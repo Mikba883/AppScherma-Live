@@ -14,13 +14,335 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bouts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          athlete_a: string
+          athlete_b: string
+          bout_date: string
+          bout_type: string
+          created_at: string | null
+          created_by: string
+          id: string
+          notes: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          score_a: number
+          score_b: number
+          status: string
+          team_id: string
+          weapon: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          athlete_a: string
+          athlete_b: string
+          bout_date: string
+          bout_type?: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          notes?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          score_a: number
+          score_b: number
+          status?: string
+          team_id: string
+          weapon: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          athlete_a?: string
+          athlete_b?: string
+          bout_date?: string
+          bout_type?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          notes?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          score_a?: number
+          score_b?: number
+          status?: string
+          team_id?: string
+          weapon?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bouts_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_athlete_a_fkey"
+            columns: ["athlete_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_athlete_b_fkey"
+            columns: ["athlete_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          birth_date: string
+          created_at: string | null
+          full_name: string
+          gender: string
+          photo_url: string | null
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          birth_date: string
+          created_at?: string | null
+          full_name: string
+          gender: string
+          photo_url?: string | null
+          role?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          birth_date?: string
+          created_at?: string | null
+          full_name?: string
+          gender?: string
+          photo_url?: string | null
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      my_pending_bouts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          athlete_a: string | null
+          athlete_b: string | null
+          bout_date: string | null
+          bout_type: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          notes: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          score_a: number | null
+          score_b: number | null
+          status: string | null
+          team_id: string | null
+          weapon: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          athlete_a?: string | null
+          athlete_b?: string | null
+          bout_date?: string | null
+          bout_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          notes?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          score_a?: number | null
+          score_b?: number | null
+          status?: string | null
+          team_id?: string | null
+          weapon?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          athlete_a?: string | null
+          athlete_b?: string | null
+          bout_date?: string | null
+          bout_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          notes?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          score_a?: number | null
+          score_b?: number | null
+          status?: string | null
+          team_id?: string | null
+          weapon?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bouts_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_athlete_a_fkey"
+            columns: ["athlete_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_athlete_b_fkey"
+            columns: ["athlete_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      decide_bout: {
+        Args: { _bout_id: string; _decision: string }
+        Returns: undefined
+      }
+      list_bouts: {
+        Args: {
+          _athletes?: string[]
+          _from?: string
+          _gender?: string
+          _max_age?: number
+          _min_age?: number
+          _to?: string
+          _weapon?: string
+        }
+        Returns: {
+          athlete_a: string
+          athlete_a_name: string
+          athlete_b: string
+          athlete_b_name: string
+          bout_date: string
+          bout_type: string
+          id: string
+          score_a: number
+          score_b: number
+          status: string
+          weapon: string
+        }[]
+      }
+      register_bout: {
+        Args: {
+          _bout_date: string
+          _bout_type: string
+          _my_score: number
+          _opp_score: number
+          _opponent: string
+          _weapon: string
+        }
+        Returns: string
+      }
+      summary_by_athlete: {
+        Args: {
+          _athletes?: string[]
+          _from?: string
+          _gender?: string
+          _max_age?: number
+          _min_age?: number
+          _to?: string
+          _weapon?: string
+        }
+        Returns: {
+          athlete_id: string
+          avg_point_diff: number
+          full_name: string
+          last_training: string
+          matches: number
+          trainings: number
+          win_rate: number
+          wins: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
