@@ -9,7 +9,7 @@ import { Navigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const AuthPage = () => {
-  const { user, signIn, signUp, loading } = useAuth();
+  const { user, signIn, signUp, loading, resetPassword } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -20,6 +20,7 @@ const AuthPage = () => {
     shift: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   if (loading) {
     return (
@@ -209,24 +210,37 @@ const AuthPage = () => {
               <div>
                 <Button
                   variant="link"
-                  onClick={() => {
-                    if (formData.email) {
-                      // Reset password functionality would go here
-                      toast({
-                        title: "Reset password",
-                        description: "Funzionalità di reset password in arrivo"
-                      });
-                    } else {
+                  onClick={async () => {
+                    if (!formData.email) {
                       toast({
                         title: "Inserisci email",
                         description: "Inserisci la tua email per il reset password",
                         variant: "destructive"
                       });
+                      return;
+                    }
+
+                    setIsResetting(true);
+                    const { error } = await resetPassword(formData.email);
+                    setIsResetting(false);
+
+                    if (error) {
+                      toast({
+                        title: "Errore",
+                        description: "Errore durante l'invio dell'email di reset",
+                        variant: "destructive"
+                      });
+                    } else {
+                      toast({
+                        title: "Email inviata",
+                        description: "Controlla la tua email per le istruzioni di reset password"
+                      });
                     }
                   }}
                   className="text-xs text-muted-foreground"
+                  disabled={isResetting}
                 >
-                  Password dimenticata?
+                  {isResetting ? "Invio..." : "Password dimenticata?"}
                 </Button>
               </div>
             )}
