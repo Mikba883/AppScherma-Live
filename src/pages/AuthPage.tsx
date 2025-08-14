@@ -16,7 +16,8 @@ const AuthPage = () => {
     password: '',
     fullName: '',
     birthDate: '',
-    gender: ''
+    gender: '',
+    shift: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,7 +42,7 @@ const AuthPage = () => {
 
     try {
       if (isSignUp) {
-        if (!formData.fullName || !formData.birthDate || !formData.gender) {
+        if (!formData.fullName || !formData.birthDate || !formData.gender || !formData.shift) {
           toast({
             title: "Errore",
             description: "Tutti i campi sono obbligatori per la registrazione",
@@ -55,7 +56,8 @@ const AuthPage = () => {
           formData.password,
           formData.fullName,
           formData.birthDate,
-          formData.gender
+          formData.gender,
+          formData.shift
         );
 
         if (error) {
@@ -153,16 +155,29 @@ const AuthPage = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
+                 <div className="space-y-2">
                   <Label htmlFor="gender">Genere</Label>
                   <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 text-base">
                       <SelectValue placeholder="Seleziona genere" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="min-w-full">
                       <SelectItem value="M">Maschio</SelectItem>
                       <SelectItem value="F">Femmina</SelectItem>
-                      <SelectItem value="X">Altro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="shift">Turno</Label>
+                  <Select value={formData.shift} onValueChange={(value) => setFormData(prev => ({ ...prev, shift: value }))}>
+                    <SelectTrigger className="h-12 text-base">
+                      <SelectValue placeholder="Seleziona turno" />
+                    </SelectTrigger>
+                    <SelectContent className="min-w-full">
+                      <SelectItem value="1">Turno 1</SelectItem>
+                      <SelectItem value="2">Turno 2</SelectItem>
+                      <SelectItem value="3">Turno 3</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -178,7 +193,7 @@ const AuthPage = () => {
             </Button>
           </form>
 
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-2">
             <Button
               variant="link"
               onClick={() => setIsSignUp(!isSignUp)}
@@ -189,6 +204,32 @@ const AuthPage = () => {
                 : 'Non hai un account? Registrati'
               }
             </Button>
+            
+            {!isSignUp && (
+              <div>
+                <Button
+                  variant="link"
+                  onClick={() => {
+                    if (formData.email) {
+                      // Reset password functionality would go here
+                      toast({
+                        title: "Reset password",
+                        description: "Funzionalità di reset password in arrivo"
+                      });
+                    } else {
+                      toast({
+                        title: "Inserisci email",
+                        description: "Inserisci la tua email per il reset password",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  className="text-xs text-muted-foreground"
+                >
+                  Password dimenticata?
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
