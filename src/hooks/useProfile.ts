@@ -10,6 +10,7 @@ export interface Profile {
   gender: 'M' | 'F' | 'X';
   photo_url?: string;
   role: 'athlete' | 'coach' | 'admin';
+  email?: string;
   created_at: string;
 }
 
