@@ -95,7 +95,6 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
               <SelectValue placeholder="Tutti i generi" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutti i generi</SelectItem>
               <SelectItem value="M">Maschio</SelectItem>
               <SelectItem value="F">Femmina</SelectItem>
               <SelectItem value="X">Altro</SelectItem>
@@ -110,7 +109,6 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
               <SelectValue placeholder="Tutte le armi" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutte le armi</SelectItem>
               <SelectItem value="fioretto">Fioretto</SelectItem>
               <SelectItem value="spada">Spada</SelectItem>
               <SelectItem value="sciabola">Sciabola</SelectItem>
