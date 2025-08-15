@@ -68,7 +68,7 @@ export const RegisterBoutForm = () => {
       const { data, error } = await supabase.rpc('register_bout', {
         _opponent: formData.opponent,
         _bout_date: formData.boutDate,
-        _weapon: formData.weapon,
+        _weapon: formData.weapon === 'none' ? '' : formData.weapon,
         _bout_type: formData.boutType,
         _my_score: parseInt(formData.myScore),
         _opp_score: parseInt(formData.oppScore)
@@ -146,7 +146,7 @@ export const RegisterBoutForm = () => {
               <SelectValue placeholder="Seleziona arma (opzionale)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Nessuna arma specificata</SelectItem>
+              <SelectItem value="none">Nessuna arma specificata</SelectItem>
               <SelectItem value="fioretto">Fioretto</SelectItem>
               <SelectItem value="spada">Spada</SelectItem>
               <SelectItem value="sciabola">Sciabola</SelectItem>
