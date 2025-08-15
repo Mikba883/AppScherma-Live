@@ -97,10 +97,6 @@ const ConsultationPage = () => {
                     Statistiche aggregate per ogni atleta nel periodo selezionato
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Esporta CSV
-                </Button>
               </CardHeader>
               <CardContent>
                 <SummaryTable filters={filters} />
@@ -117,10 +113,6 @@ const ConsultationPage = () => {
                     Elenco dettagliato di tutti i match approvati
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Esporta CSV
-                </Button>
               </CardHeader>
               <CardContent>
                 <BoutsTable filters={filters} />

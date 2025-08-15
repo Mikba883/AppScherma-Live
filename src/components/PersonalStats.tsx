@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Target, Calendar, TrendingUp } from 'lucide-react';
+import { Sword, Shield, Calendar, Award } from 'lucide-react';
 
 interface PersonalSummary {
   athlete_id: string;
@@ -75,7 +75,7 @@ export const PersonalStats = () => {
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-primary/10 rounded-lg">
-              <Target className="h-5 w-5 text-primary" />
+              <Sword className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Match Totali</p>
@@ -89,7 +89,7 @@ export const PersonalStats = () => {
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-secondary/10 rounded-lg">
-              <Calendar className="h-5 w-5 text-secondary-foreground" />
+              <Shield className="h-5 w-5 text-secondary-foreground" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Allenamenti</p>
@@ -103,7 +103,7 @@ export const PersonalStats = () => {
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-accent/10 rounded-lg">
-              <Trophy className="h-5 w-5 text-accent-foreground" />
+              <Award className="h-5 w-5 text-accent-foreground" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Win Rate</p>
@@ -122,7 +122,7 @@ export const PersonalStats = () => {
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-muted/50 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+              <Calendar className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Scarto Medio</p>
