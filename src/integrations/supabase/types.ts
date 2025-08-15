@@ -32,7 +32,7 @@ export type Database = {
           score_b: number
           status: string
           team_id: string
-          weapon: string
+          weapon: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -51,7 +51,7 @@ export type Database = {
           score_b: number
           status?: string
           team_id: string
-          weapon: string
+          weapon?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -70,7 +70,7 @@ export type Database = {
           score_b?: number
           status?: string
           team_id?: string
-          weapon?: string
+          weapon?: string | null
         }
         Relationships: [
           {

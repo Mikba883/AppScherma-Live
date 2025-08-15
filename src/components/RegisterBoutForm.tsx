@@ -40,6 +40,7 @@ export const RegisterBoutForm = () => {
         .from('profiles')
         .select('user_id, full_name')
         .neq('user_id', user.id)
+        .eq('role', 'athlete')
         .order('full_name');
 
       if (error) throw error;
@@ -52,7 +53,7 @@ export const RegisterBoutForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.opponent || !formData.weapon || !formData.myScore || !formData.oppScore) {
+    if (!formData.opponent || !formData.myScore || !formData.oppScore) {
       toast({
         title: "Errore",
         description: "Tutti i campi obbligatori devono essere compilati",
@@ -139,12 +140,13 @@ export const RegisterBoutForm = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="weapon">Arma *</Label>
+          <Label htmlFor="weapon">Arma</Label>
           <Select value={formData.weapon} onValueChange={(value) => setFormData(prev => ({ ...prev, weapon: value }))}>
             <SelectTrigger>
-              <SelectValue placeholder="Seleziona arma" />
+              <SelectValue placeholder="Seleziona arma (opzionale)" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="">Nessuna arma specificata</SelectItem>
               <SelectItem value="fioretto">Fioretto</SelectItem>
               <SelectItem value="spada">Spada</SelectItem>
               <SelectItem value="sciabola">Sciabola</SelectItem>
