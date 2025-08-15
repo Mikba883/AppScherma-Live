@@ -17,6 +17,7 @@ const AuthPage = () => {
     fullName: '',
     birthDate: '',
     gender: '',
+    role: '',
     shift: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +44,7 @@ const AuthPage = () => {
 
     try {
       if (isSignUp) {
-        if (!formData.fullName || !formData.birthDate || !formData.gender || !formData.shift) {
+        if (!formData.fullName || !formData.birthDate || !formData.gender || !formData.role || !formData.shift) {
           toast({
             title: "Errore",
             description: "Tutti i campi sono obbligatori per la registrazione",
@@ -58,6 +59,7 @@ const AuthPage = () => {
           formData.fullName,
           formData.birthDate,
           formData.gender,
+          formData.role,
           formData.shift
         );
 
@@ -170,8 +172,22 @@ const AuthPage = () => {
                       <SelectValue placeholder="Seleziona genere" />
                     </SelectTrigger>
                     <SelectContent className="min-w-full">
-                      <SelectItem value="M">Maschio</SelectItem>
-                      <SelectItem value="F">Femmina</SelectItem>
+                      <SelectItem value="M">M</SelectItem>
+                      <SelectItem value="F">F</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role">Ruolo</Label>
+                  <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+                    <SelectTrigger className="h-12 text-base">
+                      <SelectValue placeholder="Seleziona ruolo" />
+                    </SelectTrigger>
+                    <SelectContent className="min-w-full">
+                      <SelectItem value="athlete">Allievo</SelectItem>
+                      <SelectItem value="coach">Istruttore</SelectItem>
+                      <SelectItem value="admin">Amministratore</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
