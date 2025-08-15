@@ -99,6 +99,13 @@ const AuthPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/9ffe6350-a8fc-45a3-8078-f5490d380349.png" 
+              alt="Logo Fanfulla Scherma" 
+              className="h-24 w-auto"
+            />
+          </div>
           <CardTitle className="text-2xl font-bold">
             Fanfulla Scherma
           </CardTitle>
