@@ -85,16 +85,23 @@ export const useAuth = () => {
 
   const resetPassword = async (email: string) => {
     try {
+      console.log('🔄 Tentativo reset password per:', email);
       const redirectUrl = `${window.location.origin}/auth`;
+      console.log('🔗 Redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Errore reset password:', error);
+        throw error;
+      }
       
+      console.log('✅ Reset password chiamato con successo');
       return { error: null };
     } catch (error) {
+      console.error('💥 Errore catch reset password:', error);
       return { error };
     }
   };
