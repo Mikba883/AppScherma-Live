@@ -43,7 +43,8 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         _max_age: filters.maxAge || null,
         _weapon: filters.weapon || null,
         _athletes: filters.athletes || null,
-        _turno: filters.turno || null
+        _tipo_match: filters.tipoMatch || null,
+        _turni: filters.turni || null
       });
 
       if (error) throw error;
