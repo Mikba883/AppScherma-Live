@@ -43,17 +43,17 @@ const ConsultationPage = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
+        <div className="w-full px-6 py-6">
+          <div className="flex items-center gap-6">
             <Link to="/">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Dashboard
+              <Button variant="outline" size="lg" className="px-6 py-3">
+                <ArrowLeft className="w-5 h-5 mr-3" />
+                <span className="text-base">Dashboard</span>
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-primary">Consultazione Dati</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-3xl font-bold text-primary">Consultazione Dati</h1>
+              <p className="text-lg text-muted-foreground mt-1">
                 Analizza le performance del team con filtri avanzati
               </p>
             </div>
@@ -62,7 +62,7 @@ const ConsultationPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="w-full px-6 py-8 space-y-8">
         {/* Filters */}
         <Card>
           <CardHeader>

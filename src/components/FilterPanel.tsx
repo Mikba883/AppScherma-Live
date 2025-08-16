@@ -126,8 +126,8 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="sparring">Sparring</SelectItem>
-              <SelectItem value="match">Match</SelectItem>
-              <SelectItem value="torneo">Torneo</SelectItem>
+              <SelectItem value="gara">Gara</SelectItem>
+              <SelectItem value="bianco">Bianco</SelectItem>
             </SelectContent>
           </Select>
         </div>
