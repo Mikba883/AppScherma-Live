@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Table, Home } from 'lucide-react';
+import { Search, Table, Home } from 'lucide-react';
 
 export const Navigation = () => {
   const location = useLocation();
@@ -26,7 +26,7 @@ export const Navigation = () => {
           size="sm"
           className="flex items-center gap-2"
         >
-          <BarChart3 className="h-4 w-4" />
+          <Search className="h-4 w-4" />
           Consultazione
         </Button>
       </Link>

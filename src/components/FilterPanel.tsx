@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { X, Filter } from 'lucide-react';
 import { Filters } from '@/pages/ConsultationPage';
 
@@ -21,6 +22,7 @@ interface FilterPanelProps {
 export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>(filters.athletes || []);
+  const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchAthletes();
@@ -115,6 +117,20 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
             </SelectContent>
           </Select>
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="turno">Turno</Label>
+          <Select value={filters.turno || ''} onValueChange={(value) => handleFilterChange('turno', value || undefined)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Tutti i turni" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="sparring">Sparring</SelectItem>
+              <SelectItem value="match">Match</SelectItem>
+              <SelectItem value="torneo">Torneo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -146,20 +162,28 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
       </div>
 
       <div className="space-y-3">
-        <Label>Atleti (seleziona multipli)</Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-40 overflow-y-auto border rounded-lg p-3">
-          {athletes.map((athlete) => (
-            <Button
-              key={athlete.user_id}
-              variant={selectedAthletes.includes(athlete.user_id) ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleAthleteToggle(athlete.user_id)}
-              className="h-auto py-2 text-left justify-start"
-            >
-              {athlete.full_name}
-            </Button>
-          ))}
-        </div>
+        <Label>Atleti</Label>
+        <Select value="" onValueChange={() => {}}>
+          <SelectTrigger onClick={() => setIsAthleteDropdownOpen(!isAthleteDropdownOpen)}>
+            <SelectValue placeholder={selectedAthletes.length > 0 ? `${selectedAthletes.length} atleti selezionati` : "Seleziona atleti"} />
+          </SelectTrigger>
+          <SelectContent>
+            <div className="max-h-60 overflow-y-auto">
+              {athletes.map((athlete) => (
+                <div key={athlete.user_id} className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent">
+                  <Checkbox
+                    id={athlete.user_id}
+                    checked={selectedAthletes.includes(athlete.user_id)}
+                    onCheckedChange={() => handleAthleteToggle(athlete.user_id)}
+                  />
+                  <Label htmlFor={athlete.user_id} className="text-sm font-normal cursor-pointer flex-1">
+                    {athlete.full_name}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </SelectContent>
+        </Select>
         
         {selectedAthletes.length > 0 && (
           <div className="flex flex-wrap gap-1">

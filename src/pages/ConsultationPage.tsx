@@ -17,6 +17,7 @@ export interface Filters {
   maxAge?: number;
   weapon?: string;
   athletes?: string[];
+  turno?: string;
 }
 
 const ConsultationPage = () => {
