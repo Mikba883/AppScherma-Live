@@ -42,6 +42,7 @@ export const SummaryTable = ({ filters }: SummaryTableProps) => {
         _max_age: filters.maxAge || null,
         _weapon: filters.weapon || null,
         _athletes: filters.athletes || null,
+        _tipo_match: filters.tipoMatch || null,
         _turni: filters.turni || null
       });
 
