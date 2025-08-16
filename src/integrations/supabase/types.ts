@@ -126,6 +126,7 @@ export type Database = {
           gender: string
           photo_url: string | null
           role: string
+          shift: string | null
           team_id: string
           user_id: string
         }
@@ -137,6 +138,7 @@ export type Database = {
           gender: string
           photo_url?: string | null
           role?: string
+          shift?: string | null
           team_id: string
           user_id: string
         }
@@ -148,6 +150,7 @@ export type Database = {
           gender?: string
           photo_url?: string | null
           role?: string
+          shift?: string | null
           team_id?: string
           user_id?: string
         }
