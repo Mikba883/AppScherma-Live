@@ -33,38 +33,40 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background relative">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-6">
+        <div className="container mx-auto px-4 py-6">
+          {/* Desktop Layout */}
+          <div className="hidden md:flex justify-between items-center">
+            <div className="flex items-center gap-8">
               <div>
-                <h1 className="text-2xl font-bold text-primary">Fanfulla Scherma</h1>
-                <p className="text-base text-muted-foreground">
+                <h1 className="text-3xl font-bold text-primary">Fanfulla Scherma</h1>
+                <p className="text-lg text-muted-foreground mt-1">
                   Benvenuto, {profile?.full_name || user.email}
                 </p>
               </div>
-              {/* Desktop Navigation */}
-              <div className="hidden md:block">
-                <Navigation />
-              </div>
+              <Navigation />
             </div>
             
-            {/* Desktop logout button */}
-            <div className="hidden md:block">
-              <Button variant="outline" onClick={signOut}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Esci
+            <Button variant="outline" size="lg" onClick={signOut}>
+              <LogOut className="w-5 h-5 mr-2" />
+              Esci
+            </Button>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="md:hidden flex justify-between items-center">
+            <div>
+              <h1 className="text-xl font-bold text-primary">Fanfulla Scherma</h1>
+              <p className="text-sm text-muted-foreground">
+                Benvenuto, {profile?.full_name || user.email}
+              </p>
+            </div>
+            
+            <Link to="/consultation">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <span>Analisi</span>
+                <ArrowRight className="w-4 h-4" />
               </Button>
-            </div>
-            
-            {/* Mobile Analysis button */}
-            <div className="md:hidden">
-              <Link to="/consultation">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <span>Analisi</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
+            </Link>
           </div>
         </div>
       </header>
