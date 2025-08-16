@@ -246,15 +246,26 @@ export type Database = {
         Returns: string
       }
       summary_by_athlete: {
-        Args: {
-          _athletes?: string[]
-          _from?: string
-          _gender?: string
-          _max_age?: number
-          _min_age?: number
-          _to?: string
-          _weapon?: string
-        }
+        Args:
+          | {
+              _athletes?: string[]
+              _from?: string
+              _gender?: string
+              _max_age?: number
+              _min_age?: number
+              _to?: string
+              _turno?: string
+              _weapon?: string
+            }
+          | {
+              _athletes?: string[]
+              _from?: string
+              _gender?: string
+              _max_age?: number
+              _min_age?: number
+              _to?: string
+              _weapon?: string
+            }
         Returns: {
           athlete_id: string
           avg_hits_given: number
