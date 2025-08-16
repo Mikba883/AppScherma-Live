@@ -8,7 +8,8 @@ import { PendingNotifications } from '@/components/PendingNotifications';
 import { RegisterBoutForm } from '@/components/RegisterBoutForm';
 import { Navigation } from '@/components/Navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, BarChart3, Calendar, Plus, ArrowRight } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -46,10 +47,27 @@ const Dashboard = () => {
               <Navigation />
             </div>
             
-            <Button variant="outline" size="lg" onClick={signOut} className="px-6 py-3">
-              <LogOut className="w-5 h-5 mr-3" />
-              <span className="text-base">Esci</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="lg" className="px-6 py-3">
+                  <User className="w-5 h-5 mr-3" />
+                  <span className="text-base">Account</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link to="/change-password" className="flex items-center">
+                    <Lock className="w-4 h-4 mr-2" />
+                    Cambia Password
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Layout */}
@@ -61,28 +79,39 @@ const Dashboard = () => {
               </p>
             </div>
             
-            <Link to="/consultation">
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <span>Analisi</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link to="/consultation">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <span>Analisi</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem asChild>
+                    <Link to="/change-password" className="flex items-center">
+                      <Lock className="w-4 h-4 mr-2" />
+                      Cambia Password
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Mobile logout button - Fixed bottom right */}
-      <div className="md:hidden fixed bottom-4 right-4 z-50">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={signOut}
-          className="shadow-lg bg-card border-2"
-        >
-          <LogOut className="w-4 h-4 mr-1" />
-          Esci
-        </Button>
-      </div>
 
       {/* Main Content */}
       <main className="w-full px-6 py-8 pb-20 md:pb-8">
