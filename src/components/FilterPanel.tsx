@@ -119,15 +119,29 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="turno">Turno</Label>
-          <Select value={filters.turno || ''} onValueChange={(value) => handleFilterChange('turno', value || undefined)}>
+          <Label htmlFor="tipoMatch">Tipo Match</Label>
+          <Select value={filters.tipoMatch || ''} onValueChange={(value) => handleFilterChange('tipoMatch', value || undefined)}>
             <SelectTrigger>
-              <SelectValue placeholder="Tutti i turni" />
+              <SelectValue placeholder="Tutti i tipi" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="sparring">Sparring</SelectItem>
               <SelectItem value="gara">Gara</SelectItem>
               <SelectItem value="bianco">Bianco</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="turni">Turni</Label>
+          <Select value={filters.turni || ''} onValueChange={(value) => handleFilterChange('turni', value || undefined)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Tutti i turni" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Turno 1</SelectItem>
+              <SelectItem value="2">Turno 2</SelectItem>
+              <SelectItem value="3">Turno 3</SelectItem>
             </SelectContent>
           </Select>
         </div>
