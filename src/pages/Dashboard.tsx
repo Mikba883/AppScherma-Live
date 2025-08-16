@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PersonalStats } from '@/components/PersonalStats';
@@ -8,7 +8,7 @@ import { PendingNotifications } from '@/components/PendingNotifications';
 import { RegisterBoutForm } from '@/components/RegisterBoutForm';
 import { Navigation } from '@/components/Navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, BarChart3, Calendar, Plus } from 'lucide-react';
+import { LogOut, BarChart3, Calendar, Plus, ArrowRight } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -35,24 +35,35 @@ const Dashboard = () => {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4 lg:gap-6 flex-1 min-w-0">
-              <div className="min-w-0 flex-shrink">
-                <h1 className="text-xl lg:text-2xl font-bold text-primary">Fanfulla Scherma</h1>
-                <p className="text-sm lg:text-base text-muted-foreground truncate">
+            <div className="flex items-center gap-6">
+              <div>
+                <h1 className="text-2xl font-bold text-primary">Fanfulla Scherma</h1>
+                <p className="text-base text-muted-foreground">
                   Benvenuto, {profile?.full_name || user.email}
                 </p>
               </div>
-              <div className="flex-shrink-0">
+              {/* Desktop Navigation */}
+              <div className="hidden md:block">
                 <Navigation />
               </div>
             </div>
             
             {/* Desktop logout button */}
-            <div className="hidden md:block flex-shrink-0 ml-4">
+            <div className="hidden md:block">
               <Button variant="outline" onClick={signOut}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Esci
               </Button>
+            </div>
+            
+            {/* Mobile Analysis button */}
+            <div className="md:hidden">
+              <Link to="/consultation">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <span>Analisi</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
