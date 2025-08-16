@@ -211,15 +211,26 @@ export type Database = {
         }[]
       }
       list_bouts: {
-        Args: {
-          _athletes?: string[]
-          _from?: string
-          _gender?: string
-          _max_age?: number
-          _min_age?: number
-          _to?: string
-          _weapon?: string
-        }
+        Args:
+          | {
+              _athletes?: string[]
+              _from?: string
+              _gender?: string
+              _max_age?: number
+              _min_age?: number
+              _to?: string
+              _turno?: string
+              _weapon?: string
+            }
+          | {
+              _athletes?: string[]
+              _from?: string
+              _gender?: string
+              _max_age?: number
+              _min_age?: number
+              _to?: string
+              _weapon?: string
+            }
         Returns: {
           athlete_a: string
           athlete_a_name: string

@@ -41,7 +41,8 @@ export const SummaryTable = ({ filters }: SummaryTableProps) => {
         _min_age: filters.minAge || null,
         _max_age: filters.maxAge || null,
         _weapon: filters.weapon || null,
-        _athletes: filters.athletes || null
+        _athletes: filters.athletes || null,
+        _turno: filters.turno || null
       });
 
       if (error) throw error;
