@@ -267,6 +267,17 @@ export type Database = {
               _gender?: string
               _max_age?: number
               _min_age?: number
+              _tipo_match?: string
+              _to?: string
+              _turni?: string
+              _weapon?: string
+            }
+          | {
+              _athletes?: string[]
+              _from?: string
+              _gender?: string
+              _max_age?: number
+              _min_age?: number
               _to?: string
               _turno?: string
               _weapon?: string
