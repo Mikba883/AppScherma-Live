@@ -34,7 +34,15 @@ export const PersonalStats = () => {
 
     try {
       const { data, error } = await supabase.rpc('summary_by_athlete', {
-        _athletes: [user.id]
+        _from: null,
+        _to: null,
+        _gender: null,
+        _min_age: null,
+        _max_age: null,
+        _weapon: null,
+        _athletes: [user.id],
+        _tipo_match: null,
+        _turni: null
       });
 
       if (error) throw error;
