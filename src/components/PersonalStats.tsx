@@ -13,6 +13,8 @@ interface PersonalSummary {
   wins: number;
   win_rate: number;
   avg_point_diff: number;
+  avg_hits_given: number;
+  avg_hits_received: number;
   last_training: string | null;
 }
 
@@ -63,14 +65,14 @@ export const PersonalStats = () => {
   }
 
   const formatWinRate = (rate: number) => `${(rate * 100).toFixed(1)}%`;
-  const formatPointDiff = (diff: number) => diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
+  const formatHits = (hits: number) => hits.toFixed(1);
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Mai';
     return new Date(dateString).toLocaleDateString('it-IT');
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       <Card>
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-3">
@@ -121,12 +123,27 @@ export const PersonalStats = () => {
       <Card>
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-muted/50 rounded-lg">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Sword className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Scarto Medio</p>
-              <p className="text-2xl font-bold">{formatPointDiff(stats.avg_point_diff)}</p>
+              <p className="text-sm font-medium text-muted-foreground">Media Stoccate Date</p>
+              <p className="text-2xl font-bold">{formatHits(stats.avg_hits_given)}</p>
+              <p className="text-xs text-muted-foreground">Per assalto</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex items-center p-6">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <Shield className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Media Stoccate Subite</p>
+              <p className="text-2xl font-bold">{formatHits(stats.avg_hits_received)}</p>
               <p className="text-xs text-muted-foreground">
                 Ultimo: {formatDate(stats.last_training)}
               </p>

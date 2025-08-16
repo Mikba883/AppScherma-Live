@@ -257,6 +257,8 @@ export type Database = {
         }
         Returns: {
           athlete_id: string
+          avg_hits_given: number
+          avg_hits_received: number
           avg_point_diff: number
           full_name: string
           last_training: string

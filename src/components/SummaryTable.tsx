@@ -14,6 +14,8 @@ interface SummaryData {
   wins: number;
   win_rate: number;
   avg_point_diff: number;
+  avg_hits_given: number;
+  avg_hits_received: number;
   last_training: string | null;
 }
 
