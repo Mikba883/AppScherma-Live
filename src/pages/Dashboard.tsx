@@ -30,41 +30,62 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1 className="text-2xl font-bold text-primary">Fanfulla Scherma</h1>
-              <p className="text-muted-foreground">
-                Benvenuto, {profile?.full_name || user.email}
-              </p>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4 lg:gap-6 flex-1 min-w-0">
+              <div className="min-w-0 flex-shrink">
+                <h1 className="text-xl lg:text-2xl font-bold text-primary">Fanfulla Scherma</h1>
+                <p className="text-sm lg:text-base text-muted-foreground truncate">
+                  Benvenuto, {profile?.full_name || user.email}
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <Navigation />
+              </div>
             </div>
-            <Navigation />
+            
+            {/* Desktop logout button */}
+            <div className="hidden md:block flex-shrink-0 ml-4">
+              <Button variant="outline" onClick={signOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Esci
+              </Button>
+            </div>
           </div>
-          <Button variant="outline" onClick={signOut}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Esci
-          </Button>
         </div>
       </header>
 
+      {/* Mobile logout button - Fixed bottom right */}
+      <div className="md:hidden fixed bottom-4 right-4 z-50">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={signOut}
+          className="shadow-lg bg-card border-2"
+        >
+          <LogOut className="w-4 h-4 mr-1" />
+          Esci
+        </Button>
+      </div>
+
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
+            <TabsTrigger value="overview" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
               <BarChart3 className="w-4 h-4" />
-              Riepilogo
+              <span className="hidden sm:inline">Riepilogo</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <TabsTrigger value="notifications" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
               <Calendar className="w-4 h-4" />
-              Notifiche
+              <span className="hidden sm:inline">Notifiche</span>
             </TabsTrigger>
-            <TabsTrigger value="register" className="flex items-center gap-2">
+            <TabsTrigger value="register" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
               <Plus className="w-4 h-4" />
-              Registra Match
+              <span className="hidden sm:inline">Registra</span>
             </TabsTrigger>
           </TabsList>
 
