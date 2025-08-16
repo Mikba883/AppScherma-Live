@@ -164,10 +164,17 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
       <div className="space-y-3">
         <Label>Atleti</Label>
         <Select value="" onValueChange={() => {}}>
-          <SelectTrigger onClick={() => setIsAthleteDropdownOpen(!isAthleteDropdownOpen)}>
+          <SelectTrigger 
+            onClick={() => setIsAthleteDropdownOpen(!isAthleteDropdownOpen)}
+            className="min-h-10"
+          >
             <SelectValue placeholder={selectedAthletes.length > 0 ? `${selectedAthletes.length} atleti selezionati` : "Seleziona atleti"} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent 
+            className="w-[var(--radix-select-trigger-width)] max-w-none"
+            position="popper"
+            sideOffset={4}
+          >
             <div className="max-h-60 overflow-y-auto">
               {athletes.map((athlete) => (
                 <div key={athlete.user_id} className="flex items-center space-x-2 px-2 py-1.5 hover:bg-accent">
