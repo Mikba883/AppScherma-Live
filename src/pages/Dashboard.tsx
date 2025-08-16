@@ -33,10 +33,10 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background relative">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-6">
+        <div className="w-full px-6 py-6">
           {/* Desktop Layout */}
-          <div className="hidden md:flex justify-between items-center">
-            <div className="flex items-center gap-8">
+          <div className="hidden md:flex justify-between items-center max-w-none">
+            <div className="flex items-center gap-12">
               <div>
                 <h1 className="text-3xl font-bold text-primary">Fanfulla Scherma</h1>
                 <p className="text-lg text-muted-foreground mt-1">
@@ -46,9 +46,9 @@ const Dashboard = () => {
               <Navigation />
             </div>
             
-            <Button variant="outline" size="lg" onClick={signOut}>
-              <LogOut className="w-5 h-5 mr-2" />
-              Esci
+            <Button variant="outline" size="lg" onClick={signOut} className="px-6 py-3">
+              <LogOut className="w-5 h-5 mr-3" />
+              <span className="text-base">Esci</span>
             </Button>
           </div>
 
@@ -85,7 +85,7 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6 pb-20 md:pb-6">
+      <main className="w-full px-6 py-8 pb-20 md:pb-8">
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
