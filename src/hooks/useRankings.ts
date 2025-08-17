@@ -50,18 +50,18 @@ export const useRankings = () => {
     if (!user) return;
 
     try {
-      // Get position from rankings function - this includes all the data we need
-      const { data: allRankings, error: positionError } = await supabase.rpc('get_rankings');
-      if (positionError) throw positionError;
+      // Use summary_by_athlete to get ranking data like in consultation page
+      const { data: summaryData, error: summaryError } = await supabase.rpc('summary_by_athlete');
+      if (summaryError) throw summaryError;
 
-      const userPosition = allRankings?.find(r => r.athlete_id === user.id);
+      const userSummary = summaryData?.find(s => s.athlete_id === user.id);
 
-      if (userPosition) {
+      if (userSummary) {
         setPersonalRanking({
-          ranking_position: userPosition.ranking_position,
-          elo_rating: userPosition.elo_rating,
-          frequency_streak: userPosition.frequency_streak,
-          frequency_multiplier: userPosition.frequency_multiplier,
+          ranking_position: userSummary.ranking_position,
+          elo_rating: userSummary.elo_rating,
+          frequency_streak: 0, // Will be calculated from activity data
+          frequency_multiplier: 1.0,
         });
       } else {
         // User has no ranking data yet
