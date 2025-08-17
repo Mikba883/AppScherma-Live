@@ -13,17 +13,19 @@ export const TournamentSection = () => {
   const handleStartTournament = (athletes: TournamentAthlete[]) => {
     setSelectedAthletes(athletes);
     
-    // Generate all possible matches (round robin)
+    // Generate all possible matches (both directions for complete matrix)
     const newMatches: TournamentMatch[] = [];
     for (let i = 0; i < athletes.length; i++) {
-      for (let j = i + 1; j < athletes.length; j++) {
-        newMatches.push({
-          athleteA: athletes[i].id,
-          athleteB: athletes[j].id,
-          scoreA: null,
-          scoreB: null,
-          weapon: null,
-        });
+      for (let j = 0; j < athletes.length; j++) {
+        if (i !== j) { // Don't create matches with same athlete
+          newMatches.push({
+            athleteA: athletes[i].id,
+            athleteB: athletes[j].id,
+            scoreA: null,
+            scoreB: null,
+            weapon: null,
+          });
+        }
       }
     }
     
@@ -34,11 +36,12 @@ export const TournamentSection = () => {
   const handleUpdateMatch = (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => {
     setMatches(prev => 
       prev.map(match => {
-        // Update both directions automatically
-        if ((match.athleteA === athleteA && match.athleteB === athleteB)) {
+        // Update the exact match
+        if (match.athleteA === athleteA && match.athleteB === athleteB) {
           return { ...match, scoreA, scoreB, weapon };
         }
-        if ((match.athleteA === athleteB && match.athleteB === athleteA)) {
+        // Update the reverse match with swapped scores
+        if (match.athleteA === athleteB && match.athleteB === athleteA) {
           return { ...match, scoreA: scoreB, scoreB: scoreA, weapon };
         }
         return match;
