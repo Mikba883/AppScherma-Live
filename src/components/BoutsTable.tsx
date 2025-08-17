@@ -39,8 +39,15 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
   const fetchBoutsData = async () => {
     setLoading(true);
     try {
+      // Debug logging
+      console.log('BoutsTable - User:', user?.id);
+      console.log('BoutsTable - isInstructor:', isInstructor);
+      console.log('BoutsTable - Original filters:', filters);
+      
       // For students, automatically filter to show only their matches
       const athletesFilter = !isInstructor && user ? [user.id] : filters.athletes || null;
+      
+      console.log('BoutsTable - Athletes filter being applied:', athletesFilter);
       
       const { data: boutsData, error } = await supabase.rpc('list_bouts', {
         _from: filters.dateFrom || null,
@@ -55,6 +62,7 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       });
 
       if (error) throw error;
+      console.log('BoutsTable - Data received:', boutsData?.length, 'matches');
       setData(boutsData || []);
     } catch (error) {
       console.error('Error fetching bouts data:', error);
