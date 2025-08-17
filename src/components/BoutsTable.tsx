@@ -5,7 +5,9 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Download, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Filters } from '@/pages/ConsultationPage';
 
 interface BoutData {
@@ -31,6 +33,7 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
   const { isInstructor } = useUserRole();
   const [data, setData] = useState<BoutData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBoutsData();
@@ -68,6 +71,36 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       console.error('Error fetching bouts data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteMatch = async (matchId: string) => {
+    if (!isInstructor) {
+      toast.error('Solo gli istruttori possono cancellare gli incontri');
+      return;
+    }
+
+    setDeletingId(matchId);
+    
+    try {
+      const { error } = await supabase.rpc('delete_bout_with_notification', {
+        _bout_id: matchId
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Incontro cancellato con successo. Gli atleti sono stati notificati.');
+      
+      // Remove the deleted match from the local state
+      setData(prev => prev.filter(match => match.id !== matchId));
+      
+    } catch (error) {
+      console.error('Error deleting match:', error);
+      toast.error('Errore nella cancellazione dell\'incontro');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -171,6 +204,7 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
                 <TableHead>Atleta B</TableHead>
                 <TableHead className="text-center">Punteggio</TableHead>
                 <TableHead>Vincitore</TableHead>
+                {isInstructor && <TableHead className="text-center">Azioni</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -211,6 +245,40 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
                       {row.score_a > row.score_b ? row.athlete_a_name : row.athlete_b_name}
                     </Badge>
                   </TableCell>
+                  {isInstructor && (
+                    <TableCell className="text-center">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            disabled={deletingId === row.id}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancellare incontro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Sei sicuro di voler cancellare l'incontro tra {row.athlete_a_name} e {row.athlete_b_name} del {formatDate(row.bout_date)}?
+                              <br /><br />
+                              <strong>Questa azione non può essere annullata.</strong> Gli atleti riceveranno una notifica della cancellazione.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annulla</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteMatch(row.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Sì, Cancella
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

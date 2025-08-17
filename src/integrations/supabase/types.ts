@@ -134,6 +134,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          read: boolean
+          related_bout_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          read?: boolean
+          related_bout_id?: string | null
+          title: string
+          type?: string
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          read?: boolean
+          related_bout_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           birth_date: string
@@ -229,6 +265,10 @@ export type Database = {
       }
       decide_bout: {
         Args: { _bout_id: string; _decision: string }
+        Returns: undefined
+      }
+      delete_bout_with_notification: {
+        Args: { _bout_id: string }
         Returns: undefined
       }
       get_my_pending_bouts: {

@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PersonalStats } from './PersonalStats';
 import { PendingNotifications } from './PendingNotifications';
+import { NotificationsPanel } from './NotificationsPanel';
 import { RegisterBoutForm } from './RegisterBoutForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Calendar, Plus } from 'lucide-react';
+import { BarChart3, Bell, Plus, Swords } from 'lucide-react';
 
 export const StudentDashboard = () => {
   console.log('StudentDashboard - Component loaded');
@@ -11,13 +12,17 @@ export const StudentDashboard = () => {
   return (
     <main className="w-full px-6 py-8 pb-20 md:pb-8">
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
             <BarChart3 className="w-4 h-4" />
-            <span className="hidden sm:inline">Le Tue Statistiche</span>
+            <span className="hidden sm:inline">Statistiche</span>
+          </TabsTrigger>
+          <TabsTrigger value="pending" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
+            <Swords className="w-4 h-4" />
+            <span className="hidden sm:inline">Pending</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
-            <Calendar className="w-4 h-4" />
+            <Bell className="w-4 h-4" />
             <span className="hidden sm:inline">Notifiche</span>
           </TabsTrigger>
           <TabsTrigger value="register" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
@@ -40,7 +45,7 @@ export const StudentDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-6">
+        <TabsContent value="pending" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Match da approvare</CardTitle>
@@ -52,6 +57,10 @@ export const StudentDashboard = () => {
               <PendingNotifications />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-6">
+          <NotificationsPanel />
         </TabsContent>
 
         <TabsContent value="register" className="space-y-6">
