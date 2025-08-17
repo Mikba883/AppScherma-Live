@@ -33,12 +33,16 @@ export const TournamentSection = () => {
 
   const handleUpdateMatch = (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => {
     setMatches(prev => 
-      prev.map(match => 
-        (match.athleteA === athleteA && match.athleteB === athleteB) ||
-        (match.athleteA === athleteB && match.athleteB === athleteA)
-          ? { ...match, scoreA, scoreB, weapon }
-          : match
-      )
+      prev.map(match => {
+        // Update both directions automatically
+        if ((match.athleteA === athleteA && match.athleteB === athleteB)) {
+          return { ...match, scoreA, scoreB, weapon };
+        }
+        if ((match.athleteA === athleteB && match.athleteB === athleteA)) {
+          return { ...match, scoreA: scoreB, scoreB: scoreA, weapon };
+        }
+        return match;
+      })
     );
   };
 

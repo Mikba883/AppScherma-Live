@@ -67,39 +67,56 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
     const numScoreA = scoreA === '' ? null : parseInt(scoreA);
     const numScoreB = scoreB === '' ? null : parseInt(scoreB);
     
-    // Update both directions of the match
+    // Always update both directions of the match automatically
     onUpdateMatch(athleteA, athleteB, numScoreA, numScoreB, weapon || null);
-    
-    // Also update the reverse match with swapped scores
-    if (numScoreA !== null && numScoreB !== null) {
-      onUpdateMatch(athleteB, athleteA, numScoreB, numScoreA, weapon || null);
-    }
   };
 
-  // Generate rounds for tournament organization
+  // Generate rounds for tournament organization using correct round-robin algorithm
   const generateRounds = () => {
-    const rounds: { round: number; matches: Array<{athleteA: TournamentAthlete; athleteB: TournamentAthlete}> }[] = [];
     const totalAthletes = athletes.length;
+    if (totalAthletes < 2) return [];
     
-    // Round-robin tournament: each athlete plays every other athlete once
-    for (let round = 1; round < totalAthletes; round++) {
+    const rounds: { round: number; matches: Array<{athleteA: TournamentAthlete; athleteB: TournamentAthlete}> }[] = [];
+    const totalRounds = totalAthletes % 2 === 0 ? totalAthletes - 1 : totalAthletes;
+    
+    // Create a copy of athletes array for rotation
+    let athletesList = [...athletes];
+    
+    // If odd number of athletes, add a "bye" placeholder
+    if (totalAthletes % 2 === 1) {
+      athletesList.push({ id: 'bye', full_name: 'BYE' } as TournamentAthlete);
+    }
+    
+    const numAthletes = athletesList.length;
+    const half = numAthletes / 2;
+    
+    for (let round = 0; round < totalRounds; round++) {
       const roundMatches: Array<{athleteA: TournamentAthlete; athleteB: TournamentAthlete}> = [];
       
-      for (let i = 0; i < Math.floor(totalAthletes / 2); i++) {
-        const athlete1Index = i;
-        const athlete2Index = (totalAthletes - 1 - i + round - 1) % (totalAthletes - 1);
-        const finalAthlete2Index = athlete2Index >= totalAthletes - 1 ? totalAthletes - 1 : athlete2Index;
+      for (let i = 0; i < half; i++) {
+        const athlete1 = athletesList[i];
+        const athlete2 = athletesList[numAthletes - 1 - i];
         
-        if (athlete1Index !== finalAthlete2Index && athlete1Index < totalAthletes && finalAthlete2Index < totalAthletes) {
+        // Skip if either athlete is the "bye" placeholder
+        if (athlete1.id !== 'bye' && athlete2.id !== 'bye') {
           roundMatches.push({
-            athleteA: athletes[athlete1Index],
-            athleteB: athletes[finalAthlete2Index]
+            athleteA: athlete1,
+            athleteB: athlete2
           });
         }
       }
       
       if (roundMatches.length > 0) {
-        rounds.push({ round, matches: roundMatches });
+        rounds.push({ round: round + 1, matches: roundMatches });
+      }
+      
+      // Rotate athletes (keep first fixed, rotate others)
+      if (numAthletes > 2) {
+        const temp = athletesList[1];
+        for (let i = 1; i < numAthletes - 1; i++) {
+          athletesList[i] = athletesList[i + 1];
+        }
+        athletesList[numAthletes - 1] = temp;
       }
     }
     
@@ -223,18 +240,17 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
                         </TableCell>
                         {athletes.map((athleteB) => (
                           <TableCell key={athleteB.id} className="p-1">
-                            {athleteA.id === athleteB.id ? (
-                              <div className="w-20 h-16 bg-muted rounded flex items-center justify-center">
-                                <Target className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                            ) : (
-                              <MatchCell
-                                athleteA={athleteA.id}
-                                athleteB={athleteB.id}
-                                match={getMatch(athleteA.id, athleteB.id)}
-                                onUpdate={handleScoreChange}
-                              />
-                            )}
+                             {athleteA.id === athleteB.id ? (
+                               <div className="w-20 h-16 bg-muted rounded flex items-center justify-center">
+                                 <Target className="w-4 h-4 text-muted-foreground" />
+                               </div>
+                             ) : (
+                               <ReadOnlyMatchCell
+                                 athleteA={athleteA.id}
+                                 athleteB={athleteB.id}
+                                 match={getMatch(athleteA.id, athleteB.id)}
+                               />
+                             )}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -297,22 +313,25 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
               <div key={round} className="border rounded-lg p-4">
                 <h4 className="font-semibold mb-3">Turno {round}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {matches.map((match, index) => {
-                    const matchData = getMatch(match.athleteA.id, match.athleteB.id);
-                    const isCompleted = matchData?.scoreA !== null && matchData?.scoreB !== null;
-                    return (
-                      <div key={index} className={`p-3 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
-                        <div className="text-sm font-medium">
-                          {match.athleteA.full_name} vs {match.athleteB.full_name}
-                        </div>
-                        {isCompleted && (
-                          <div className="text-xs text-gray-600 mt-1">
-                            {matchData.scoreA} - {matchData.scoreB} ({matchData.weapon})
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                   {matches.map((match, index) => {
+                     const matchData = getMatch(match.athleteA.id, match.athleteB.id);
+                     const isCompleted = matchData?.scoreA !== null && matchData?.scoreB !== null;
+                     return (
+                       <div key={index} className={`p-4 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                         <div className="text-sm font-medium mb-3">
+                           {match.athleteA.full_name} vs {match.athleteB.full_name}
+                         </div>
+                         <MatchInputs
+                           athleteA={match.athleteA.id}
+                           athleteB={match.athleteB.id}
+                           athleteAName={match.athleteA.full_name}
+                           athleteBName={match.athleteB.full_name}
+                           match={matchData}
+                           onUpdate={handleScoreChange}
+                         />
+                       </div>
+                     );
+                   })}
                 </div>
               </div>
             ))}
@@ -345,21 +364,59 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
   );
 };
 
-interface MatchCellProps {
+// Read-only matrix cell component
+interface ReadOnlyMatchCellProps {
   athleteA: string;
   athleteB: string;
+  match?: TournamentMatch;
+}
+
+const ReadOnlyMatchCell = ({ athleteA, athleteB, match }: ReadOnlyMatchCellProps) => {
+  const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
+  
+  if (!isComplete) {
+    return (
+      <div className="w-20 h-16 bg-muted rounded flex items-center justify-center">
+        <div className="text-xs text-muted-foreground">-</div>
+      </div>
+    );
+  }
+
+  const scoreANum = match.scoreA!;
+  const scoreBNum = match.scoreB!;
+  const isAWinning = scoreANum > scoreBNum;
+  const isBWinning = scoreBNum > scoreANum;
+
+  return (
+    <div className="w-20 h-16 rounded border flex flex-col items-center justify-center p-1">
+      <div className="text-xs mb-1">{match.weapon?.charAt(0).toUpperCase()}</div>
+      <div className="flex gap-1 text-xs">
+        <span className={`${isAWinning ? 'text-green-600 font-bold' : isBWinning ? 'text-red-600' : ''}`}>
+          {scoreANum}
+        </span>
+        <span>-</span>
+        <span className={`${isBWinning ? 'text-green-600 font-bold' : isAWinning ? 'text-red-600' : ''}`}>
+          {scoreBNum}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// Match input component for the turns section
+interface MatchInputsProps {
+  athleteA: string;
+  athleteB: string;
+  athleteAName: string;
+  athleteBName: string;
   match?: TournamentMatch;
   onUpdate: (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => void;
 }
 
-const MatchCell = ({ athleteA, athleteB, match, onUpdate }: MatchCellProps) => {
+const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate }: MatchInputsProps) => {
   const [scoreA, setScoreA] = useState(match?.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
-
-  const handleUpdate = () => {
-    onUpdate(athleteA, athleteB, scoreA, scoreB, weapon);
-  };
 
   const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
   const scoreANum = parseInt(scoreA) || 0;
@@ -368,61 +425,72 @@ const MatchCell = ({ athleteA, athleteB, match, onUpdate }: MatchCellProps) => {
   const isBWinning = isComplete && scoreBNum > scoreANum;
 
   return (
-    <div className="w-20 space-y-1">
-      {/* Weapon */}
-      <Select 
-        value={weapon} 
-        onValueChange={(value) => {
-          setWeapon(value);
-          onUpdate(athleteA, athleteB, scoreA, scoreB, value);
-        }}
-      >
-        <SelectTrigger className="h-6 text-xs">
-          <SelectValue placeholder="Arma" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="fioretto">F</SelectItem>
-          <SelectItem value="spada">S</SelectItem>
-          <SelectItem value="sciabola">C</SelectItem>
-        </SelectContent>
-      </Select>
+    <div className="space-y-3">
+      {/* Weapon Selection */}
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
+        <Select 
+          value={weapon} 
+          onValueChange={(value) => {
+            setWeapon(value);
+            onUpdate(athleteA, athleteB, scoreA, scoreB, value);
+          }}
+        >
+          <SelectTrigger className="h-8">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="fioretto">Fioretto</SelectItem>
+            <SelectItem value="spada">Spada</SelectItem>
+            <SelectItem value="sciabola">Sciabola</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Scores */}
-      <div className="flex gap-1">
-        <Input
-          type="number"
-          min="0"
-          max="15"
-          value={scoreA}
-          onChange={(e) => {
-            setScoreA(e.target.value);
-            onUpdate(athleteA, athleteB, e.target.value, scoreB, weapon);
-          }}
-          className={`h-6 text-xs text-center p-1 ${
-            isAWinning ? 'bg-green-100 border-green-300' : 
-            isBWinning ? 'bg-red-100 border-red-300' : ''
-          }`}
-          placeholder="0"
-        />
-        <Input
-          type="number"
-          min="0"
-          max="15"
-          value={scoreB}
-          onChange={(e) => {
-            setScoreB(e.target.value);
-            onUpdate(athleteA, athleteB, scoreA, e.target.value, weapon);
-          }}
-          className={`h-6 text-xs text-center p-1 ${
-            isBWinning ? 'bg-green-100 border-green-300' : 
-            isAWinning ? 'bg-red-100 border-red-300' : ''
-          }`}
-          placeholder="0"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">{athleteAName}</label>
+          <Input
+            type="number"
+            min="0"
+            max="15"
+            value={scoreA}
+            onChange={(e) => {
+              setScoreA(e.target.value);
+              onUpdate(athleteA, athleteB, e.target.value, scoreB, weapon);
+            }}
+            className={`text-center ${
+              isAWinning ? 'bg-green-100 border-green-300 text-green-800' : 
+              isBWinning ? 'bg-red-100 border-red-300 text-red-800' : ''
+            }`}
+            placeholder="0"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">{athleteBName}</label>
+          <Input
+            type="number"
+            min="0"
+            max="15"
+            value={scoreB}
+            onChange={(e) => {
+              setScoreB(e.target.value);
+              onUpdate(athleteA, athleteB, scoreA, e.target.value, weapon);
+            }}
+            className={`text-center ${
+              isBWinning ? 'bg-green-100 border-green-300 text-green-800' : 
+              isAWinning ? 'bg-red-100 border-red-300 text-red-800' : ''
+            }`}
+            placeholder="0"
+          />
+        </div>
       </div>
 
       {isComplete && (
-        <div className="h-1 bg-green-500 rounded w-full"></div>
+        <div className="flex items-center justify-center">
+          <Badge variant="default" className="text-xs bg-green-100 text-green-800">Completato</Badge>
+        </div>
       )}
     </div>
   );
