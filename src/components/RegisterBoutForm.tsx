@@ -28,7 +28,7 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
     athleteA: isInstructorMode ? '' : user?.id || '',
     athleteB: '',
     boutDate: new Date().toISOString().split('T')[0],
-    weapon: '',
+    weapon: 'none',
     boutType: 'sparring',
     scoreA: '',
     scoreB: '',
@@ -126,7 +126,7 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
           .insert({
             team_id: teamInfo.team_id,
             bout_date: formData.boutDate,
-            weapon: formData.weapon === 'none' ? null : formData.weapon,
+            weapon: (formData.weapon === 'none' || formData.weapon === '') ? null : formData.weapon,
             bout_type: formData.boutType,
             athlete_a: formData.athleteA,
             athlete_b: formData.athleteB,
@@ -178,16 +178,16 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
       }
 
       // Reset form
-      setFormData({
-        athleteA: isInstructorMode ? '' : user?.id || '',
-        athleteB: '',
-        boutDate: new Date().toISOString().split('T')[0],
-        weapon: '',
-        boutType: 'sparring',
-        scoreA: '',
-        scoreB: '',
-        notes: ''
-      });
+        setFormData({
+          athleteA: isInstructorMode ? '' : user?.id || '',
+          athleteB: '',
+          boutDate: new Date().toISOString().split('T')[0],
+          weapon: 'none',
+          boutType: 'sparring',
+          scoreA: '',
+          scoreB: '',
+          notes: ''
+        });
     } catch (error: any) {
       console.error('Registration error:', error);
       toast({
