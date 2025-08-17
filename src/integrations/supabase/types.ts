@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          activity_points: number
+          athlete_id: string
+          created_at: string | null
+          id: string
+          matches_count: number
+          week_start: string
+        }
+        Insert: {
+          activity_points?: number
+          athlete_id: string
+          created_at?: string | null
+          id?: string
+          matches_count?: number
+          week_start: string
+        }
+        Update: {
+          activity_points?: number
+          athlete_id?: string
+          created_at?: string | null
+          id?: string
+          matches_count?: number
+          week_start?: string
+        }
+        Relationships: []
+      }
       bouts: {
         Row: {
           approved_at: string | null
@@ -164,6 +191,51 @@ export type Database = {
           },
         ]
       }
+      rankings: {
+        Row: {
+          activity_points: number
+          athlete_id: string
+          created_at: string | null
+          elo_rating: number
+          frequency_multiplier: number
+          frequency_streak: number
+          last_activity_date: string | null
+          last_updated: string | null
+          matches_played: number
+          peak_rating: number
+          total_weeks_active: number
+          weekly_matches: number
+        }
+        Insert: {
+          activity_points?: number
+          athlete_id: string
+          created_at?: string | null
+          elo_rating?: number
+          frequency_multiplier?: number
+          frequency_streak?: number
+          last_activity_date?: string | null
+          last_updated?: string | null
+          matches_played?: number
+          peak_rating?: number
+          total_weeks_active?: number
+          weekly_matches?: number
+        }
+        Update: {
+          activity_points?: number
+          athlete_id?: string
+          created_at?: string | null
+          elo_rating?: number
+          frequency_multiplier?: number
+          frequency_streak?: number
+          last_activity_date?: string | null
+          last_updated?: string | null
+          matches_played?: number
+          peak_rating?: number
+          total_weeks_active?: number
+          weekly_matches?: number
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
           created_at: string | null
@@ -187,6 +259,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_elo_change: {
+        Args: {
+          _frequency_multiplier?: number
+          _matches_played: number
+          _opponent_elo: number
+          _player_elo: number
+          _player_won: boolean
+        }
+        Returns: number
+      }
       decide_bout: {
         Args: { _bout_id: string; _decision: string }
         Returns: undefined
@@ -211,6 +293,25 @@ export type Database = {
           status: string
           team_id: string
           weapon: string
+        }[]
+      }
+      get_rankings: {
+        Args: {
+          _gender?: string
+          _max_age?: number
+          _min_age?: number
+          _weapon?: string
+        }
+        Returns: {
+          athlete_id: string
+          elo_rating: number
+          frequency_multiplier: number
+          frequency_streak: number
+          full_name: string
+          last_activity_date: string
+          matches_played: number
+          peak_rating: number
+          ranking_position: number
         }[]
       }
       list_bouts: {
@@ -314,6 +415,19 @@ export type Database = {
           win_rate: number
           wins: number
         }[]
+      }
+      update_frequency_stats: {
+        Args: { _athlete_id: string }
+        Returns: undefined
+      }
+      update_rankings_after_match: {
+        Args: {
+          _athlete_a: string
+          _athlete_b: string
+          _score_a: number
+          _score_b: number
+        }
+        Returns: undefined
       }
     }
     Enums: {
