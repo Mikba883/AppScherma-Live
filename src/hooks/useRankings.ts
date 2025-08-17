@@ -50,33 +50,26 @@ export const useRankings = () => {
     if (!user) return;
 
     try {
-      // Get personal ranking from rankings table
-      const { data: rankingData, error: rankingError } = await supabase
-        .from('rankings')
-        .select('elo_rating, frequency_streak, frequency_multiplier')
-        .eq('athlete_id', user.id)
-        .single();
-
-      if (rankingError && rankingError.code !== 'PGRST116') {
-        throw rankingError;
-      }
-
-      // Get position from rankings function
+      // Get position from rankings function - this includes all the data we need
       const { data: allRankings, error: positionError } = await supabase.rpc('get_rankings');
       if (positionError) throw positionError;
 
       const userPosition = allRankings?.find(r => r.athlete_id === user.id);
 
-      if (rankingData || userPosition) {
+      if (userPosition) {
         setPersonalRanking({
-          ranking_position: userPosition?.ranking_position || 0,
-          elo_rating: rankingData?.elo_rating || userPosition?.elo_rating || 1200,
-          frequency_streak: rankingData?.frequency_streak || 0,
-          frequency_multiplier: rankingData?.frequency_multiplier || 1.0,
+          ranking_position: userPosition.ranking_position,
+          elo_rating: userPosition.elo_rating,
+          frequency_streak: userPosition.frequency_streak,
+          frequency_multiplier: userPosition.frequency_multiplier,
         });
+      } else {
+        // User has no ranking data yet
+        setPersonalRanking(null);
       }
     } catch (error) {
       console.error('Error fetching personal ranking:', error);
+      setPersonalRanking(null);
     } finally {
       setLoading(false);
     }
