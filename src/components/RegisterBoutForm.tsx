@@ -23,6 +23,7 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
   const { user } = useAuth();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [loading, setLoading] = useState(false);
+  const [teamInfo, setTeamInfo] = useState<{ team_id: string; role: string } | null>(null);
   const [formData, setFormData] = useState({
     athleteA: isInstructorMode ? '' : user?.id || '',
     athleteB: '',
@@ -35,8 +36,33 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
   });
 
   useEffect(() => {
-    fetchAthletes();
+    if (user) {
+      fetchUserTeamInfo();
+      fetchAthletes();
+    }
   }, [user]);
+
+  const fetchUserTeamInfo = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('team_id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      setTeamInfo(data);
+    } catch (error) {
+      console.error('Error fetching user team info:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile caricare le informazioni del profilo",
+        variant: "destructive"
+      });
+    }
+  };
 
   const fetchAthletes = async () => {
     if (!user) return;
@@ -89,11 +115,16 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
 
     try {
       if (isInstructorMode) {
+        // Verifica che l'utente sia effettivamente un istruttore
+        if (!teamInfo || teamInfo.role !== 'istruttore') {
+          throw new Error('Non hai i permessi per registrare match in modalità istruttore');
+        }
+
         // Modalità istruttore: inserimento diretto senza approvazione
         const { data, error } = await supabase
           .from('bouts')
           .insert({
-            team_id: (await supabase.from('profiles').select('team_id').eq('user_id', user!.id).single()).data?.team_id,
+            team_id: teamInfo.team_id,
             bout_date: formData.boutDate,
             weapon: formData.weapon === 'none' ? null : formData.weapon,
             bout_type: formData.boutType,
@@ -110,7 +141,10 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Database error:', error);
+          throw new Error(`Errore durante l'inserimento: ${error.message}`);
+        }
 
         toast({
           title: "Match registrato",
@@ -155,9 +189,10 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
         notes: ''
       });
     } catch (error: any) {
+      console.error('Registration error:', error);
       toast({
-        title: "Errore",
-        description: error.message || "Impossibile registrare il match",
+        title: "Errore registrazione",
+        description: error.message || "Impossibile registrare il match. Controlla i permessi e riprova.",
         variant: "destructive"
       });
     } finally {
@@ -297,6 +332,9 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
       {isInstructorMode && (
         <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800/30">
           <p><strong>Modalità Istruttore:</strong> Il match verrà inserito direttamente nel sistema senza necessità di approvazione.</p>
+          {teamInfo && teamInfo.role !== 'istruttore' && (
+            <p className="text-red-600 font-medium mt-2">⚠️ Attenzione: Non hai i permessi di istruttore. La registrazione potrebbe fallire.</p>
+          )}
         </div>
       )}
     </form>
