@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,9 +24,10 @@ export interface Filters {
 
 const ConsultationPage = () => {
   const { user, loading } = useAuth();
+  const { isInstructor, loading: roleLoading } = useUserRole();
   const [filters, setFilters] = useState<Filters>({});
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -78,50 +80,66 @@ const ConsultationPage = () => {
         </Card>
 
         {/* Tables */}
-        <Tabs defaultValue="summary" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="summary" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Riassunto per Atleta
-            </TabsTrigger>
-            <TabsTrigger value="bouts" className="flex items-center gap-2">
-              <Table className="w-4 h-4" />
-              Lista Completa Match
-            </TabsTrigger>
-          </TabsList>
+        {isInstructor ? (
+          <Tabs defaultValue="summary" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="summary" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Riassunto per Atleta
+              </TabsTrigger>
+              <TabsTrigger value="bouts" className="flex items-center gap-2">
+                <Table className="w-4 h-4" />
+                Lista Completa Match
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="summary">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Riassunto per Atleta</CardTitle>
-                  <CardDescription>
-                    Statistiche aggregate per ogni atleta nel periodo selezionato
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <SummaryTable filters={filters} />
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="summary">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Riassunto per Atleta</CardTitle>
+                    <CardDescription>
+                      Statistiche aggregate per ogni atleta nel periodo selezionato
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <SummaryTable filters={filters} />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="bouts">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Lista Completa Match</CardTitle>
-                  <CardDescription>
-                    Elenco dettagliato di tutti i match approvati
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <BoutsTable filters={filters} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="bouts">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Lista Completa Match</CardTitle>
+                    <CardDescription>
+                      Elenco dettagliato di tutti i match approvati
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <BoutsTable filters={filters} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>I Tuoi Match</CardTitle>
+                <CardDescription>
+                  Elenco dei tuoi match approvati
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <BoutsTable filters={filters} />
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );

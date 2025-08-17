@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Sword, Shield, Calendar, Award, Zap } from 'lucide-react';
+import { Sword, Shield, Award } from 'lucide-react';
 import { RankingWidget } from './RankingWidget';
 
 interface PersonalSummary {
@@ -170,33 +170,6 @@ export const PersonalStats = () => {
         </CardContent>
       </Card>
       </div>
-
-      {/* Frequency Card */}
-      <Card className="bg-gradient-to-br from-amber-50 via-amber-25 to-transparent border-amber-200 dark:from-amber-950/30 dark:via-amber-950/10 dark:to-transparent dark:border-amber-800/30">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-amber-100 rounded-lg dark:bg-amber-900/30">
-                <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Frequenza Allenamenti</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-xl font-bold text-amber-700 dark:text-amber-300">
-                    {stats.trainings} giorni
-                  </p>
-                  <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800/30">
-                    Attivo
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ultimo allenamento: {formatDate(stats.last_training)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

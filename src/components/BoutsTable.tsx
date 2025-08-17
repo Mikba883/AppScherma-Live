@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,16 +27,21 @@ interface BoutsTableProps {
 }
 
 export const BoutsTable = ({ filters }: BoutsTableProps) => {
+  const { user } = useAuth();
+  const { isInstructor } = useUserRole();
   const [data, setData] = useState<BoutData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchBoutsData();
-  }, [filters]);
+  }, [filters, isInstructor, user]);
 
   const fetchBoutsData = async () => {
     setLoading(true);
     try {
+      // For students, automatically filter to show only their matches
+      const athletesFilter = !isInstructor && user ? [user.id] : filters.athletes || null;
+      
       const { data: boutsData, error } = await supabase.rpc('list_bouts', {
         _from: filters.dateFrom || null,
         _to: filters.dateTo || null,
@@ -42,7 +49,7 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         _min_age: filters.minAge || null,
         _max_age: filters.maxAge || null,
         _weapon: filters.weapon || null,
-        _athletes: filters.athletes || null,
+        _athletes: athletesFilter,
         _tipo_match: filters.tipoMatch || null,
         _turni: filters.turni || null
       });
