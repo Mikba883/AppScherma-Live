@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Calendar, Plus } from 'lucide-react';
 
 export const StudentDashboard = () => {
+  console.log('StudentDashboard - Component loaded');
+  
   return (
     <main className="w-full px-6 py-8 pb-20 md:pb-8">
       <Tabs defaultValue="overview" className="space-y-6">

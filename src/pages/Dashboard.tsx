@@ -15,6 +15,13 @@ const Dashboard = () => {
   const { profile, loading: profileLoading } = useProfile();
   const { isInstructor, isStudent, loading: roleLoading } = useUserRole();
 
+  // Debug logging
+  console.log('Dashboard - User:', user?.id);
+  console.log('Dashboard - Profile:', profile);
+  console.log('Dashboard - isInstructor:', isInstructor);
+  console.log('Dashboard - isStudent:', isStudent);
+  console.log('Dashboard - Loading states:', { authLoading, profileLoading, roleLoading });
+
   if (authLoading || profileLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

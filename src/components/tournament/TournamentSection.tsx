@@ -4,6 +4,8 @@ import { TournamentMatrix } from './TournamentMatrix';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 
 export const TournamentSection = () => {
+  console.log('TournamentSection - Component loaded');
+  
   const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [tournamentStarted, setTournamentStarted] = useState(false);
