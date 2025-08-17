@@ -295,6 +295,18 @@ export type Database = {
           weapon: string
         }[]
       }
+      get_personal_ranking_with_elo: {
+        Args: { _athlete_id: string }
+        Returns: {
+          elo_rating: number
+          frequency_multiplier: number
+          frequency_streak: number
+          last_activity_date: string
+          matches_played: number
+          peak_rating: number
+          ranking_position: number
+        }[]
+      }
       get_rankings: {
         Args: {
           _gender?: string

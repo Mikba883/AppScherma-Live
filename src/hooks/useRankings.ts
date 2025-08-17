@@ -50,18 +50,19 @@ export const useRankings = () => {
     if (!user) return;
 
     try {
-      // Use summary_by_athlete to get ranking data like in consultation page
-      const { data: summaryData, error: summaryError } = await supabase.rpc('summary_by_athlete');
-      if (summaryError) throw summaryError;
+      // Use the new dedicated function to get personal ranking with ELO
+      const { data: rankingData, error: rankingError } = await supabase.rpc('get_personal_ranking_with_elo', {
+        _athlete_id: user.id
+      });
+      if (rankingError) throw rankingError;
 
-      const userSummary = summaryData?.find(s => s.athlete_id === user.id);
-
-      if (userSummary) {
+      if (rankingData && rankingData.length > 0) {
+        const ranking = rankingData[0];
         setPersonalRanking({
-          ranking_position: userSummary.ranking_position,
-          elo_rating: userSummary.elo_rating,
-          frequency_streak: 0, // Will be calculated from activity data
-          frequency_multiplier: 1.0,
+          ranking_position: ranking.ranking_position,
+          elo_rating: ranking.elo_rating,
+          frequency_streak: ranking.frequency_streak || 0,
+          frequency_multiplier: ranking.frequency_multiplier || 1.0,
         });
       } else {
         // User has no ranking data yet
