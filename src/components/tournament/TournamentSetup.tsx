@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Play, Search } from 'lucide-react';
+import { Users, Play, X, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import type { TournamentAthlete } from '@/pages/TournamentPage';
 
@@ -14,11 +12,17 @@ interface TournamentSetupProps {
   onStartTournament: (athletes: TournamentAthlete[]) => void;
 }
 
+interface AthleteWithShift extends TournamentAthlete {
+  shift?: string;
+}
+
 export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => {
-  const [athletes, setAthletes] = useState<TournamentAthlete[]>([]);
-  const [selectedAthletes, setSelectedAthletes] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState('');
+  const [athletes, setAthletes] = useState<AthleteWithShift[]>([]);
+  const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
+  const [selectedAthleteId, setSelectedAthleteId] = useState<string>('');
+  const [shiftFilter, setShiftFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [availableShifts, setAvailableShifts] = useState<string[]>([]);
 
   useEffect(() => {
     fetchAthletes();
@@ -28,15 +32,22 @@ export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => 
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name')
+        .select('user_id, full_name, shift')
         .order('full_name');
 
       if (error) throw error;
       
-      setAthletes(data.map(athlete => ({
+      const athleteData = data.map(athlete => ({
         id: athlete.user_id,
-        full_name: athlete.full_name
-      })));
+        full_name: athlete.full_name,
+        shift: athlete.shift
+      }));
+
+      setAthletes(athleteData);
+      
+      // Get unique shifts for filter
+      const shifts = [...new Set(data.map(a => a.shift).filter(Boolean))];
+      setAvailableShifts(shifts);
     } catch (error) {
       console.error('Error fetching athletes:', error);
       toast.error('Errore nel caricamento degli atleti');
@@ -45,46 +56,40 @@ export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => 
     }
   };
 
-  const filteredAthletes = athletes.filter(athlete =>
-    athlete.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAthletes = athletes.filter(athlete => {
+    const isNotSelected = !selectedAthletes.some(selected => selected.id === athlete.id);
+    const matchesShift = !shiftFilter || athlete.shift === shiftFilter;
+    return isNotSelected && matchesShift;
+  });
 
-  const handleAthleteToggle = (athleteId: string) => {
-    setSelectedAthletes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(athleteId)) {
-        newSet.delete(athleteId);
-      } else {
-        newSet.add(athleteId);
-      }
-      return newSet;
-    });
+  const handleAddAthlete = (athleteId: string) => {
+    const athlete = athletes.find(a => a.id === athleteId);
+    if (athlete) {
+      setSelectedAthletes(prev => [...prev, { id: athlete.id, full_name: athlete.full_name }]);
+      setSelectedAthleteId('');
+    }
+  };
+
+  const handleRemoveAthlete = (athleteId: string) => {
+    setSelectedAthletes(prev => prev.filter(athlete => athlete.id !== athleteId));
   };
 
   const handleStartTournament = () => {
-    const selectedAthletesList = athletes.filter(athlete => 
-      selectedAthletes.has(athlete.id)
-    );
-
-    if (selectedAthletesList.length < 3) {
+    if (selectedAthletes.length < 3) {
       toast.error('Seleziona almeno 3 atleti per iniziare un torneo');
       return;
     }
 
-    if (selectedAthletesList.length > 16) {
+    if (selectedAthletes.length > 16) {
       toast.error('Seleziona massimo 16 atleti per il torneo');
       return;
     }
 
-    onStartTournament(selectedAthletesList);
-  };
-
-  const selectAll = () => {
-    setSelectedAthletes(new Set(filteredAthletes.map(a => a.id)));
+    onStartTournament(selectedAthletes);
   };
 
   const clearAll = () => {
-    setSelectedAthletes(new Set());
+    setSelectedAthletes([]);
   };
 
   if (loading) {
@@ -99,95 +104,122 @@ export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => 
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Selezione Atleti per Torneo
-          </CardTitle>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary">
-                {selectedAthletes.size} atleti selezionati
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          Selezione Atleti per Torneo
+        </CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Badge variant="secondary">
+              {selectedAthletes.length} atleti selezionati
+            </Badge>
+            {selectedAthletes.length > 0 && (
+              <Badge variant="outline">
+                {(selectedAthletes.length * (selectedAthletes.length - 1)) / 2} incontri totali
               </Badge>
-              {selectedAthletes.size > 0 && (
-                <Badge variant="outline">
-                  {(selectedAthletes.size * (selectedAthletes.size - 1)) / 2} incontri totali
-                </Badge>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={selectAll}>
-                Seleziona tutti
-              </Button>
-              <Button variant="outline" size="sm" onClick={clearAll}>
-                Deseleziona tutti
-              </Button>
-            </div>
+            )}
           </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Cerca atleti..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Athletes List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-            {filteredAthletes.map((athlete) => (
-              <div
-                key={athlete.id}
-                className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-              >
-                <Checkbox
-                  id={athlete.id}
-                  checked={selectedAthletes.has(athlete.id)}
-                  onCheckedChange={() => handleAthleteToggle(athlete.id)}
-                />
-                <Label
-                  htmlFor={athlete.id}
-                  className="flex-1 cursor-pointer text-sm font-medium"
-                >
-                  {athlete.full_name}
-                </Label>
-              </div>
-            ))}
-          </div>
-
-          {filteredAthletes.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              Nessun atleta trovato con il termine di ricerca "{searchTerm}"
-            </div>
-          )}
-
-          {/* Start Tournament Button */}
-          <div className="flex justify-center pt-4">
-            <Button
-              onClick={handleStartTournament}
-              disabled={selectedAthletes.size < 3}
-              size="lg"
-              className="flex items-center gap-2"
-            >
-              <Play className="w-4 h-4" />
-              Inizia Torneo ({selectedAthletes.size} atleti)
+          {selectedAthletes.length > 0 && (
+            <Button variant="outline" size="sm" onClick={clearAll}>
+              Deseleziona tutti
             </Button>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-6">
+        {/* Filters and Selection */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Shift Filter */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              <label className="text-sm font-medium">Filtra per turno</label>
+            </div>
+            <Select value={shiftFilter} onValueChange={setShiftFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tutti i turni" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Tutti i turni</SelectItem>
+                {availableShifts.map((shift) => (
+                  <SelectItem key={shift} value={shift}>
+                    {shift}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {selectedAthletes.size < 3 && selectedAthletes.size > 0 && (
-            <p className="text-center text-sm text-muted-foreground">
-              Seleziona almeno 3 atleti per iniziare il torneo
+          {/* Athlete Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Aggiungi atleta</label>
+            <div className="flex gap-2">
+              <Select 
+                value={selectedAthleteId} 
+                onValueChange={(value) => {
+                  setSelectedAthleteId(value);
+                  handleAddAthlete(value);
+                }}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Seleziona un atleta..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredAthletes.map((athlete) => (
+                    <SelectItem key={athlete.id} value={athlete.id}>
+                      {athlete.full_name} {athlete.shift && `(${athlete.shift})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Selected Athletes */}
+        {selectedAthletes.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Atleti selezionati:</h3>
+            <div className="flex flex-wrap gap-2">
+              {selectedAthletes.map((athlete) => (
+                <div
+                  key={athlete.id}
+                  className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                  onClick={() => handleRemoveAthlete(athlete.id)}
+                >
+                  <span className="text-sm font-medium">{athlete.full_name}</span>
+                  <X className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Clicca su un atleta per rimuoverlo dalla selezione
             </p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        )}
+
+        {/* Start Tournament Button */}
+        <div className="flex justify-center pt-4">
+          <Button
+            onClick={handleStartTournament}
+            disabled={selectedAthletes.length < 3}
+            size="lg"
+            className="flex items-center gap-2"
+          >
+            <Play className="w-4 h-4" />
+            Inizia Torneo ({selectedAthletes.length} atleti)
+          </Button>
+        </div>
+
+        {selectedAthletes.length < 3 && selectedAthletes.length > 0 && (
+          <p className="text-center text-sm text-muted-foreground">
+            Seleziona almeno 3 atleti per iniziare il torneo
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 };
