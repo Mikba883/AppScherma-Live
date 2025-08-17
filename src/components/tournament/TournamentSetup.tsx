@@ -20,7 +20,7 @@ export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => 
   const [athletes, setAthletes] = useState<AthleteWithShift[]>([]);
   const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>('');
-  const [shiftFilter, setShiftFilter] = useState<string>('');
+  const [shiftFilter, setShiftFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [availableShifts, setAvailableShifts] = useState<string[]>([]);
 
@@ -58,7 +58,7 @@ export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => 
 
   const filteredAthletes = athletes.filter(athlete => {
     const isNotSelected = !selectedAthletes.some(selected => selected.id === athlete.id);
-    const matchesShift = !shiftFilter || athlete.shift === shiftFilter;
+    const matchesShift = !shiftFilter || shiftFilter === 'all' || athlete.shift === shiftFilter;
     return isNotSelected && matchesShift;
   });
 
@@ -143,7 +143,7 @@ export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => 
                 <SelectValue placeholder="Tutti i turni" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutti i turni</SelectItem>
+                <SelectItem value="all">Tutti i turni</SelectItem>
                 {availableShifts.map((shift) => (
                   <SelectItem key={shift} value={shift}>
                     {shift}
