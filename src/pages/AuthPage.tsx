@@ -44,10 +44,10 @@ const AuthPage = () => {
 
     try {
       if (isSignUp) {
-        if (!formData.fullName || !formData.birthDate || !formData.gender || !formData.role || !formData.shift) {
+        if (!formData.fullName || !formData.birthDate || !formData.gender || !formData.role) {
           toast({
             title: "Errore",
-            description: "Tutti i campi sono obbligatori per la registrazione",
+            description: "Nome, data di nascita, genere e ruolo sono obbligatori",
             variant: "destructive"
           });
           return;
@@ -185,18 +185,17 @@ const AuthPage = () => {
                       <SelectValue placeholder="Seleziona ruolo" />
                     </SelectTrigger>
                     <SelectContent className="min-w-full">
-                      <SelectItem value="athlete">Allievo</SelectItem>
-                      <SelectItem value="coach">Istruttore</SelectItem>
-                      <SelectItem value="admin">Amministratore</SelectItem>
+                      <SelectItem value="allievo">Allievo</SelectItem>
+                      <SelectItem value="istruttore">Istruttore</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="shift">Turno</Label>
+                  <Label htmlFor="shift">Turno (opzionale)</Label>
                   <Select value={formData.shift} onValueChange={(value) => setFormData(prev => ({ ...prev, shift: value }))}>
                     <SelectTrigger className="h-12 text-base">
-                      <SelectValue placeholder="Seleziona turno" />
+                      <SelectValue placeholder="Seleziona turno (opzionale)" />
                     </SelectTrigger>
                     <SelectContent className="min-w-full">
                       <SelectItem value="1">Turno 1</SelectItem>

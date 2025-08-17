@@ -9,7 +9,7 @@ export interface Profile {
   birth_date: string;
   gender: 'M' | 'F' | 'X';
   photo_url?: string;
-  role: 'athlete' | 'coach' | 'admin';
+  role: 'allievo' | 'istruttore';
   email?: string;
   created_at: string;
 }

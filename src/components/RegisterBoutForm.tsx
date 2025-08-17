@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { Send } from 'lucide-react';
@@ -14,17 +15,22 @@ interface Athlete {
   full_name: string;
 }
 
-export const RegisterBoutForm = () => {
+interface RegisterBoutFormProps {
+  isInstructorMode?: boolean;
+}
+
+export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormProps) => {
   const { user } = useAuth();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    opponent: '',
+    athleteA: isInstructorMode ? '' : user?.id || '',
+    athleteB: '',
     boutDate: new Date().toISOString().split('T')[0],
     weapon: '',
     boutType: 'sparring',
-    myScore: '',
-    oppScore: '',
+    scoreA: '',
+    scoreB: '',
     notes: ''
   });
 
@@ -39,12 +45,17 @@ export const RegisterBoutForm = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, full_name')
-        .neq('user_id', user.id)
-        .eq('role', 'athlete')
+        .eq('role', 'allievo')
         .order('full_name');
 
       if (error) throw error;
-      setAthletes(data || []);
+      
+      // Se non siamo in modalità istruttore, filtra via l'utente corrente
+      const filteredData = isInstructorMode 
+        ? data || []
+        : (data || []).filter(athlete => athlete.user_id !== user.id);
+      
+      setAthletes(filteredData);
     } catch (error) {
       console.error('Error fetching athletes:', error);
     }
@@ -53,50 +64,94 @@ export const RegisterBoutForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.opponent || !formData.myScore || !formData.oppScore) {
-      toast({
-        title: "Errore",
-        description: "Tutti i campi obbligatori devono essere compilati",
-        variant: "destructive"
-      });
-      return;
+    // Validation per modalità istruttore vs allievo
+    if (isInstructorMode) {
+      if (!formData.athleteA || !formData.athleteB || !formData.scoreA || !formData.scoreB) {
+        toast({
+          title: "Errore",
+          description: "Seleziona entrambi gli atleti e inserisci i punteggi",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      if (!formData.athleteB || !formData.scoreA || !formData.scoreB) {
+        toast({
+          title: "Errore",
+          description: "Tutti i campi obbligatori devono essere compilati",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.rpc('register_bout', {
-        _opponent: formData.opponent,
-        _bout_date: formData.boutDate,
-        _weapon: formData.weapon === 'none' ? '' : formData.weapon,
-        _bout_type: formData.boutType,
-        _my_score: parseInt(formData.myScore),
-        _opp_score: parseInt(formData.oppScore)
-      });
-
-      if (error) throw error;
-
-      // Aggiorna le note se presenti
-      if (formData.notes && data) {
-        await supabase
+      if (isInstructorMode) {
+        // Modalità istruttore: inserimento diretto senza approvazione
+        const { data, error } = await supabase
           .from('bouts')
-          .update({ notes: formData.notes })
-          .eq('id', data);
-      }
+          .insert({
+            team_id: (await supabase.from('profiles').select('team_id').eq('user_id', user!.id).single()).data?.team_id,
+            bout_date: formData.boutDate,
+            weapon: formData.weapon === 'none' ? null : formData.weapon,
+            bout_type: formData.boutType,
+            athlete_a: formData.athleteA,
+            athlete_b: formData.athleteB,
+            score_a: parseInt(formData.scoreA),
+            score_b: parseInt(formData.scoreB),
+            status: 'approved', // Approvato automaticamente
+            created_by: user!.id,
+            approved_by: user!.id,
+            approved_at: new Date().toISOString(),
+            notes: formData.notes || null
+          })
+          .select()
+          .single();
 
-      toast({
-        title: "Match registrato",
-        description: "Il match è stato inviato per approvazione all'avversario"
-      });
+        if (error) throw error;
+
+        toast({
+          title: "Match registrato",
+          description: "Match inserito direttamente nel sistema"
+        });
+      } else {
+        // Modalità allievo: sistema di approvazione esistente
+        const { data, error } = await supabase.rpc('register_bout', {
+          _opponent: formData.athleteB,
+          _bout_date: formData.boutDate,
+          _weapon: formData.weapon === 'none' ? '' : formData.weapon,
+          _bout_type: formData.boutType,
+          _my_score: parseInt(formData.scoreA),
+          _opp_score: parseInt(formData.scoreB)
+        });
+
+        if (error) throw error;
+
+        // Aggiorna le note se presenti
+        if (formData.notes && data) {
+          await supabase
+            .from('bouts')
+            .update({ notes: formData.notes })
+            .eq('id', data);
+        }
+
+        toast({
+          title: "Match registrato",
+          description: "Il match è stato inviato per approvazione all'avversario"
+        });
+      }
 
       // Reset form
       setFormData({
-        opponent: '',
+        athleteA: isInstructorMode ? '' : user?.id || '',
+        athleteB: '',
         boutDate: new Date().toISOString().split('T')[0],
         weapon: '',
         boutType: 'sparring',
-        myScore: '',
-        oppScore: '',
+        scoreA: '',
+        scoreB: '',
         notes: ''
       });
     } catch (error: any) {
@@ -113,20 +168,38 @@ export const RegisterBoutForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {isInstructorMode && (
+          <div className="space-y-2">
+            <Label htmlFor="athleteA">Atleta A *</Label>
+            <Combobox
+              options={athletes.map((athlete) => ({
+                value: athlete.user_id,
+                label: athlete.full_name
+              }))}
+              value={formData.athleteA}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, athleteA: value }))}
+              placeholder="Cerca e seleziona primo atleta..."
+              emptyText="Nessun atleta trovato."
+              className="w-full"
+            />
+          </div>
+        )}
+
         <div className="space-y-2">
-          <Label htmlFor="opponent">Avversario *</Label>
-          <Select value={formData.opponent} onValueChange={(value) => setFormData(prev => ({ ...prev, opponent: value }))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleziona avversario" />
-            </SelectTrigger>
-            <SelectContent>
-              {athletes.map((athlete) => (
-                <SelectItem key={athlete.user_id} value={athlete.user_id}>
-                  {athlete.full_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="athleteB">{isInstructorMode ? 'Atleta B *' : 'Avversario *'}</Label>
+          <Combobox
+            options={athletes
+              .filter(athlete => !isInstructorMode || athlete.user_id !== formData.athleteA)
+              .map((athlete) => ({
+                value: athlete.user_id,
+                label: athlete.full_name
+              }))}
+            value={formData.athleteB}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, athleteB: value }))}
+            placeholder={isInstructorMode ? "Cerca e seleziona secondo atleta..." : "Cerca e seleziona avversario..."}
+            emptyText="Nessun atleta trovato."
+            className="w-full"
+          />
         </div>
 
         <div className="space-y-2">
@@ -169,27 +242,31 @@ export const RegisterBoutForm = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="myScore">Il tuo punteggio *</Label>
+          <Label htmlFor="scoreA">
+            {isInstructorMode ? 'Punteggio Atleta A *' : 'Il tuo punteggio *'}
+          </Label>
           <Input
-            id="myScore"
+            id="scoreA"
             type="number"
             min="0"
             max="50"
-            value={formData.myScore}
-            onChange={(e) => setFormData(prev => ({ ...prev, myScore: e.target.value }))}
+            value={formData.scoreA}
+            onChange={(e) => setFormData(prev => ({ ...prev, scoreA: e.target.value }))}
             placeholder="es. 15"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="oppScore">Punteggio avversario *</Label>
+          <Label htmlFor="scoreB">
+            {isInstructorMode ? 'Punteggio Atleta B *' : 'Punteggio avversario *'}
+          </Label>
           <Input
-            id="oppScore"
+            id="scoreB"
             type="number"
             min="0"
             max="50"
-            value={formData.oppScore}
-            onChange={(e) => setFormData(prev => ({ ...prev, oppScore: e.target.value }))}
+            value={formData.scoreB}
+            onChange={(e) => setFormData(prev => ({ ...prev, scoreB: e.target.value }))}
             placeholder="es. 12"
           />
         </div>
@@ -211,9 +288,17 @@ export const RegisterBoutForm = () => {
         {loading ? 'Registrazione...' : 'Registra Match'}
       </Button>
 
-      <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-        <p><strong>Nota:</strong> Il match sarà inviato all'avversario per approvazione. Una volta approvato, verrà incluso nelle statistiche del team.</p>
-      </div>
+      {!isInstructorMode && (
+        <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+          <p><strong>Nota:</strong> Il match sarà inviato all'avversario per approvazione. Una volta approvato, verrà incluso nelle statistiche del team.</p>
+        </div>
+      )}
+      
+      {isInstructorMode && (
+        <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800/30">
+          <p><strong>Modalità Istruttore:</strong> Il match verrà inserito direttamente nel sistema senza necessità di approvazione.</p>
+        </div>
+      )}
     </form>
   );
 };
