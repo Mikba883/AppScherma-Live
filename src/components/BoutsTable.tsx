@@ -250,11 +250,12 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button 
-                            variant="destructive" 
+                            variant="ghost" 
                             size="sm"
                             disabled={deletingId === row.id}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>

@@ -142,10 +142,10 @@ export const InstructorDashboard = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelTabChange}>No</AlertDialogCancel>
             <AlertDialogAction onClick={confirmTabChange}>
               Sì, Esci
             </AlertDialogAction>
+            <AlertDialogCancel onClick={cancelTabChange}>No</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
