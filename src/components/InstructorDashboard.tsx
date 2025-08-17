@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { RegisterBoutForm } from './RegisterBoutForm';
 import { TournamentSection } from './tournament/TournamentSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,9 +9,36 @@ import { BarChart3, Users, Plus, Trophy } from 'lucide-react';
 export const InstructorDashboard = () => {
   console.log('InstructorDashboard - Component loaded');
   
+  const [hasUnsavedMatches, setHasUnsavedMatches] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [currentTab, setCurrentTab] = useState('overview');
+  
+  const handleTabChange = (newTab: string) => {
+    if (currentTab === 'tournament' && hasUnsavedMatches) {
+      setPendingTab(newTab);
+      setShowExitDialog(true);
+    } else {
+      setCurrentTab(newTab);
+    }
+  };
+
+  const confirmTabChange = () => {
+    if (pendingTab) {
+      setCurrentTab(pendingTab);
+      setPendingTab(null);
+    }
+    setShowExitDialog(false);
+  };
+
+  const cancelTabChange = () => {
+    setPendingTab(null);
+    setShowExitDialog(false);
+  };
+
   return (
     <main className="w-full px-6 py-8 pb-20 md:pb-8">
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
             <BarChart3 className="w-4 h-4" />
@@ -100,9 +128,27 @@ export const InstructorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="tournament" className="space-y-6">
-          <TournamentSection />
+          <TournamentSection onTournamentStateChange={setHasUnsavedMatches} />
         </TabsContent>
       </Tabs>
+
+      {/* Exit Tournament Dialog */}
+      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Uscire dalla modalità torneo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler uscire dalla modalità torneo senza salvare gli assalti? Tutti i dati inseriti andranno persi.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelTabChange}>No</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmTabChange}>
+              Sì, Esci
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 };

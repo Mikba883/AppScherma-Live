@@ -165,6 +165,9 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
       }
 
       toast.success(`${completedMatches.length} incontri salvati con successo!`);
+      
+      // Reset tournament after successful save
+      onResetTournament();
       navigate('/');
     } catch (error) {
       console.error('Error saving tournament results:', error);

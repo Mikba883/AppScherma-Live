@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentMatrix } from './TournamentMatrix';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 
-export const TournamentSection = () => {
+interface TournamentSectionProps {
+  onTournamentStateChange?: (hasUnsavedMatches: boolean) => void;
+}
+
+export const TournamentSection = ({ onTournamentStateChange }: TournamentSectionProps) => {
   console.log('TournamentSection - Component loaded');
   
   const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
@@ -53,7 +57,20 @@ export const TournamentSection = () => {
     setTournamentStarted(false);
     setSelectedAthletes([]);
     setMatches([]);
+    onTournamentStateChange?.(false);
   };
+
+  // Check for unsaved matches and notify parent
+  const hasUnsavedMatches = () => {
+    return tournamentStarted && matches.some(match => 
+      match.scoreA !== null && match.scoreB !== null && match.weapon !== null
+    );
+  };
+
+  // Notify parent when tournament state changes
+  React.useEffect(() => {
+    onTournamentStateChange?.(hasUnsavedMatches());
+  }, [matches, tournamentStarted, onTournamentStateChange]);
 
   return (
     <div className="space-y-6">
