@@ -58,7 +58,6 @@ export type Database = {
           score_a: number
           score_b: number
           status: string
-          team_id: string
           weapon: string | null
         }
         Insert: {
@@ -77,7 +76,6 @@ export type Database = {
           score_a: number
           score_b: number
           status?: string
-          team_id: string
           weapon?: string | null
         }
         Update: {
@@ -96,7 +94,6 @@ export type Database = {
           score_a?: number
           score_b?: number
           status?: string
-          team_id?: string
           weapon?: string | null
         }
         Relationships: [
@@ -135,13 +132,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
-          {
-            foreignKeyName: "bouts_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
         ]
       }
       profiles: {
@@ -151,10 +141,8 @@ export type Database = {
           email: string | null
           full_name: string
           gender: string
-          photo_url: string | null
           role: string
           shift: string | null
-          team_id: string
           user_id: string
         }
         Insert: {
@@ -163,10 +151,8 @@ export type Database = {
           email?: string | null
           full_name: string
           gender: string
-          photo_url?: string | null
           role?: string
           shift?: string | null
-          team_id: string
           user_id: string
         }
         Update: {
@@ -175,21 +161,11 @@ export type Database = {
           email?: string | null
           full_name?: string
           gender?: string
-          photo_url?: string | null
           role?: string
           shift?: string | null
-          team_id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       rankings: {
         Row: {
@@ -236,24 +212,6 @@ export type Database = {
         }
         Relationships: []
       }
-      teams: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -272,10 +230,6 @@ export type Database = {
       decide_bout: {
         Args: { _bout_id: string; _decision: string }
         Returns: undefined
-      }
-      get_current_user_team_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
       }
       get_my_pending_bouts: {
         Args: Record<PropertyKey, never>
