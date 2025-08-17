@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Table, Home } from 'lucide-react';
+import { Table, Home, Trophy } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export const Navigation = () => {
   const location = useLocation();
+  const { isInstructor } = useUserRole();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -30,6 +32,19 @@ export const Navigation = () => {
           <span>Consultazione</span>
         </Button>
       </Link>
+
+      {isInstructor && (
+        <Link to="/tournament">
+          <Button 
+            variant={isActive('/tournament') ? "secondary" : "outline"} 
+            size="default"
+            className="flex items-center gap-2 text-sm px-4 font-medium"
+          >
+            <Trophy className="h-4 w-4" />
+            <span>Torneo</span>
+          </Button>
+        </Link>
+      )}
     </nav>
   );
 };
