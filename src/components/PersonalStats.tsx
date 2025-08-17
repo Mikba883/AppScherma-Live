@@ -86,7 +86,12 @@ export const PersonalStats = () => {
     <div className="space-y-6">
       {/* Ranking Widget - Always Visible */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <RankingWidget />
+        <RankingWidget customRankingData={{
+          ranking_position: stats.ranking_position,
+          elo_rating: stats.elo_rating,
+          frequency_streak: 0, // Not available in PersonalSummary, will use default
+          frequency_multiplier: 1.0 // Not available in PersonalSummary, will use default
+        }} />
       </div>
       
       {/* Statistics Cards */}

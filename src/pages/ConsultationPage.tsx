@@ -75,7 +75,7 @@ const ConsultationPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <FilterPanel filters={filters} onFiltersChange={setFilters} />
+            <FilterPanel filters={filters} onFiltersChange={setFilters} isInstructor={isInstructor} />
           </CardContent>
         </Card>
 

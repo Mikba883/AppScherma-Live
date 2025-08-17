@@ -3,8 +3,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useRankings } from '@/hooks/useRankings';
 
-export const RankingWidget = () => {
-  const { personalRanking, loading } = useRankings();
+interface CustomRankingData {
+  ranking_position: number;
+  elo_rating: number;
+  frequency_streak: number;
+  frequency_multiplier: number;
+}
+
+interface RankingWidgetProps {
+  customRankingData?: CustomRankingData;
+}
+
+export const RankingWidget = ({ customRankingData }: RankingWidgetProps = {}) => {
+  const { personalRanking: hookRanking, loading } = useRankings();
+  
+  // Use custom data if provided, otherwise use hook data
+  const personalRanking = customRankingData || hookRanking;
 
   if (loading) {
     return (

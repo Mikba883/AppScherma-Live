@@ -17,9 +17,10 @@ interface Athlete {
 interface FilterPanelProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
+  isInstructor?: boolean;
 }
 
-export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
+export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: FilterPanelProps) => {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>(filters.athletes || []);
   const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
@@ -90,19 +91,21 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="gender">Genere</Label>
-          <Select value={filters.gender || ''} onValueChange={(value) => handleFilterChange('gender', value || undefined)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tutti i generi" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="M">Maschio</SelectItem>
-              <SelectItem value="F">Femmina</SelectItem>
-              <SelectItem value="X">Altro</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {isInstructor && (
+          <div className="space-y-2">
+            <Label htmlFor="gender">Genere</Label>
+            <Select value={filters.gender || ''} onValueChange={(value) => handleFilterChange('gender', value || undefined)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tutti i generi" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="M">Maschio</SelectItem>
+                <SelectItem value="F">Femmina</SelectItem>
+                <SelectItem value="X">Altro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="weapon">Arma</Label>
@@ -132,19 +135,21 @@ export const FilterPanel = ({ filters, onFiltersChange }: FilterPanelProps) => {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="turni">Turni</Label>
-          <Select value={filters.turni || ''} onValueChange={(value) => handleFilterChange('turni', value || undefined)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tutti i turni" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">Turno 1</SelectItem>
-              <SelectItem value="2">Turno 2</SelectItem>
-              <SelectItem value="3">Turno 3</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {isInstructor && (
+          <div className="space-y-2">
+            <Label htmlFor="turni">Turni</Label>
+            <Select value={filters.turni || ''} onValueChange={(value) => handleFilterChange('turni', value || undefined)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tutti i turni" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Turno 1</SelectItem>
+                <SelectItem value="2">Turno 2</SelectItem>
+                <SelectItem value="3">Turno 3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
