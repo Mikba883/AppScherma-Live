@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FilterPanel } from '@/components/FilterPanel';
 import { SummaryTable } from '@/components/SummaryTable';
 import { BoutsTable } from '@/components/BoutsTable';
-import { ArrowLeft, Download, Table, Users } from 'lucide-react';
+import { GlobalStats } from '@/components/GlobalStats';
+import { ArrowLeft, Download, Table, Users, BarChart3 } from 'lucide-react';
 
 export interface Filters {
   dateFrom?: string;
@@ -82,7 +83,7 @@ const ConsultationPage = () => {
         {/* Tables */}
         {isInstructor ? (
           <Tabs defaultValue="summary" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="summary" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Riassunto per Atleta
@@ -90,6 +91,10 @@ const ConsultationPage = () => {
               <TabsTrigger value="bouts" className="flex items-center gap-2">
                 <Table className="w-4 h-4" />
                 Lista Completa Match
+              </TabsTrigger>
+              <TabsTrigger value="stats" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Statistiche Globali
               </TabsTrigger>
             </TabsList>
 
@@ -121,6 +126,22 @@ const ConsultationPage = () => {
                 </CardHeader>
                 <CardContent>
                   <BoutsTable filters={filters} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="stats">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Statistiche Globali</CardTitle>
+                    <CardDescription>
+                      Analisi aggregate dei dati del club e statistiche di attività
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <GlobalStats filters={filters} />
                 </CardContent>
               </Card>
             </TabsContent>
