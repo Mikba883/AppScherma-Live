@@ -23,7 +23,6 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
   const { user } = useAuth();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [loading, setLoading] = useState(false);
-  const [teamInfo, setTeamInfo] = useState<{ team_id: string; role: string } | null>(null);
   const [formData, setFormData] = useState({
     athleteA: isInstructorMode ? '' : user?.id || '',
     athleteB: '',
@@ -37,32 +36,9 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
 
   useEffect(() => {
     if (user) {
-      fetchUserTeamInfo();
       fetchAthletes();
     }
   }, [user]);
-
-  const fetchUserTeamInfo = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('team_id, role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) throw error;
-      setTeamInfo(data);
-    } catch (error) {
-      console.error('Error fetching user team info:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile caricare le informazioni del profilo",
-        variant: "destructive"
-      });
-    }
-  };
 
   const fetchAthletes = async () => {
     if (!user) return;
@@ -115,55 +91,25 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
 
     try {
       if (isInstructorMode) {
-        console.log('Modalità istruttore attiva');
-        console.log('TeamInfo:', teamInfo);
-        
-        // Verifica che l'utente sia effettivamente un istruttore
-        if (!teamInfo) {
-          throw new Error('Impossibile caricare le informazioni del profilo. Riprova.');
-        }
-        
-        if (teamInfo.role !== 'istruttore') {
-          throw new Error(`Ruolo non autorizzato: ${teamInfo.role}. Solo gli istruttori possono usare questa modalità.`);
-        }
-
-        console.log('Tentativo di inserimento match con dati:', {
-          team_id: teamInfo.team_id,
-          bout_date: formData.boutDate,
-          weapon: (formData.weapon === 'none' || formData.weapon === '') ? null : formData.weapon,
-          bout_type: formData.boutType,
-          athlete_a: formData.athleteA,
-          athlete_b: formData.athleteB,
-          score_a: parseInt(formData.scoreA),
-          score_b: parseInt(formData.scoreB),
-          status: 'approved',
-          created_by: user!.id
+        // Modalità istruttore: usa la nuova funzione RPC
+        const { data, error } = await supabase.rpc('register_bout_instructor', {
+          _athlete_a: formData.athleteA,
+          _athlete_b: formData.athleteB,
+          _bout_date: formData.boutDate,
+          _weapon: formData.weapon === 'none' ? '' : formData.weapon,
+          _bout_type: formData.boutType,
+          _score_a: parseInt(formData.scoreA),
+          _score_b: parseInt(formData.scoreB)
         });
-        
-        // Modalità istruttore: inserimento diretto senza approvazione
-        const { data, error } = await supabase
-          .from('bouts')
-          .insert({
-            team_id: teamInfo.team_id,
-            bout_date: formData.boutDate,
-            weapon: (formData.weapon === 'none' || formData.weapon === '') ? null : formData.weapon,
-            bout_type: formData.boutType,
-            athlete_a: formData.athleteA,
-            athlete_b: formData.athleteB,
-            score_a: parseInt(formData.scoreA),
-            score_b: parseInt(formData.scoreB),
-            status: 'approved', // Approvato automaticamente
-            created_by: user!.id,
-            approved_by: user!.id,
-            approved_at: new Date().toISOString(),
-            notes: formData.notes || null
-          })
-          .select()
-          .single();
 
-        if (error) {
-          console.error('Database error:', error);
-          throw new Error(`Errore durante l'inserimento: ${error.message}`);
+        if (error) throw error;
+
+        // Aggiorna le note se presenti
+        if (formData.notes && data) {
+          await supabase
+            .from('bouts')
+            .update({ notes: formData.notes })
+            .eq('id', data);
         }
 
         toast({
@@ -352,9 +298,6 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
       {isInstructorMode && (
         <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800/30">
           <p><strong>Modalità Istruttore:</strong> Il match verrà inserito direttamente nel sistema senza necessità di approvazione.</p>
-          {teamInfo && teamInfo.role !== 'istruttore' && (
-            <p className="text-red-600 font-medium mt-2">⚠️ Attenzione: Non hai i permessi di istruttore. La registrazione potrebbe fallire.</p>
-          )}
         </div>
       )}
     </form>
