@@ -21,6 +21,7 @@ interface TournamentMatrixProps {
 
 export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTournament }: TournamentMatrixProps) => {
   const [saving, setSaving] = useState(false);
+  const [showFinishDialog, setShowFinishDialog] = useState(false);
   const navigate = useNavigate();
 
   const getMatch = (athleteA: string, athleteB: string): TournamentMatch | undefined => {
@@ -65,8 +66,47 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
   const handleScoreChange = (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => {
     const numScoreA = scoreA === '' ? null : parseInt(scoreA);
     const numScoreB = scoreB === '' ? null : parseInt(scoreB);
+    
+    // Update both directions of the match
     onUpdateMatch(athleteA, athleteB, numScoreA, numScoreB, weapon || null);
+    
+    // Also update the reverse match with swapped scores
+    if (numScoreA !== null && numScoreB !== null) {
+      onUpdateMatch(athleteB, athleteA, numScoreB, numScoreA, weapon || null);
+    }
   };
+
+  // Generate rounds for tournament organization
+  const generateRounds = () => {
+    const rounds: { round: number; matches: Array<{athleteA: TournamentAthlete; athleteB: TournamentAthlete}> }[] = [];
+    const totalAthletes = athletes.length;
+    
+    // Round-robin tournament: each athlete plays every other athlete once
+    for (let round = 1; round < totalAthletes; round++) {
+      const roundMatches: Array<{athleteA: TournamentAthlete; athleteB: TournamentAthlete}> = [];
+      
+      for (let i = 0; i < Math.floor(totalAthletes / 2); i++) {
+        const athlete1Index = i;
+        const athlete2Index = (totalAthletes - 1 - i + round - 1) % (totalAthletes - 1);
+        const finalAthlete2Index = athlete2Index >= totalAthletes - 1 ? totalAthletes - 1 : athlete2Index;
+        
+        if (athlete1Index !== finalAthlete2Index && athlete1Index < totalAthletes && finalAthlete2Index < totalAthletes) {
+          roundMatches.push({
+            athleteA: athletes[athlete1Index],
+            athleteB: athletes[finalAthlete2Index]
+          });
+        }
+      }
+      
+      if (roundMatches.length > 0) {
+        rounds.push({ round, matches: roundMatches });
+      }
+    }
+    
+    return rounds;
+  };
+
+  const rounds = generateRounds();
 
   const getCompletedMatches = () => {
     return matches.filter(match => match.scoreA !== null && match.scoreB !== null && match.weapon !== null).length;
@@ -143,57 +183,13 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
               <Badge variant="secondary">
                 {getCompletedMatches()}/{getTotalMatches()} incontri completati
               </Badge>
-              <div className="flex gap-2">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Reset Torneo
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Conferma Reset</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Sei sicuro di voler resettare il torneo? Tutti i risultati inseriti saranno persi.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Annulla</AlertDialogCancel>
-                      <AlertDialogAction onClick={onResetTournament}>
-                        Reset Torneo
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      disabled={getCompletedMatches() === 0 || saving}
-                      className="flex items-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      {saving ? 'Salvataggio...' : 'Salva Risultati'}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Salva Risultati Torneo</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Confermi di voler salvare {getCompletedMatches()} incontri completati? 
-                        I risultati saranno registrati nel database e i ranking aggiornati.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Annulla</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleSaveResults}>
-                        Salva Risultati
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+              <Button 
+                onClick={() => setShowFinishDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <Trophy className="w-4 h-4" />
+                FINE
+              </Button>
             </div>
           </CardTitle>
         </CardHeader>
@@ -210,14 +206,14 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-40">Atleta</TableHead>
-                      {athletes.map((athlete) => (
-                        <TableHead key={athlete.id} className="text-center min-w-24 text-xs">
-                          {athlete.full_name.split(' ').map(n => n[0]).join('')}
-                        </TableHead>
-                      ))}
-                    </TableRow>
+                     <TableRow>
+                       <TableHead className="w-40">Atleta</TableHead>
+                       {athletes.map((athlete) => (
+                         <TableHead key={athlete.id} className="text-center min-w-24 text-xs">
+                           {athlete.full_name}
+                         </TableHead>
+                       ))}
+                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {athletes.map((athleteA) => (
@@ -289,6 +285,62 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
           </Card>
         </div>
       </div>
+
+      {/* Tournament Rounds */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Organizzazione Turni</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {rounds.map(({ round, matches }) => (
+              <div key={round} className="border rounded-lg p-4">
+                <h4 className="font-semibold mb-3">Turno {round}</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {matches.map((match, index) => {
+                    const matchData = getMatch(match.athleteA.id, match.athleteB.id);
+                    const isCompleted = matchData?.scoreA !== null && matchData?.scoreB !== null;
+                    return (
+                      <div key={index} className={`p-3 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                        <div className="text-sm font-medium">
+                          {match.athleteA.full_name} vs {match.athleteB.full_name}
+                        </div>
+                        {isCompleted && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            {matchData.scoreA} - {matchData.scoreB} ({matchData.weapon})
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Finish Dialog */}
+      <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalizza Torneo</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vuoi salvare i risultati del torneo? Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
+              {getCompletedMatches() > 0 && " I risultati saranno registrati nel database e i ranking aggiornati."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleSaveResults}
+              disabled={getCompletedMatches() === 0 || saving}
+            >
+              {saving ? 'Salvataggio...' : 'Sì, Salva'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -310,6 +362,10 @@ const MatchCell = ({ athleteA, athleteB, match, onUpdate }: MatchCellProps) => {
   };
 
   const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
+  const scoreANum = parseInt(scoreA) || 0;
+  const scoreBNum = parseInt(scoreB) || 0;
+  const isAWinning = isComplete && scoreANum > scoreBNum;
+  const isBWinning = isComplete && scoreBNum > scoreANum;
 
   return (
     <div className="w-20 space-y-1">
@@ -342,7 +398,10 @@ const MatchCell = ({ athleteA, athleteB, match, onUpdate }: MatchCellProps) => {
             setScoreA(e.target.value);
             onUpdate(athleteA, athleteB, e.target.value, scoreB, weapon);
           }}
-          className="h-6 text-xs text-center p-1"
+          className={`h-6 text-xs text-center p-1 ${
+            isAWinning ? 'bg-green-100 border-green-300' : 
+            isBWinning ? 'bg-red-100 border-red-300' : ''
+          }`}
           placeholder="0"
         />
         <Input
@@ -354,7 +413,10 @@ const MatchCell = ({ athleteA, athleteB, match, onUpdate }: MatchCellProps) => {
             setScoreB(e.target.value);
             onUpdate(athleteA, athleteB, scoreA, e.target.value, weapon);
           }}
-          className="h-6 text-xs text-center p-1"
+          className={`h-6 text-xs text-center p-1 ${
+            isBWinning ? 'bg-green-100 border-green-300' : 
+            isAWinning ? 'bg-red-100 border-red-300' : ''
+          }`}
           placeholder="0"
         />
       </div>
