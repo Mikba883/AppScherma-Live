@@ -303,7 +303,7 @@ interface MatchCellProps {
 const MatchCell = ({ athleteA, athleteB, match, onUpdate }: MatchCellProps) => {
   const [scoreA, setScoreA] = useState(match?.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
-  const [weapon, setWeapon] = useState(match?.weapon || '');
+  const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
 
   const handleUpdate = () => {
     onUpdate(athleteA, athleteB, scoreA, scoreB, weapon);

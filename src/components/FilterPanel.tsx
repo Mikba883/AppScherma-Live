@@ -182,7 +182,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
 
       <div className="space-y-3">
         <Label>Atleti</Label>
-        <Select value="" onValueChange={() => {}}>
+        <Select value="placeholder" onValueChange={() => {}}>
           <SelectTrigger 
             onClick={() => setIsAthleteDropdownOpen(!isAthleteDropdownOpen)}
             className="min-h-10"
