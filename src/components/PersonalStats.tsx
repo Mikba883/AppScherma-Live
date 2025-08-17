@@ -4,10 +4,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Sword, Shield, Calendar, Award } from 'lucide-react';
+import { RankingWidget } from './RankingWidget';
 
 interface PersonalSummary {
   athlete_id: string;
   full_name: string;
+  ranking_position: number;
+  elo_rating: number;
   matches: number;
   trainings: number;
   wins: number;
@@ -80,8 +83,15 @@ export const PersonalStats = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-      <Card>
+    <div className="space-y-6">
+      {/* Ranking Widget - Separate Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <RankingWidget />
+      </div>
+      
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card>
         <CardContent className="flex items-center p-6">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -159,6 +169,7 @@ export const PersonalStats = () => {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };

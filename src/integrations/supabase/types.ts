@@ -408,9 +408,11 @@ export type Database = {
           avg_hits_given: number
           avg_hits_received: number
           avg_point_diff: number
+          elo_rating: number
           full_name: string
           last_training: string
           matches: number
+          ranking_position: number
           trainings: number
           win_rate: number
           wins: number

@@ -9,6 +9,8 @@ import { Filters } from '@/pages/ConsultationPage';
 interface SummaryData {
   athlete_id: string;
   full_name: string;
+  ranking_position: number;
+  elo_rating: number;
   matches: number;
   trainings: number;
   wins: number;
@@ -58,9 +60,11 @@ export const SummaryTable = ({ filters }: SummaryTableProps) => {
   const exportToCSV = () => {
     if (data.length === 0) return;
 
-    const headers = ['Atleta', 'Match', 'Allenamenti', 'Vittorie', 'Win Rate %', 'Scarto Medio', 'Ultimo Allenamento'];
+    const headers = ['Posizione', 'Atleta', 'ELO', 'Match', 'Allenamenti', 'Vittorie', 'Win Rate %', 'Scarto Medio', 'Ultimo Allenamento'];
     const csvData = data.map(row => [
+      row.ranking_position,
       row.full_name,
+      row.elo_rating,
       row.matches,
       row.trainings,
       row.wins,
@@ -125,7 +129,9 @@ export const SummaryTable = ({ filters }: SummaryTableProps) => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-16 text-center">Pos.</TableHead>
               <TableHead>Atleta</TableHead>
+              <TableHead className="w-20 text-center">ELO</TableHead>
               <TableHead className="text-center">Match</TableHead>
               <TableHead className="text-center">Allenamenti</TableHead>
               <TableHead className="text-center">Vittorie</TableHead>
@@ -137,7 +143,21 @@ export const SummaryTable = ({ filters }: SummaryTableProps) => {
           <TableBody>
             {data.map((row) => (
               <TableRow key={row.athlete_id}>
+                <TableCell className="text-center font-bold">
+                  <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                    row.ranking_position <= 3 
+                      ? 'bg-primary text-primary-foreground' 
+                      : row.ranking_position <= 10 
+                        ? 'bg-secondary text-secondary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {row.ranking_position}
+                  </div>
+                </TableCell>
                 <TableCell className="font-medium">{row.full_name}</TableCell>
+                <TableCell className="text-center font-mono text-sm">
+                  <span className="font-semibold text-primary">{row.elo_rating}</span>
+                </TableCell>
                 <TableCell className="text-center">{row.matches}</TableCell>
                 <TableCell className="text-center">{row.trainings}</TableCell>
                 <TableCell className="text-center">
