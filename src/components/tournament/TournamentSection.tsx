@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentMatrix } from './TournamentMatrix';
-import type { TournamentAthlete, TournamentMatch } from '@/pages/TournamentPage';
+import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 
 export const TournamentSection = () => {
   const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);

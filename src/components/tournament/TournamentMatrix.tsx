@@ -10,7 +10,7 @@ import { Trophy, Save, RotateCcw, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import type { TournamentAthlete, TournamentMatch } from '@/pages/TournamentPage';
+import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 
 interface TournamentMatrixProps {
   athletes: TournamentAthlete[];

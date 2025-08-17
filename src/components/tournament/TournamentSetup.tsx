@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Users, Play, X, Filter } from 'lucide-react';
 import { toast } from 'sonner';
-import type { TournamentAthlete } from '@/pages/TournamentPage';
+import type { TournamentAthlete } from '@/types/tournament';
 
 interface TournamentSetupProps {
   onStartTournament: (athletes: TournamentAthlete[]) => void;
