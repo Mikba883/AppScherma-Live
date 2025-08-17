@@ -115,11 +115,31 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
 
     try {
       if (isInstructorMode) {
+        console.log('Modalità istruttore attiva');
+        console.log('TeamInfo:', teamInfo);
+        
         // Verifica che l'utente sia effettivamente un istruttore
-        if (!teamInfo || teamInfo.role !== 'istruttore') {
-          throw new Error('Non hai i permessi per registrare match in modalità istruttore');
+        if (!teamInfo) {
+          throw new Error('Impossibile caricare le informazioni del profilo. Riprova.');
+        }
+        
+        if (teamInfo.role !== 'istruttore') {
+          throw new Error(`Ruolo non autorizzato: ${teamInfo.role}. Solo gli istruttori possono usare questa modalità.`);
         }
 
+        console.log('Tentativo di inserimento match con dati:', {
+          team_id: teamInfo.team_id,
+          bout_date: formData.boutDate,
+          weapon: (formData.weapon === 'none' || formData.weapon === '') ? null : formData.weapon,
+          bout_type: formData.boutType,
+          athlete_a: formData.athleteA,
+          athlete_b: formData.athleteB,
+          score_a: parseInt(formData.scoreA),
+          score_b: parseInt(formData.scoreB),
+          status: 'approved',
+          created_by: user!.id
+        });
+        
         // Modalità istruttore: inserimento diretto senza approvazione
         const { data, error } = await supabase
           .from('bouts')
