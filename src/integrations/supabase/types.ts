@@ -363,6 +363,18 @@ export type Database = {
         }
         Returns: string
       }
+      register_bout_instructor: {
+        Args: {
+          _athlete_a: string
+          _athlete_b: string
+          _bout_date: string
+          _bout_type: string
+          _score_a: number
+          _score_b: number
+          _weapon: string
+        }
+        Returns: string
+      }
       summary_by_athlete: {
         Args:
           | {
