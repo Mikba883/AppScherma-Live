@@ -4,13 +4,12 @@ import { useAuth } from './useAuth';
 
 export interface Profile {
   user_id: string;
-  team_id: string;
   full_name: string;
   birth_date: string;
   gender: 'M' | 'F' | 'X';
-  photo_url?: string;
   role: 'allievo' | 'istruttore';
   email?: string;
+  shift?: string;
   created_at: string;
 }
 
