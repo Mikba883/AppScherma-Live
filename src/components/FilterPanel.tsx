@@ -154,9 +154,12 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             onChange={(e) => {
               const newFromDate = e.target.value || undefined;
               console.log('🗓️ FilterPanel - From date input:', newFromDate);
-              console.log('🗓️ FilterPanel - From date as Date object:', newFromDate ? new Date(newFromDate) : null);
-              console.log('🗓️ FilterPanel - From date ISO string:', newFromDate ? new Date(newFromDate).toISOString() : 'null');
               handleFilterChange('dateFrom', newFromDate);
+            }}
+            lang="it-IT"
+            style={{ 
+              colorScheme: 'light',
+              direction: 'ltr'
             }}
           />
           {filters.dateFrom && (
@@ -176,9 +179,12 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             onChange={(e) => {
               const newToDate = e.target.value || undefined;
               console.log('🗓️ FilterPanel - To date input:', newToDate);
-              console.log('🗓️ FilterPanel - To date as Date object:', newToDate ? new Date(newToDate) : null);
-              console.log('🗓️ FilterPanel - To date ISO string:', newToDate ? new Date(newToDate).toISOString() : 'null');
               handleFilterChange('dateTo', newToDate);
+            }}
+            lang="it-IT"
+            style={{ 
+              colorScheme: 'light',
+              direction: 'ltr'
             }}
           />
           {filters.dateTo && (
