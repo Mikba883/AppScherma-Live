@@ -48,17 +48,16 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       console.log('BoutsTable - isInstructor:', isInstructor);
       console.log('BoutsTable - Original filters:', filters);
       
-      // For students: if athlete filter is applied, intersect with user's matches
+      // For students: if athlete filter is applied, find matches against selected athletes
       // For instructors: use athlete filter as-is
       let athletesFilter = null;
       if (!isInstructor && user) {
-        // Student: if athlete filter is applied, show only matches with selected athletes
-        // Otherwise show all their matches
         if (filters.athletes && filters.athletes.length > 0) {
-          // Include the student's ID AND the selected athletes to get intersection
-          athletesFilter = [user.id, ...filters.athletes];
+          // Student with athlete filter: show matches where user plays against selected athletes
+          // We pass only the selected opponents, the SQL will filter for matches involving the user
+          athletesFilter = filters.athletes;
         } else {
-          // Show only student's matches
+          // Student without filter: show all their matches
           athletesFilter = [user.id];
         }
       } else if (isInstructor) {
@@ -76,6 +75,15 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         toFormatted: filters.dateTo ? new Date(filters.dateTo).toISOString().split('T')[0] : null
       });
 
+      // Special handling for student athlete filter
+      let finalAthletesFilter = athletesFilter;
+      if (!isInstructor && user && filters.athletes && filters.athletes.length > 0) {
+        // For students, we need a different approach: 
+        // We want matches where the student participates AND the opponent is in the selected list
+        // This requires a modified query approach
+        finalAthletesFilter = [user.id, ...filters.athletes];
+      }
+
       const rpcParams = {
         _from: filters.dateFrom || null,
         _to: filters.dateTo || null,
@@ -83,7 +91,7 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         _min_age: filters.minAge || null,
         _max_age: filters.maxAge || null,
         _weapon: filters.weapon || null,
-        _athletes: athletesFilter,
+        _athletes: finalAthletesFilter,
         _tipo_match: filters.tipoMatch || null,
         _turni: filters.turni || null
       };
@@ -93,14 +101,33 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       const { data: boutsData, error } = await supabase.rpc('list_bouts', rpcParams);
 
       if (error) throw error;
+      
+      // For students with athlete filter, further filter the results
+      let finalData = boutsData || [];
+      if (!isInstructor && user && filters.athletes && filters.athletes.length > 0) {
+        finalData = (boutsData || []).filter(bout => {
+          // Keep matches where the student participates AND the opponent is in selected athletes
+          const isStudentAthleteA = bout.athlete_a === user.id;
+          const isStudentAthleteB = bout.athlete_b === user.id;
+          
+          if (isStudentAthleteA) {
+            return filters.athletes!.includes(bout.athlete_b);
+          } else if (isStudentAthleteB) {
+            return filters.athletes!.includes(bout.athlete_a);
+          }
+          return false;
+        });
+      }
+      
       console.log('BoutsTable - Data received:', boutsData?.length, 'matches');
+      console.log('BoutsTable - Final filtered data:', finalData.length, 'matches');
       console.log('BoutsTable - Date range in results:', {
         earliest: boutsData?.length > 0 ? Math.min(...boutsData.map(b => new Date(b.bout_date).getTime())) : null,
         latest: boutsData?.length > 0 ? Math.max(...boutsData.map(b => new Date(b.bout_date).getTime())) : null,
         earliestFormatted: boutsData?.length > 0 ? new Date(Math.min(...boutsData.map(b => new Date(b.bout_date).getTime()))).toISOString().split('T')[0] : null,
         latestFormatted: boutsData?.length > 0 ? new Date(Math.max(...boutsData.map(b => new Date(b.bout_date).getTime()))).toISOString().split('T')[0] : null
       });
-      setData(boutsData || []);
+      setData(finalData);
     } catch (error) {
       console.error('Error fetching bouts data:', error);
     } finally {

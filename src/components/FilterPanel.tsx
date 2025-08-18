@@ -157,6 +157,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
               console.log('FilterPanel - From date changed to:', newFromDate);
             }}
           />
+          <p className="text-xs text-muted-foreground">(gg/mm/aaaa)</p>
         </div>
 
         <div className="space-y-2">
@@ -172,6 +173,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
               console.log('FilterPanel - To date changed to:', newToDate);
             }}
           />
+          <p className="text-xs text-muted-foreground">(gg/mm/aaaa)</p>
           {filters.dateFrom && filters.dateTo && new Date(filters.dateTo) < new Date(filters.dateFrom) && (
             <p className="text-sm text-destructive">
               La data "A" deve essere successiva alla data "Da"
