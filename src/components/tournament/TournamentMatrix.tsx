@@ -411,21 +411,26 @@ const ReadOnlyMatchCell = ({ athleteA, athleteB, match }: ReadOnlyMatchCellProps
     );
   }
 
-  const scoreANum = match.scoreA!;
-  const scoreBNum = match.scoreB!;
-  const isAWinning = scoreANum > scoreBNum;
-  const isBWinning = scoreBNum > scoreANum;
+  // Determine if the match orientation matches the cell orientation
+  const isMatchOriented = match.athleteA === athleteA && match.athleteB === athleteB;
+  
+  // Get scores in the correct orientation for this cell
+  const scoreForA = isMatchOriented ? match.scoreA! : match.scoreB!;
+  const scoreForB = isMatchOriented ? match.scoreB! : match.scoreA!;
+  
+  const isAWinning = scoreForA > scoreForB;
+  const isBWinning = scoreForB > scoreForA;
 
   return (
     <div className="w-20 h-16 rounded border flex flex-col items-center justify-center p-1">
       <div className="text-xs mb-1">{match.weapon?.charAt(0).toUpperCase()}</div>
       <div className="flex gap-1 text-xs">
         <span className={`${isAWinning ? 'text-green-600 font-bold' : isBWinning ? 'text-red-600' : ''}`}>
-          {scoreANum}
+          {scoreForA}
         </span>
         <span>-</span>
         <span className={`${isBWinning ? 'text-green-600 font-bold' : isAWinning ? 'text-red-600' : ''}`}>
-          {scoreBNum}
+          {scoreForB}
         </span>
       </div>
     </div>
