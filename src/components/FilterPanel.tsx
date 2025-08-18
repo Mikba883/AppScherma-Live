@@ -158,11 +158,6 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             }}
             placeholder="Seleziona data inizio"
           />
-          {filters.dateFrom && (
-            <p className="text-xs text-green-600">
-              Data attiva: {filters.dateFrom.split('-').reverse().join('/')}
-            </p>
-          )}
         </div>
 
         <div className="space-y-2">
@@ -178,11 +173,6 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             placeholder="Seleziona data fine"
             disabled={!filters.dateFrom}
           />
-          {filters.dateTo && (
-            <p className="text-xs text-green-600">
-              Data attiva: {filters.dateTo.split('-').reverse().join('/')}
-            </p>
-          )}
           {filters.dateFrom && filters.dateTo && new Date(filters.dateTo) < new Date(filters.dateFrom) && (
             <p className="text-sm text-destructive">
               La data "A" deve essere successiva alla data "Da"
