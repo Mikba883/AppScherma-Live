@@ -69,10 +69,11 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         .from('bouts')
         .select('weapon')
         .not('weapon', 'is', null)
+        .neq('weapon', '') // Exclude empty strings
         .order('weapon');
 
       if (!weaponError && weaponData) {
-        const uniqueWeapons = [...new Set(weaponData.map(b => b.weapon))];
+        const uniqueWeapons = [...new Set(weaponData.map(b => b.weapon).filter(w => w && w.trim() !== ''))];
         setAvailableWeapons(uniqueWeapons.map(w => ({
           value: w,
           label: w === 'fioretto' ? 'Fioretto' : w === 'spada' ? 'Spada' : 'Sciabola'
@@ -83,10 +84,11 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
       const { data: typeData, error: typeError } = await supabase
         .from('bouts')
         .select('bout_type')
+        .neq('bout_type', '') // Exclude empty strings
         .order('bout_type');
 
       if (!typeError && typeData) {
-        const uniqueTypes = [...new Set(typeData.map(b => b.bout_type))];
+        const uniqueTypes = [...new Set(typeData.map(b => b.bout_type).filter(t => t && t.trim() !== ''))];
         setAvailableMatchTypes(uniqueTypes.map(t => ({
           value: t,
           label: t === 'sparring' ? 'Sparring' : t === 'gara' ? 'Gara' : 'Bianco'
@@ -98,10 +100,11 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         .from('profiles')
         .select('shift')
         .not('shift', 'is', null)
+        .neq('shift', '') // Exclude empty strings
         .order('shift');
 
       if (!turnError && turnData) {
-        const uniqueTurns = [...new Set(turnData.map(p => p.shift))];
+        const uniqueTurns = [...new Set(turnData.map(p => p.shift).filter(s => s && s.trim() !== ''))];
         setAvailableTurns(uniqueTurns.map(t => ({
           value: t,
           label: `Turno ${t}`
@@ -262,7 +265,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
 
       <div className="space-y-3">
         <Label>Atleti</Label>
-        <Select value="placeholder" onValueChange={() => {}}>
+        <Select value={selectedAthletes.length > 0 ? "selected" : "none"} onValueChange={() => {}}>
           <SelectTrigger 
             onClick={() => setIsAthleteDropdownOpen(!isAthleteDropdownOpen)}
             className="min-h-10"
