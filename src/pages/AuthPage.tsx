@@ -103,8 +103,8 @@ const AuthPage = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/lovable-uploads/9ffe6350-a8fc-45a3-8078-f5490d380349.png" 
-              alt="Logo Fanfulla Scherma" 
+              src="/lovable-uploads/065820b9-0536-4c73-aef4-c9b62284abc0.png" 
+              alt="Logo Fanfulla 1874" 
               className="h-24 w-auto"
             />
           </div>
