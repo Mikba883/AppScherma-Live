@@ -67,12 +67,16 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       
       console.log('BoutsTable - Athletes filter being applied:', athletesFilter);
       
-      // Debug date filters
-      console.log('BoutsTable - Date filters:', {
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
+      // Detailed date debugging
+      console.log('🗓️ BoutsTable - Date filter analysis:', {
+        originalFrom: filters.dateFrom,
+        originalTo: filters.dateTo,
+        fromAsDate: filters.dateFrom ? new Date(filters.dateFrom) : null,
+        toAsDate: filters.dateTo ? new Date(filters.dateTo) : null,
         fromFormatted: filters.dateFrom ? new Date(filters.dateFrom).toISOString().split('T')[0] : null,
-        toFormatted: filters.dateTo ? new Date(filters.dateTo).toISOString().split('T')[0] : null
+        toFormatted: filters.dateTo ? new Date(filters.dateTo).toISOString().split('T')[0] : null,
+        fromItalian: filters.dateFrom ? new Date(filters.dateFrom).toLocaleDateString('it-IT') : null,
+        toItalian: filters.dateTo ? new Date(filters.dateTo).toLocaleDateString('it-IT') : null
       });
 
       // Special handling for student athlete filter
@@ -96,7 +100,13 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         _turni: filters.turni || null
       };
       
-      console.log('BoutsTable - RPC parameters:', rpcParams);
+      console.log('🔍 BoutsTable - RPC params being sent:', rpcParams);
+      console.log('🔍 BoutsTable - Date params specifically:', {
+        _from: rpcParams._from,
+        _to: rpcParams._to,
+        fromType: typeof rpcParams._from,
+        toType: typeof rpcParams._to
+      });
 
       const { data: boutsData, error } = await supabase.rpc('list_bouts', rpcParams);
 
@@ -119,14 +129,37 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         });
       }
       
-      console.log('BoutsTable - Data received:', boutsData?.length, 'matches');
-      console.log('BoutsTable - Final filtered data:', finalData.length, 'matches');
-      console.log('BoutsTable - Date range in results:', {
-        earliest: boutsData?.length > 0 ? Math.min(...boutsData.map(b => new Date(b.bout_date).getTime())) : null,
-        latest: boutsData?.length > 0 ? Math.max(...boutsData.map(b => new Date(b.bout_date).getTime())) : null,
-        earliestFormatted: boutsData?.length > 0 ? new Date(Math.min(...boutsData.map(b => new Date(b.bout_date).getTime()))).toISOString().split('T')[0] : null,
-        latestFormatted: boutsData?.length > 0 ? new Date(Math.max(...boutsData.map(b => new Date(b.bout_date).getTime()))).toISOString().split('T')[0] : null
-      });
+      console.log('📊 BoutsTable - Data received:', boutsData?.length, 'matches');
+      console.log('📊 BoutsTable - Final filtered data:', finalData.length, 'matches');
+      
+      // Detailed date analysis of results
+      if (boutsData && boutsData.length > 0) {
+        const dates = boutsData.map(b => b.bout_date);
+        const earliest = new Date(Math.min(...dates.map(d => new Date(d).getTime())));
+        const latest = new Date(Math.max(...dates.map(d => new Date(d).getTime())));
+        
+        console.log('🗓️ BoutsTable - Date range analysis in results:', {
+          totalMatches: boutsData.length,
+          dateRange: `${earliest.toLocaleDateString('it-IT')} - ${latest.toLocaleDateString('it-IT')}`,
+          earliestISO: earliest.toISOString().split('T')[0],
+          latestISO: latest.toISOString().split('T')[0],
+          requestedRange: `${filters.dateFrom || 'nessuna'} - ${filters.dateTo || 'nessuna'}`,
+          allDatesInResults: dates.map(d => new Date(d).toLocaleDateString('it-IT')).slice(0, 5) // First 5 dates
+        });
+        
+        // Check if requested dates are actually included
+        if (filters.dateFrom || filters.dateTo) {
+          const matchesInRange = boutsData.filter(bout => {
+            const boutDate = new Date(bout.bout_date).toISOString().split('T')[0];
+            const fromMatch = !filters.dateFrom || boutDate >= filters.dateFrom;
+            const toMatch = !filters.dateTo || boutDate <= filters.dateTo;
+            return fromMatch && toMatch;
+          });
+          console.log('🔍 BoutsTable - Matches in requested date range:', matchesInRange.length);
+        }
+      } else {
+        console.log('📊 BoutsTable - No data received from database');
+      }
       setData(finalData);
     } catch (error) {
       console.error('Error fetching bouts data:', error);

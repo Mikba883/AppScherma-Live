@@ -146,22 +146,28 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="dateFrom">Data da</Label>
+          <Label htmlFor="dateFrom">Data da <span className="text-muted-foreground text-sm">(formato: gg/mm/aaaa)</span></Label>
           <Input
             id="dateFrom"
             type="date"
             value={filters.dateFrom || ''}
             onChange={(e) => {
               const newFromDate = e.target.value || undefined;
+              console.log('🗓️ FilterPanel - From date input:', newFromDate);
+              console.log('🗓️ FilterPanel - From date as Date object:', newFromDate ? new Date(newFromDate) : null);
+              console.log('🗓️ FilterPanel - From date ISO string:', newFromDate ? new Date(newFromDate).toISOString() : 'null');
               handleFilterChange('dateFrom', newFromDate);
-              console.log('FilterPanel - From date changed to:', newFromDate);
             }}
           />
-          <p className="text-xs text-muted-foreground">(gg/mm/aaaa)</p>
+          {filters.dateFrom && (
+            <p className="text-xs text-green-600">
+              Data attiva: {new Date(filters.dateFrom).toLocaleDateString('it-IT')}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="dateTo">Data a</Label>
+          <Label htmlFor="dateTo">Data a <span className="text-muted-foreground text-sm">(formato: gg/mm/aaaa)</span></Label>
           <Input
             id="dateTo"
             type="date"
@@ -169,11 +175,17 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             min={filters.dateFrom || undefined}
             onChange={(e) => {
               const newToDate = e.target.value || undefined;
+              console.log('🗓️ FilterPanel - To date input:', newToDate);
+              console.log('🗓️ FilterPanel - To date as Date object:', newToDate ? new Date(newToDate) : null);
+              console.log('🗓️ FilterPanel - To date ISO string:', newToDate ? new Date(newToDate).toISOString() : 'null');
               handleFilterChange('dateTo', newToDate);
-              console.log('FilterPanel - To date changed to:', newToDate);
             }}
           />
-          <p className="text-xs text-muted-foreground">(gg/mm/aaaa)</p>
+          {filters.dateTo && (
+            <p className="text-xs text-green-600">
+              Data attiva: {new Date(filters.dateTo).toLocaleDateString('it-IT')}
+            </p>
+          )}
           {filters.dateFrom && filters.dateTo && new Date(filters.dateTo) < new Date(filters.dateFrom) && (
             <p className="text-sm text-destructive">
               La data "A" deve essere successiva alla data "Da"
