@@ -395,6 +395,33 @@ export type Database = {
           wins: number
         }[]
       }
+      tournament_summary_by_athlete: {
+        Args: {
+          _athletes?: string[]
+          _from?: string
+          _gender?: string
+          _max_age?: number
+          _min_age?: number
+          _tipo_match?: string
+          _to?: string
+          _turni?: string
+          _weapon?: string
+        }
+        Returns: {
+          athlete_id: string
+          avg_hits_given: number
+          avg_hits_received: number
+          avg_point_diff: number
+          elo_rating: number
+          full_name: string
+          last_training: string
+          matches: number
+          ranking_position: number
+          trainings: number
+          win_rate: number
+          wins: number
+        }[]
+      }
       update_frequency_stats: {
         Args: { _athlete_id: string }
         Returns: undefined
