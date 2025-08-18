@@ -285,7 +285,6 @@ export type Database = {
           score_a: number
           score_b: number
           status: string
-          team_id: string
           weapon: string
         }[]
       }
