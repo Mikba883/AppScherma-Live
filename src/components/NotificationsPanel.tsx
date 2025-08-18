@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, BellOff, Check, AlertTriangle, Info } from 'lucide-react';
+import { Bell, BellOff, Check, AlertTriangle, Info, X, Swords, Calendar, User, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Notification {
@@ -18,26 +18,43 @@ interface Notification {
   related_bout_id?: string;
 }
 
+interface PendingBout {
+  id: string;
+  bout_date: string;
+  weapon: string;
+  bout_type: string;
+  athlete_a: string;
+  athlete_b: string;
+  score_a: number;
+  score_b: number;
+  created_at: string;
+  notes?: string;
+  creator_name?: string;
+}
+
 export const NotificationsPanel = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [pendingBouts, setPendingBouts] = useState<PendingBout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
+      fetchPendingBouts();
     }
   }, [user]);
 
   const fetchNotifications = async () => {
     if (!user) return;
     
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('athlete_id', user.id)
+        .eq('read', false) // Solo notifiche non lette
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -48,30 +65,70 @@ export const NotificationsPanel = () => {
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast.error('Errore nel caricamento delle notifiche');
+    }
+  };
+
+  const fetchPendingBouts = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('get_my_pending_bouts');
+      
+      if (error) throw error;
+
+      // Arricchire i dati con i nomi degli atleti
+      if (data?.length > 0) {
+        const athleteIds = [...new Set([
+          ...data.map((b: PendingBout) => b.athlete_a),
+          ...data.map((b: PendingBout) => b.athlete_b)
+        ])];
+
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', athleteIds);
+
+        if (profilesError) throw profilesError;
+
+        const profilesMap = profiles?.reduce((acc, p) => {
+          acc[p.user_id] = p.full_name;
+          return acc;
+        }, {} as Record<string, string>) || {};
+
+        const enrichedBouts = data.map((bout: PendingBout) => ({
+          ...bout,
+          creator_name: profilesMap[bout.athlete_a] || 'Sconosciuto'
+        }));
+
+        setPendingBouts(enrichedBouts);
+      } else {
+        setPendingBouts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching pending bouts:', error);
+      toast.error('Errore nel caricamento dei match pending');
     } finally {
       setLoading(false);
     }
   };
 
-  const markAsRead = async (notificationId: string) => {
+  const deleteNotification = async (notificationId: string) => {
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .delete()
         .eq('id', notificationId);
 
       if (error) throw error;
 
       setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === notificationId 
-            ? { ...notif, read: true }
-            : notif
-        )
+        prev.filter(notif => notif.id !== notificationId)
       );
+      
+      toast.success('Notifica eliminata');
     } catch (error) {
-      console.error('Error marking notification as read:', error);
-      toast.error('Errore nel segnare la notifica come letta');
+      console.error('Error deleting notification:', error);
+      toast.error('Errore nell\'eliminazione della notifica');
     }
   };
 
@@ -120,17 +177,45 @@ export const NotificationsPanel = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('it-IT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const handleBoutDecision = async (boutId: string, decision: 'approve' | 'reject') => {
+    setActionLoading(boutId);
+    
+    try {
+      const { error } = await supabase.rpc('decide_bout', {
+        _bout_id: boutId,
+        _decision: decision
+      });
+
+      if (error) throw error;
+
+      toast.success(decision === 'approve' ? "Match approvato" : "Match rifiutato");
+      await fetchPendingBouts();
+    } catch (error) {
+      toast.error(`Impossibile ${decision === 'approve' ? 'approvare' : 'rifiutare'} il match`);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const getWeaponLabel = (weapon: string) => {
+    const labels: Record<string, string> = {
+      'fioretto': 'Fioretto',
+      'spada': 'Spada', 
+      'sciabola': 'Sciabola'
+    };
+    return labels[weapon] || weapon;
+  };
+
+  const getTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      'sparring': 'Sparring',
+      'gara': 'Gara',
+      'bianco': 'Assalto Bianco'
+    };
+    return labels[type] || type;
+  };
+
+  const totalItems = notifications.length + pendingBouts.length;
 
   if (loading) {
     return (
@@ -152,48 +237,112 @@ export const NotificationsPanel = () => {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {unreadCount > 0 ? (
+            {totalItems > 0 ? (
               <Bell className="w-5 h-5" />
             ) : (
               <BellOff className="w-5 h-5" />
             )}
             Notifiche
-            {unreadCount > 0 && (
+            {totalItems > 0 && (
               <Badge variant="destructive" className="ml-2">
-                {unreadCount}
+                {totalItems}
               </Badge>
             )}
           </div>
-          {unreadCount > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={markAllAsRead}
-            >
-              Segna tutte come lette
-            </Button>
-          )}
         </CardTitle>
         <CardDescription>
-          Le tue notifiche più recenti
+          Match da approvare e notifiche di sistema
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {notifications.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
+        ) : totalItems === 0 ? (
           <div className="text-center py-8">
             <BellOff className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-muted-foreground">Nessuna notifica</p>
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Pending Bouts */}
+            {pendingBouts.map((bout) => (
+              <Card key={bout.id} className="border-l-4 border-l-primary">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Swords className="h-5 w-5" />
+                      Nuovo Match da Approvare
+                    </CardTitle>
+                    <Badge variant="outline">{getTypeLabel(bout.bout_type)}</Badge>
+                  </div>
+                  <CardDescription className="flex items-center gap-4 text-sm">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(bout.bout_date).toLocaleDateString('it-IT')}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <User className="h-4 w-4" />
+                      {bout.creator_name}
+                    </span>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Arma</p>
+                      <p className="font-medium">{getWeaponLabel(bout.weapon)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Punteggio</p>
+                      <p className="font-bold text-lg">
+                        {bout.score_a} - {bout.score_b}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Risultato</p>
+                      <Badge variant={bout.score_b > bout.score_a ? "default" : "secondary"}>
+                        {bout.score_b > bout.score_a ? "Vittoria" : "Sconfitta"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {bout.notes && (
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">Note:</p>
+                      <p className="text-sm">{bout.notes}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={() => handleBoutDecision(bout.id, 'approve')}
+                      disabled={actionLoading === bout.id}
+                      className="flex-1"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      {actionLoading === bout.id ? 'Elaborazione...' : 'Approva'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleBoutDecision(bout.id, 'reject')}
+                      disabled={actionLoading === bout.id}
+                      className="flex-1"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Rifiuta
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {/* System Notifications */}
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`p-4 rounded-lg border ${
-                  !notification.read 
-                    ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800' 
-                    : 'bg-muted/50'
-                }`}
+                className="p-4 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
@@ -209,30 +358,30 @@ export const NotificationsPanel = () => {
                         >
                           {notification.type}
                         </Badge>
-                        {!notification.read && (
-                          <Badge variant="default" className="text-xs">
-                            Nuovo
-                          </Badge>
-                        )}
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(notification.created_at)}
+                        {new Date(notification.created_at).toLocaleDateString('it-IT', {
+                          day: '2-digit',
+                          month: '2-digit', 
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </p>
                     </div>
                   </div>
-                  {!notification.read && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => markAsRead(notification.id)}
-                      className="ml-2"
-                    >
-                      <Check className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteNotification(notification.id)}
+                    className="ml-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Presa visione
+                  </Button>
                 </div>
               </div>
             ))}

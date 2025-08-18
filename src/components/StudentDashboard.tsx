@@ -1,10 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PersonalStats } from './PersonalStats';
-import { PendingNotifications } from './PendingNotifications';
 import { NotificationsPanel } from './NotificationsPanel';
 import { RegisterBoutForm } from './RegisterBoutForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Bell, Plus, Swords } from 'lucide-react';
+import { BarChart3, Bell, Plus } from 'lucide-react';
 
 export const StudentDashboard = () => {
   console.log('StudentDashboard - Component loaded');
@@ -12,14 +11,10 @@ export const StudentDashboard = () => {
   return (
     <main className="w-full px-6 py-8 pb-20 md:pb-8">
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
             <BarChart3 className="w-4 h-4" />
             <span className="hidden sm:inline">Statistiche</span>
-          </TabsTrigger>
-          <TabsTrigger value="pending" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
-            <Swords className="w-4 h-4" />
-            <span className="hidden sm:inline">Pending</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
             <Bell className="w-4 h-4" />
@@ -41,20 +36,6 @@ export const StudentDashboard = () => {
             </CardHeader>
             <CardContent>
               <PersonalStats />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="pending" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Match da approvare</CardTitle>
-              <CardDescription>
-                Gestisci i match in attesa della tua approvazione
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PendingNotifications />
             </CardContent>
           </Card>
         </TabsContent>
