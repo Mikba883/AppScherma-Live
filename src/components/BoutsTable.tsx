@@ -68,7 +68,15 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       
       console.log('BoutsTable - Athletes filter being applied:', athletesFilter);
       
-      const { data: boutsData, error } = await supabase.rpc('list_bouts', {
+      // Debug date filters
+      console.log('BoutsTable - Date filters:', {
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+        fromFormatted: filters.dateFrom ? new Date(filters.dateFrom).toISOString().split('T')[0] : null,
+        toFormatted: filters.dateTo ? new Date(filters.dateTo).toISOString().split('T')[0] : null
+      });
+
+      const rpcParams = {
         _from: filters.dateFrom || null,
         _to: filters.dateTo || null,
         _gender: filters.gender || null,
@@ -78,10 +86,20 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         _athletes: athletesFilter,
         _tipo_match: filters.tipoMatch || null,
         _turni: filters.turni || null
-      });
+      };
+      
+      console.log('BoutsTable - RPC parameters:', rpcParams);
+
+      const { data: boutsData, error } = await supabase.rpc('list_bouts', rpcParams);
 
       if (error) throw error;
       console.log('BoutsTable - Data received:', boutsData?.length, 'matches');
+      console.log('BoutsTable - Date range in results:', {
+        earliest: boutsData?.length > 0 ? Math.min(...boutsData.map(b => new Date(b.bout_date).getTime())) : null,
+        latest: boutsData?.length > 0 ? Math.max(...boutsData.map(b => new Date(b.bout_date).getTime())) : null,
+        earliestFormatted: boutsData?.length > 0 ? new Date(Math.min(...boutsData.map(b => new Date(b.bout_date).getTime()))).toISOString().split('T')[0] : null,
+        latestFormatted: boutsData?.length > 0 ? new Date(Math.max(...boutsData.map(b => new Date(b.bout_date).getTime()))).toISOString().split('T')[0] : null
+      });
       setData(boutsData || []);
     } catch (error) {
       console.error('Error fetching bouts data:', error);
@@ -186,26 +204,54 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
     );
   }
 
+  // Count active filters for UX
+  const activeFiltersCount = Object.values(filters).filter(value => {
+    if (Array.isArray(value)) return value.length > 0;
+    return value !== null && value !== undefined && value !== '';
+  }).length;
+
   if (data.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">
-          Nessun match disponibile con i filtri selezionati.
-        </p>
+      <div className="space-y-4">
+        {/* Filter status */}
+        <div className="flex justify-between items-center text-sm text-muted-foreground">
+          <div>
+            {activeFiltersCount > 0 && (
+              <span className="bg-primary/10 text-primary px-2 py-1 rounded-md">
+                {activeFiltersCount} filtri attivi
+              </span>
+            )}
+          </div>
+          <div>0 match trovati</div>
+        </div>
+        
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            {activeFiltersCount > 0 ? 'Nessun match trovato con i filtri applicati' : 'Nessun match disponibile'}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          {data.length} match trovati
-        </p>
-        <Button variant="outline" size="sm" onClick={exportToCSV}>
-          <Download className="h-4 w-4 mr-2" />
-          Esporta CSV
-        </Button>
+      {/* Filter status and results info */}
+      <div className="flex justify-between items-center text-sm text-muted-foreground">
+        <div>
+          {activeFiltersCount > 0 && (
+            <span className="bg-primary/10 text-primary px-2 py-1 rounded-md">
+              {activeFiltersCount} filtri attivi
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <span>{data.length} match trovati</span>
+          <Button variant="outline" size="sm" onClick={exportToCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Esporta CSV
+          </Button>
+        </div>
       </div>
 
       <div className="border rounded-lg overflow-hidden">

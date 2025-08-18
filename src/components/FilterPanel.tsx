@@ -151,7 +151,11 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             id="dateFrom"
             type="date"
             value={filters.dateFrom || ''}
-            onChange={(e) => handleFilterChange('dateFrom', e.target.value || undefined)}
+            onChange={(e) => {
+              const newFromDate = e.target.value || undefined;
+              handleFilterChange('dateFrom', newFromDate);
+              console.log('FilterPanel - From date changed to:', newFromDate);
+            }}
           />
         </div>
 
@@ -161,8 +165,18 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             id="dateTo"
             type="date"
             value={filters.dateTo || ''}
-            onChange={(e) => handleFilterChange('dateTo', e.target.value || undefined)}
+            min={filters.dateFrom || undefined}
+            onChange={(e) => {
+              const newToDate = e.target.value || undefined;
+              handleFilterChange('dateTo', newToDate);
+              console.log('FilterPanel - To date changed to:', newToDate);
+            }}
           />
+          {filters.dateFrom && filters.dateTo && new Date(filters.dateTo) < new Date(filters.dateFrom) && (
+            <p className="text-sm text-destructive">
+              La data "A" deve essere successiva alla data "Da"
+            </p>
+          )}
         </div>
 
         {isInstructor && (
