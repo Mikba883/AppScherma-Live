@@ -152,7 +152,14 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             id="dateFrom"
             date={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
             onDateSelect={(date) => {
-              const dateString = date ? date.toISOString().split('T')[0] : undefined;
+              if (!date) {
+                handleFilterChange('dateFrom', undefined);
+                return;
+              }
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const dateString = `${year}-${month}-${day}`;
               console.log('🗓️ FilterPanel - From date selected:', dateString);
               handleFilterChange('dateFrom', dateString);
             }}
@@ -166,7 +173,14 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             id="dateTo"
             date={filters.dateTo ? new Date(filters.dateTo) : undefined}
             onDateSelect={(date) => {
-              const dateString = date ? date.toISOString().split('T')[0] : undefined;
+              if (!date) {
+                handleFilterChange('dateTo', undefined);
+                return;
+              }
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const dateString = `${year}-${month}-${day}`;
               console.log('🗓️ FilterPanel - To date selected:', dateString);
               handleFilterChange('dateTo', dateString);
             }}
