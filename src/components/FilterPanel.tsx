@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { X, Filter } from 'lucide-react';
 import { Filters } from '@/pages/ConsultationPage';
+import { createLocalDate, formatDateForStorage } from '@/lib/date-utils';
 
 interface Athlete {
   user_id: string;
@@ -150,16 +151,13 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
           <Label htmlFor="dateFrom">Data da</Label>
           <DatePicker
             id="dateFrom"
-            date={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
+            date={filters.dateFrom ? createLocalDate(filters.dateFrom) : undefined}
             onDateSelect={(date) => {
               if (!date) {
                 handleFilterChange('dateFrom', undefined);
                 return;
               }
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const day = String(date.getDate()).padStart(2, '0');
-              const dateString = `${year}-${month}-${day}`;
+              const dateString = formatDateForStorage(date);
               console.log('🗓️ FilterPanel - From date selected:', dateString);
               handleFilterChange('dateFrom', dateString);
             }}
@@ -171,16 +169,13 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
           <Label htmlFor="dateTo">Data a</Label>
           <DatePicker
             id="dateTo"
-            date={filters.dateTo ? new Date(filters.dateTo) : undefined}
+            date={filters.dateTo ? createLocalDate(filters.dateTo) : undefined}
             onDateSelect={(date) => {
               if (!date) {
                 handleFilterChange('dateTo', undefined);
                 return;
               }
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const day = String(date.getDate()).padStart(2, '0');
-              const dateString = `${year}-${month}-${day}`;
+              const dateString = formatDateForStorage(date);
               console.log('🗓️ FilterPanel - To date selected:', dateString);
               handleFilterChange('dateTo', dateString);
             }}
