@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { X, Filter } from 'lucide-react';
 import { Filters } from '@/pages/ConsultationPage';
 
@@ -146,21 +147,16 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="dateFrom">Data da <span className="text-muted-foreground text-sm">(giorno/mese/anno)</span></Label>
-          <Input
+          <Label htmlFor="dateFrom">Data da</Label>
+          <DatePicker
             id="dateFrom"
-            type="date"
-            value={filters.dateFrom || ''}
-            onChange={(e) => {
-              const newFromDate = e.target.value || undefined;
-              console.log('🗓️ FilterPanel - From date input:', newFromDate);
-              handleFilterChange('dateFrom', newFromDate);
+            date={filters.dateFrom ? new Date(filters.dateFrom) : undefined}
+            onDateSelect={(date) => {
+              const dateString = date ? date.toISOString().split('T')[0] : undefined;
+              console.log('🗓️ FilterPanel - From date selected:', dateString);
+              handleFilterChange('dateFrom', dateString);
             }}
-            lang="it-IT"
-            style={{ 
-              colorScheme: 'light',
-              direction: 'ltr'
-            }}
+            placeholder="Seleziona data inizio"
           />
           {filters.dateFrom && (
             <p className="text-xs text-green-600">
@@ -170,22 +166,17 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="dateTo">Data a <span className="text-muted-foreground text-sm">(giorno/mese/anno)</span></Label>
-          <Input
+          <Label htmlFor="dateTo">Data a</Label>
+          <DatePicker
             id="dateTo"
-            type="date"
-            value={filters.dateTo || ''}
-            min={filters.dateFrom || undefined}
-            onChange={(e) => {
-              const newToDate = e.target.value || undefined;
-              console.log('🗓️ FilterPanel - To date input:', newToDate);
-              handleFilterChange('dateTo', newToDate);
+            date={filters.dateTo ? new Date(filters.dateTo) : undefined}
+            onDateSelect={(date) => {
+              const dateString = date ? date.toISOString().split('T')[0] : undefined;
+              console.log('🗓️ FilterPanel - To date selected:', dateString);
+              handleFilterChange('dateTo', dateString);
             }}
-            lang="it-IT"
-            style={{ 
-              colorScheme: 'light',
-              direction: 'ltr'
-            }}
+            placeholder="Seleziona data fine"
+            disabled={!filters.dateFrom}
           />
           {filters.dateTo && (
             <p className="text-xs text-green-600">
