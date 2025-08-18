@@ -7,12 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FilterPanel } from '@/components/FilterPanel';
 import { SummaryTable } from '@/components/SummaryTable';
-import { TournamentSummaryTable } from '@/components/TournamentSummaryTable';
 import { BoutsTable } from '@/components/BoutsTable';
 import { GlobalStats } from '@/components/GlobalStats';
-import { ArrowLeft, Download, Table, Users, BarChart3, Trophy } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { ArrowLeft, Table, Users, BarChart3 } from 'lucide-react';
 
 export interface Filters {
   dateFrom?: string;
@@ -30,7 +27,6 @@ const ConsultationPage = () => {
   const { user, loading } = useAuth();
   const { isInstructor, loading: roleLoading, role } = useUserRole();
   const [filters, setFilters] = useState<Filters>({});
-  const [tournamentMode, setTournamentMode] = useState(false);
 
   console.log('[ConsultationPage] State:', {
     user: !!user,
@@ -107,27 +103,8 @@ const ConsultationPage = () => {
               Personalizza la vista dei dati applicando i filtri desiderati
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <FilterPanel filters={filters} onFiltersChange={setFilters} isInstructor={isInstructor} />
-            
-            {isInstructor && (
-              <div className="border-t pt-4">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="tournament-mode" 
-                    checked={tournamentMode}
-                    onCheckedChange={setTournamentMode}
-                  />
-                  <Label htmlFor="tournament-mode" className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4" />
-                    Modalità Torneo (ogni match conteggiato una sola volta)
-                  </Label>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Attiva per calcoli corretti nelle competizioni round-robin dove A vs B e B vs A sono lo stesso match
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -160,11 +137,7 @@ const ConsultationPage = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {tournamentMode ? (
-                    <TournamentSummaryTable filters={filters} />
-                  ) : (
-                    <SummaryTable filters={filters} />
-                  )}
+                  <SummaryTable filters={filters} />
                 </CardContent>
               </Card>
             </TabsContent>
