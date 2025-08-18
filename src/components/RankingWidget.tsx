@@ -1,4 +1,4 @@
-import { Trophy, TrendingUp, Zap, Calendar } from 'lucide-react';
+import { Trophy, TrendingUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useRankings } from '@/hooks/useRankings';
@@ -65,11 +65,6 @@ export const RankingWidget = ({ customRankingData }: RankingWidgetProps = {}) =>
     return 'º';
   };
 
-  const getStreakBadgeVariant = (streak: number) => {
-    if (streak >= 4) return 'default';
-    if (streak >= 2) return 'secondary';
-    return 'outline';
-  };
 
   return (
     <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 hover:shadow-lg transition-shadow">
@@ -95,42 +90,10 @@ export const RankingWidget = ({ customRankingData }: RankingWidgetProps = {}) =>
                 <span className="text-sm font-medium text-primary">
                   {personalRanking.elo_rating} ELO
                 </span>
-                {personalRanking.frequency_streak > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Zap className="h-3 w-3 text-amber-500" />
-                    <Badge variant={getStreakBadgeVariant(personalRanking.frequency_streak)} className="text-xs">
-                      {personalRanking.frequency_streak}w streak
-                    </Badge>
-                  </div>
-                )}
               </div>
             </div>
           </div>
-          
-          {personalRanking.frequency_multiplier > 1.0 && (
-            <div className="text-right">
-              <div className="flex items-center gap-1 text-amber-600">
-                <TrendingUp className="h-4 w-4" />
-                <span className="text-sm font-semibold">
-                  +{Math.round((personalRanking.frequency_multiplier - 1) * 100)}%
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">Bonus Frequenza</p>
-            </div>
-          )}
         </div>
-        
-        {personalRanking.frequency_streak > 0 && (
-          <div className="mt-4 pt-4 border-t border-primary/20">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>Streak attiva da {personalRanking.frequency_streak} settimane</span>
-              </div>
-              <span>Moltiplicatore: x{personalRanking.frequency_multiplier.toFixed(2)}</span>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
