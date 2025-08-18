@@ -14,6 +14,21 @@ interface Athlete {
   full_name: string;
 }
 
+interface WeaponOption {
+  value: string;
+  label: string;
+}
+
+interface MatchTypeOption {
+  value: string;
+  label: string;
+}
+
+interface TurnOption {
+  value: string;
+  label: string;
+}
+
 interface FilterPanelProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
@@ -22,11 +37,15 @@ interface FilterPanelProps {
 
 export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: FilterPanelProps) => {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [availableWeapons, setAvailableWeapons] = useState<WeaponOption[]>([]);
+  const [availableMatchTypes, setAvailableMatchTypes] = useState<MatchTypeOption[]>([]);
+  const [availableTurns, setAvailableTurns] = useState<TurnOption[]>([]);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>(filters.athletes || []);
   const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchAthletes();
+    fetchAvailableOptions();
   }, []);
 
   const fetchAthletes = async () => {
@@ -43,8 +62,60 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
     }
   };
 
+  const fetchAvailableOptions = async () => {
+    try {
+      // Fetch available weapons from bouts table
+      const { data: weaponData, error: weaponError } = await supabase
+        .from('bouts')
+        .select('weapon')
+        .not('weapon', 'is', null)
+        .order('weapon');
+
+      if (!weaponError && weaponData) {
+        const uniqueWeapons = [...new Set(weaponData.map(b => b.weapon))];
+        setAvailableWeapons(uniqueWeapons.map(w => ({
+          value: w,
+          label: w === 'fioretto' ? 'Fioretto' : w === 'spada' ? 'Spada' : 'Sciabola'
+        })));
+      }
+
+      // Fetch available match types from bouts table
+      const { data: typeData, error: typeError } = await supabase
+        .from('bouts')
+        .select('bout_type')
+        .order('bout_type');
+
+      if (!typeError && typeData) {
+        const uniqueTypes = [...new Set(typeData.map(b => b.bout_type))];
+        setAvailableMatchTypes(uniqueTypes.map(t => ({
+          value: t,
+          label: t === 'sparring' ? 'Sparring' : t === 'gara' ? 'Gara' : 'Bianco'
+        })));
+      }
+
+      // Fetch available turns from profiles table
+      const { data: turnData, error: turnError } = await supabase
+        .from('profiles')
+        .select('shift')
+        .not('shift', 'is', null)
+        .order('shift');
+
+      if (!turnError && turnData) {
+        const uniqueTurns = [...new Set(turnData.map(p => p.shift))];
+        setAvailableTurns(uniqueTurns.map(t => ({
+          value: t,
+          label: `Turno ${t}`
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching available options:', error);
+    }
+  };
+
   const handleFilterChange = (key: keyof Filters, value: any) => {
-    const newFilters = { ...filters, [key]: value };
+    // If value is empty string, convert to undefined to clear the filter
+    const finalValue = value === '' ? undefined : value;
+    const newFilters = { ...filters, [key]: finalValue };
     onFiltersChange(newFilters);
   };
 
@@ -94,14 +165,14 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         {isInstructor && (
           <div className="space-y-2">
             <Label htmlFor="gender">Genere</Label>
-            <Select value={filters.gender || ''} onValueChange={(value) => handleFilterChange('gender', value || undefined)}>
+            <Select value={filters.gender || ''} onValueChange={(value) => handleFilterChange('gender', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Tutti i generi" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Tutti i generi</SelectItem>
                 <SelectItem value="M">Maschio</SelectItem>
                 <SelectItem value="F">Femmina</SelectItem>
-                <SelectItem value="X">Altro</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -109,28 +180,34 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
 
         <div className="space-y-2">
           <Label htmlFor="weapon">Arma</Label>
-          <Select value={filters.weapon || ''} onValueChange={(value) => handleFilterChange('weapon', value || undefined)}>
+          <Select value={filters.weapon || ''} onValueChange={(value) => handleFilterChange('weapon', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Tutte le armi" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="fioretto">Fioretto</SelectItem>
-              <SelectItem value="spada">Spada</SelectItem>
-              <SelectItem value="sciabola">Sciabola</SelectItem>
+              <SelectItem value="">Tutte le armi</SelectItem>
+              {availableWeapons.map((weapon) => (
+                <SelectItem key={weapon.value} value={weapon.value}>
+                  {weapon.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="tipoMatch">Tipo Match</Label>
-          <Select value={filters.tipoMatch || ''} onValueChange={(value) => handleFilterChange('tipoMatch', value || undefined)}>
+          <Select value={filters.tipoMatch || ''} onValueChange={(value) => handleFilterChange('tipoMatch', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Tutti i tipi" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="sparring">Sparring</SelectItem>
-              <SelectItem value="gara">Gara</SelectItem>
-              <SelectItem value="bianco">Bianco</SelectItem>
+              <SelectItem value="">Tutti i tipi</SelectItem>
+              {availableMatchTypes.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -138,14 +215,17 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         {isInstructor && (
           <div className="space-y-2">
             <Label htmlFor="turni">Turni</Label>
-            <Select value={filters.turni || ''} onValueChange={(value) => handleFilterChange('turni', value || undefined)}>
+            <Select value={filters.turni || ''} onValueChange={(value) => handleFilterChange('turni', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Tutti i turni" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Turno 1</SelectItem>
-                <SelectItem value="2">Turno 2</SelectItem>
-                <SelectItem value="3">Turno 3</SelectItem>
+                <SelectItem value="">Tutti i turni</SelectItem>
+                {availableTurns.map((turn) => (
+                  <SelectItem key={turn.value} value={turn.value}>
+                    {turn.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
