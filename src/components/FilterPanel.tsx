@@ -146,7 +146,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="dateFrom">Data da <span className="text-muted-foreground text-sm">(formato: gg/mm/aaaa)</span></Label>
+          <Label htmlFor="dateFrom">Data da <span className="text-muted-foreground text-sm">(giorno/mese/anno)</span></Label>
           <Input
             id="dateFrom"
             type="date"
@@ -161,13 +161,13 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
           />
           {filters.dateFrom && (
             <p className="text-xs text-green-600">
-              Data attiva: {new Date(filters.dateFrom).toLocaleDateString('it-IT')}
+              Data attiva: {filters.dateFrom.split('-').reverse().join('/')}
             </p>
           )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="dateTo">Data a <span className="text-muted-foreground text-sm">(formato: gg/mm/aaaa)</span></Label>
+          <Label htmlFor="dateTo">Data a <span className="text-muted-foreground text-sm">(giorno/mese/anno)</span></Label>
           <Input
             id="dateTo"
             type="date"
@@ -183,7 +183,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
           />
           {filters.dateTo && (
             <p className="text-xs text-green-600">
-              Data attiva: {new Date(filters.dateTo).toLocaleDateString('it-IT')}
+              Data attiva: {filters.dateTo.split('-').reverse().join('/')}
             </p>
           )}
           {filters.dateFrom && filters.dateTo && new Date(filters.dateTo) < new Date(filters.dateFrom) && (

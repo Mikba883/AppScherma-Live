@@ -67,16 +67,14 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       
       console.log('BoutsTable - Athletes filter being applied:', athletesFilter);
       
-      // Detailed date debugging
+      // Detailed date debugging - avoid timezone issues
       console.log('🗓️ BoutsTable - Date filter analysis:', {
         originalFrom: filters.dateFrom,
         originalTo: filters.dateTo,
-        fromAsDate: filters.dateFrom ? new Date(filters.dateFrom) : null,
-        toAsDate: filters.dateTo ? new Date(filters.dateTo) : null,
-        fromFormatted: filters.dateFrom ? new Date(filters.dateFrom).toISOString().split('T')[0] : null,
-        toFormatted: filters.dateTo ? new Date(filters.dateTo).toISOString().split('T')[0] : null,
-        fromItalian: filters.dateFrom ? new Date(filters.dateFrom).toLocaleDateString('it-IT') : null,
-        toItalian: filters.dateTo ? new Date(filters.dateTo).toLocaleDateString('it-IT') : null
+        fromFormatted: filters.dateFrom, // Keep as YYYY-MM-DD format
+        toFormatted: filters.dateTo,     // Keep as YYYY-MM-DD format
+        fromItalian: filters.dateFrom ? filters.dateFrom.split('-').reverse().join('/') : null,
+        toItalian: filters.dateTo ? filters.dateTo.split('-').reverse().join('/') : null
       });
 
       // Special handling for student athlete filter
