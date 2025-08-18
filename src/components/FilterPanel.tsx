@@ -235,33 +235,35 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="minAge">Età minima</Label>
-          <Input
-            id="minAge"
-            type="number"
-            min="0"
-            max="100"
-            value={filters.minAge || ''}
-            onChange={(e) => handleFilterChange('minAge', e.target.value ? parseInt(e.target.value) : undefined)}
-            placeholder="es. 18"
-          />
-        </div>
+      {isInstructor && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="minAge">Età minima</Label>
+            <Input
+              id="minAge"
+              type="number"
+              min="0"
+              max="100"
+              value={filters.minAge || ''}
+              onChange={(e) => handleFilterChange('minAge', e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder="es. 18"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="maxAge">Età massima</Label>
-          <Input
-            id="maxAge"
-            type="number"
-            min="0"
-            max="100"
-            value={filters.maxAge || ''}
-            onChange={(e) => handleFilterChange('maxAge', e.target.value ? parseInt(e.target.value) : undefined)}
-            placeholder="es. 30"
-          />
+          <div className="space-y-2">
+            <Label htmlFor="maxAge">Età massima</Label>
+            <Input
+              id="maxAge"
+              type="number"
+              min="0"
+              max="100"
+              value={filters.maxAge || ''}
+              onChange={(e) => handleFilterChange('maxAge', e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder="es. 30"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="space-y-3">
         <Label>Atleti</Label>

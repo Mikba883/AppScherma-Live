@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { Filters } from '@/pages/ConsultationPage';
+import { formatDateItalian } from '@/lib/date-utils';
 
 interface SummaryData {
   athlete_id: string;
@@ -70,7 +71,7 @@ export const SummaryTable = ({ filters }: SummaryTableProps) => {
       row.wins,
       `${(row.win_rate * 100).toFixed(1)}%`,
       row.avg_point_diff?.toFixed(1) || '0.0',
-      row.last_training ? new Date(row.last_training).toLocaleDateString('it-IT') : 'Mai'
+      formatDateItalian(row.last_training)
     ]);
 
     const csvContent = [headers, ...csvData]
@@ -91,8 +92,7 @@ export const SummaryTable = ({ filters }: SummaryTableProps) => {
     return diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1);
   };
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Mai';
-    return new Date(dateString).toLocaleDateString('it-IT');
+    return formatDateItalian(dateString);
   };
 
   if (loading) {

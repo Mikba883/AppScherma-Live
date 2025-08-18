@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Download, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Filters } from '@/pages/ConsultationPage';
+import { formatDateItalian } from '@/lib/date-utils';
 
 interface BoutData {
   id: string;
@@ -47,8 +48,23 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       console.log('BoutsTable - isInstructor:', isInstructor);
       console.log('BoutsTable - Original filters:', filters);
       
-      // For students, automatically filter to show only their matches
-      const athletesFilter = !isInstructor && user ? [user.id] : filters.athletes || null;
+      // For students: if athlete filter is applied, intersect with user's matches
+      // For instructors: use athlete filter as-is
+      let athletesFilter = null;
+      if (!isInstructor && user) {
+        // Student: if athlete filter is applied, show only matches with selected athletes
+        // Otherwise show all their matches
+        if (filters.athletes && filters.athletes.length > 0) {
+          // Include the student's ID AND the selected athletes to get intersection
+          athletesFilter = [user.id, ...filters.athletes];
+        } else {
+          // Show only student's matches
+          athletesFilter = [user.id];
+        }
+      } else if (isInstructor) {
+        // Instructor: use filter as-is
+        athletesFilter = filters.athletes || null;
+      }
       
       console.log('BoutsTable - Athletes filter being applied:', athletesFilter);
       
@@ -109,7 +125,7 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
 
     const headers = ['Data', 'Arma', 'Tipo', 'Atleta A', 'Atleta B', 'Punti A', 'Punti B', 'Vincitore'];
     const csvData = data.map(row => [
-      new Date(row.bout_date).toLocaleDateString('it-IT'),
+      formatDateItalian(row.bout_date),
       getWeaponLabel(row.weapon),
       getTypeLabel(row.bout_type),
       row.athlete_a_name,
@@ -159,7 +175,7 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('it-IT');
+    return formatDateItalian(dateString);
   };
 
   if (loading) {
