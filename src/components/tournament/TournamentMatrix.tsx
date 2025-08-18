@@ -37,19 +37,30 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
     let pointsFor = 0;
     let pointsAgainst = 0;
 
+    // Count each match only once by checking unique pairs
+    const countedMatches = new Set<string>();
+
     matches.forEach(match => {
       if ((match.athleteA === athleteId || match.athleteB === athleteId) && 
           match.scoreA !== null && match.scoreB !== null) {
-        totalMatches++;
         
-        if (match.athleteA === athleteId) {
-          pointsFor += match.scoreA;
-          pointsAgainst += match.scoreB;
-          if (match.scoreA > match.scoreB) wins++;
-        } else {
-          pointsFor += match.scoreB;
-          pointsAgainst += match.scoreA;
-          if (match.scoreB > match.scoreA) wins++;
+        // Create a unique key for this match (ordered by athlete IDs to avoid duplicates)
+        const matchKey = [match.athleteA, match.athleteB].sort().join('-');
+        
+        // Only count if we haven't already counted this match
+        if (!countedMatches.has(matchKey)) {
+          countedMatches.add(matchKey);
+          totalMatches++;
+          
+          if (match.athleteA === athleteId) {
+            pointsFor += match.scoreA;
+            pointsAgainst += match.scoreB;
+            if (match.scoreA > match.scoreB) wins++;
+          } else {
+            pointsFor += match.scoreB;
+            pointsAgainst += match.scoreA;
+            if (match.scoreB > match.scoreA) wins++;
+          }
         }
       }
     });
@@ -126,11 +137,26 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
   const rounds = generateRounds();
 
   const getCompletedMatches = () => {
-    return matches.filter(match => match.scoreA !== null && match.scoreB !== null && match.weapon !== null).length;
+    const countedMatches = new Set<string>();
+    return matches.filter(match => {
+      if (match.scoreA !== null && match.scoreB !== null && match.weapon !== null) {
+        const matchKey = [match.athleteA, match.athleteB].sort().join('-');
+        if (!countedMatches.has(matchKey)) {
+          countedMatches.add(matchKey);
+          return true;
+        }
+      }
+      return false;
+    }).length;
   };
 
   const getTotalMatches = () => {
-    return matches.length;
+    const countedMatches = new Set<string>();
+    matches.forEach(match => {
+      const matchKey = [match.athleteA, match.athleteB].sort().join('-');
+      countedMatches.add(matchKey);
+    });
+    return countedMatches.size;
   };
 
   const handleSaveResults = async () => {
