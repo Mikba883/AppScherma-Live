@@ -28,7 +28,12 @@ export const useProfile = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('[useProfile] No user found');
+      return;
+    }
+    
+    console.log('[useProfile] Fetching profile for user:', user.id);
     
     try {
       const { data, error } = await supabase
@@ -37,10 +42,16 @@ export const useProfile = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useProfile] Error fetching profile:', error);
+        throw error;
+      }
+      
+      console.log('[useProfile] Profile fetched successfully:', data);
       setProfile(data as Profile);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('[useProfile] Catch block - Error fetching profile:', error);
+      setProfile(null);
     } finally {
       setLoading(false);
     }

@@ -10,12 +10,18 @@ export const useUserRole = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[useUserRole] Effect triggered - user:', !!user, 'profile:', profile);
+    
     if (profile) {
+      console.log('[useUserRole] Profile found, role:', profile.role);
       setIsInstructor(profile.role === 'istruttore');
       setIsStudent(profile.role === 'allievo');
       setLoading(false);
     } else if (!user) {
+      console.log('[useUserRole] No user, setting loading to false');
       setLoading(false);
+    } else {
+      console.log('[useUserRole] User exists but no profile yet, keeping loading true');
     }
   }, [profile, user]);
 

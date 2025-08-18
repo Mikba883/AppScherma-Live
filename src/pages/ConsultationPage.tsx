@@ -28,24 +28,39 @@ export interface Filters {
 
 const ConsultationPage = () => {
   const { user, loading } = useAuth();
-  const { isInstructor, loading: roleLoading } = useUserRole();
+  const { isInstructor, loading: roleLoading, role } = useUserRole();
   const [filters, setFilters] = useState<Filters>({});
   const [tournamentMode, setTournamentMode] = useState(false);
 
+  console.log('[ConsultationPage] State:', {
+    user: !!user,
+    loading,
+    roleLoading,
+    isInstructor,
+    role
+  });
+
   if (loading || roleLoading) {
+    console.log('[ConsultationPage] Loading state - auth loading:', loading, 'role loading:', roleLoading);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Caricamento...</p>
+          <p className="mt-2 text-muted-foreground">
+            Caricamento... {loading && 'Auth'} {roleLoading && 'Role'}
+          </p>
         </div>
       </div>
     );
   }
 
   if (!user) {
+    console.log('[ConsultationPage] No user found, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }
+
+  // Add debug info for render
+  console.log('[ConsultationPage] Rendering page - isInstructor:', isInstructor);
 
   return (
     <div className="min-h-screen bg-background">
