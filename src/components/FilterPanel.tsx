@@ -165,12 +165,12 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         {isInstructor && (
           <div className="space-y-2">
             <Label htmlFor="gender">Genere</Label>
-            <Select value={filters.gender || ''} onValueChange={(value) => handleFilterChange('gender', value)}>
+            <Select value={filters.gender || 'all'} onValueChange={(value) => handleFilterChange('gender', value === 'all' ? undefined : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Tutti i generi" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutti i generi</SelectItem>
+                <SelectItem value="all">Tutti i generi</SelectItem>
                 <SelectItem value="M">Maschio</SelectItem>
                 <SelectItem value="F">Femmina</SelectItem>
               </SelectContent>
@@ -180,12 +180,12 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
 
         <div className="space-y-2">
           <Label htmlFor="weapon">Arma</Label>
-          <Select value={filters.weapon || ''} onValueChange={(value) => handleFilterChange('weapon', value)}>
+          <Select value={filters.weapon || 'all'} onValueChange={(value) => handleFilterChange('weapon', value === 'all' ? undefined : value)}>
             <SelectTrigger>
               <SelectValue placeholder="Tutte le armi" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutte le armi</SelectItem>
+              <SelectItem value="all">Tutte le armi</SelectItem>
               {availableWeapons.map((weapon) => (
                 <SelectItem key={weapon.value} value={weapon.value}>
                   {weapon.label}
@@ -197,12 +197,12 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
 
         <div className="space-y-2">
           <Label htmlFor="tipoMatch">Tipo Match</Label>
-          <Select value={filters.tipoMatch || ''} onValueChange={(value) => handleFilterChange('tipoMatch', value)}>
+          <Select value={filters.tipoMatch || 'all'} onValueChange={(value) => handleFilterChange('tipoMatch', value === 'all' ? undefined : value)}>
             <SelectTrigger>
               <SelectValue placeholder="Tutti i tipi" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tutti i tipi</SelectItem>
+              <SelectItem value="all">Tutti i tipi</SelectItem>
               {availableMatchTypes.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
@@ -215,12 +215,12 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         {isInstructor && (
           <div className="space-y-2">
             <Label htmlFor="turni">Turni</Label>
-            <Select value={filters.turni || ''} onValueChange={(value) => handleFilterChange('turni', value)}>
+            <Select value={filters.turni || 'all'} onValueChange={(value) => handleFilterChange('turni', value === 'all' ? undefined : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Tutti i turni" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutti i turni</SelectItem>
+                <SelectItem value="all">Tutti i turni</SelectItem>
                 {availableTurns.map((turn) => (
                   <SelectItem key={turn.value} value={turn.value}>
                     {turn.label}
