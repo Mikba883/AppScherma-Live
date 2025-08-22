@@ -75,8 +75,22 @@ const ConsultationPage = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="w-full px-6 py-6">
-          <div className="flex items-center gap-6">
+        <div className="w-full px-4 sm:px-6 py-4 sm:py-6">
+          {/* Mobile Layout - Stack vertically */}
+          <div className="flex flex-col gap-3 sm:hidden">
+            <Link to="/" className="self-start">
+              <Button variant="outline" size="sm" className="mobile-touch">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <div className="text-center">
+              <h1 className="text-xl font-bold text-primary">Consultazione</h1>
+              <p className="text-xs text-muted-foreground">Analisi dati</p>
+            </div>
+          </div>
+          
+          {/* Desktop Layout - Side by side */}
+          <div className="hidden sm:flex items-center gap-6">
             <Link to="/">
               <Button variant="outline" size="lg" className="px-6 py-3">
                 <ArrowLeft className="w-5 h-5 mr-3" />
@@ -85,7 +99,7 @@ const ConsultationPage = () => {
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-primary">Consultazione Dati</h1>
-              <p className="text-muted-foreground mobile-text">
+              <p className="text-muted-foreground">
                 Analisi dati
               </p>
             </div>
@@ -112,17 +126,20 @@ const ConsultationPage = () => {
         {isInstructor ? (
           <Tabs defaultValue="summary" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="summary" className="flex items-center gap-2">
+              <TabsTrigger value="summary" className="flex items-center gap-1 sm:gap-2">
                 <Users className="w-4 h-4" />
-                Riassunto per Atleta
+                <span className="hidden sm:inline">Riassunto per Atleta</span>
+                <span className="sm:hidden text-xs">Atleti</span>
               </TabsTrigger>
-              <TabsTrigger value="bouts" className="flex items-center gap-2">
+              <TabsTrigger value="bouts" className="flex items-center gap-1 sm:gap-2">
                 <Table className="w-4 h-4" />
-                Lista Completa Match
+                <span className="hidden sm:inline">Lista Completa Match</span>
+                <span className="sm:hidden text-xs">Match</span>
               </TabsTrigger>
-              <TabsTrigger value="stats" className="flex items-center gap-2">
+              <TabsTrigger value="stats" className="flex items-center gap-1 sm:gap-2">
                 <BarChart3 className="w-4 h-4" />
-                Statistiche Globali
+                <span className="hidden sm:inline">Statistiche Globali</span>
+                <span className="sm:hidden text-xs">Stats</span>
               </TabsTrigger>
             </TabsList>
 
