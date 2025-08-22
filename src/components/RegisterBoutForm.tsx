@@ -30,8 +30,7 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
     weapon: 'none',
     boutType: 'sparring',
     scoreA: '',
-    scoreB: '',
-    notes: ''
+    scoreB: ''
   });
 
   useEffect(() => {
@@ -104,14 +103,6 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
 
         if (error) throw error;
 
-        // Aggiorna le note se presenti
-        if (formData.notes && data) {
-          await supabase
-            .from('bouts')
-            .update({ notes: formData.notes })
-            .eq('id', data);
-        }
-
         toast({
           title: "Match registrato",
           description: "Match inserito direttamente nel sistema"
@@ -129,14 +120,6 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
 
         if (error) throw error;
 
-        // Aggiorna le note se presenti
-        if (formData.notes && data) {
-          await supabase
-            .from('bouts')
-            .update({ notes: formData.notes })
-            .eq('id', data);
-        }
-
         toast({
           title: "Match registrato",
           description: "Il match è stato inviato per approvazione all'avversario"
@@ -151,8 +134,7 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
           weapon: 'none',
           boutType: 'sparring',
           scoreA: '',
-          scoreB: '',
-          notes: ''
+          scoreB: ''
         });
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -271,18 +253,6 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
             placeholder="es. 12"
           />
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="notes">Note (opzionale)</Label>
-          <Textarea
-            id="notes"
-            placeholder="Note..."
-            value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            rows={3}
-            className="mobile-input"
-          />
       </div>
 
       <Button type="submit" disabled={loading} className="w-full mobile-button">

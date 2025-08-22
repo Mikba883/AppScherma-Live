@@ -65,6 +65,12 @@ export const InstructorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="tournament" className="space-y-6">
+          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg mobile-banner dark:bg-blue-950/30 dark:border-blue-800/30">
+            <h3 className="font-medium text-blue-800 text-sm mb-1 dark:text-blue-200">Modalità Istruttore</h3>
+            <p className="text-blue-700 text-xs mobile-text dark:text-blue-300">
+              I match vengono inseriti direttamente senza approvazione.
+            </p>
+          </div>
           <TournamentSection onTournamentStateChange={setHasUnsavedMatches} />
         </TabsContent>
       </Tabs>

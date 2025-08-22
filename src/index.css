@@ -135,4 +135,19 @@ All colors MUST be HSL.
   .mobile-button {
     @apply h-12 px-6 text-base font-medium;
   }
+  
+  /* Mobile-optimized text */
+  .mobile-text {
+    @apply text-xs sm:text-sm;
+  }
+  
+  /* Mobile touch targets */
+  .mobile-touch {
+    @apply min-h-[44px] min-w-[44px] p-2;
+  }
+  
+  /* Mobile banner optimization */
+  .mobile-banner {
+    @apply text-center sm:text-left;
+  }
 }

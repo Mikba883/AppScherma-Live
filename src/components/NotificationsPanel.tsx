@@ -377,10 +377,9 @@ export const NotificationsPanel = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => deleteNotification(notification.id)}
-                    className="ml-2"
+                    className="ml-2 mobile-touch"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Presa visione
                   </Button>
                 </div>
               </div>

@@ -85,8 +85,8 @@ const ConsultationPage = () => {
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-primary">Consultazione Dati</h1>
-              <p className="text-lg text-muted-foreground mt-1">
-                Analizza le performance del team con filtri avanzati
+              <p className="text-muted-foreground mobile-text">
+                Analisi dati
               </p>
             </div>
           </div>
