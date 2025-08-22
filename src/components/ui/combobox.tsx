@@ -50,7 +50,7 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 mobile-dropdown z-50">
         <Command>
           <CommandInput placeholder="Cerca..." />
           <CommandEmpty>{emptyText}</CommandEmpty>
@@ -59,6 +59,7 @@ export function Combobox({
               <CommandItem
                 key={option.value}
                 value={option.value}
+                className="touch-target"
                 onSelect={(currentValue) => {
                   onValueChange(currentValue === value ? "" : currentValue)
                   setOpen(false)

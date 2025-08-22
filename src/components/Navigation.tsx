@@ -8,15 +8,15 @@ export const Navigation = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="flex items-center gap-6">
+    <nav className="flex items-center gap-2 sm:gap-6">
       <Link to="/">
         <Button 
           variant={isActive('/') ? "default" : "ghost"} 
           size="default"
-          className="flex items-center gap-2 text-sm px-4"
+          className="flex items-center gap-1 sm:gap-2 text-sm px-2 sm:px-4 mobile-button sm:h-10"
         >
           <Home className="h-4 w-4" />
-          <span>Dashboard</span>
+          <span className="hidden sm:inline">Dashboard</span>
         </Button>
       </Link>
       
@@ -24,10 +24,10 @@ export const Navigation = () => {
         <Button 
           variant={isActive('/consultation') ? "secondary" : "outline"} 
           size="default"
-          className="flex items-center gap-2 text-sm px-4 font-medium"
+          className="flex items-center gap-1 sm:gap-2 text-sm px-2 sm:px-4 font-medium mobile-button sm:h-10"
         >
           <Table className="h-4 w-4" />
-          <span>Consultazione</span>
+          <span className="hidden sm:inline">Consultazione</span>
         </Button>
       </Link>
 

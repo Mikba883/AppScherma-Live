@@ -167,8 +167,8 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="mobile-form">
+      <div className="mobile-grid">
         {isInstructorMode && (
           <div className="space-y-2">
             <Label htmlFor="athleteA">Atleta A *</Label>
@@ -179,7 +179,7 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
               }))}
               value={formData.athleteA}
               onValueChange={(value) => setFormData(prev => ({ ...prev, athleteA: value }))}
-              placeholder="Cerca e seleziona primo atleta..."
+              placeholder="Atleta A..."
               emptyText="Nessun atleta trovato."
               className="w-full"
             />
@@ -197,7 +197,7 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
               }))}
             value={formData.athleteB}
             onValueChange={(value) => setFormData(prev => ({ ...prev, athleteB: value }))}
-            placeholder={isInstructorMode ? "Cerca e seleziona secondo atleta..." : "Cerca e seleziona avversario..."}
+            placeholder={isInstructorMode ? "Atleta B..." : "Avversario..."}
             emptyText="Nessun atleta trovato."
             className="w-full"
           />
@@ -217,7 +217,7 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
           <Label htmlFor="weapon">Arma</Label>
           <Select value={formData.weapon} onValueChange={(value) => setFormData(prev => ({ ...prev, weapon: value }))}>
             <SelectTrigger>
-              <SelectValue placeholder="Seleziona arma (opzionale)" />
+              <SelectValue placeholder="Arma..." />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Nessuna arma specificata</SelectItem>
@@ -275,23 +275,24 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
 
       <div className="space-y-2">
         <Label htmlFor="notes">Note (opzionale)</Label>
-        <Textarea
-          id="notes"
-          placeholder="Aggiungi eventuali note sul match..."
-          value={formData.notes}
-          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-          rows={3}
-        />
+          <Textarea
+            id="notes"
+            placeholder="Note..."
+            value={formData.notes}
+            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            rows={3}
+            className="mobile-input"
+          />
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full">
+      <Button type="submit" disabled={loading} className="w-full mobile-button">
         <Send className="h-4 w-4 mr-2" />
-        {loading ? 'Registrazione...' : 'Registra Match'}
+        {loading ? 'Invio...' : 'Registra'}
       </Button>
 
       {!isInstructorMode && (
         <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-          <p><strong>Nota:</strong> Il match sarà inviato all'avversario per approvazione. Una volta approvato, verrà incluso nelle statistiche del team.</p>
+          <p>Match da approvare dall'avversario</p>
         </div>
       )}
       

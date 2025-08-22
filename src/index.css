@@ -103,3 +103,36 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile-first touch optimizations */
+@layer components {
+  /* Ensure all interactive elements have proper touch targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Mobile-optimized dropdowns with solid backgrounds */
+  .mobile-dropdown {
+    @apply bg-popover/95 backdrop-blur-sm border border-border/50;
+  }
+  
+  /* Better spacing for mobile forms */
+  .mobile-form {
+    @apply space-y-4 p-4;
+  }
+  
+  /* Mobile-optimized grid that collapses to single column */
+  .mobile-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+  }
+  
+  /* Larger text inputs for mobile */
+  .mobile-input {
+    @apply h-12 text-base; /* Prevent zoom on iOS */
+  }
+  
+  /* Enhanced touch areas for buttons */
+  .mobile-button {
+    @apply h-12 px-6 text-base font-medium;
+  }
+}

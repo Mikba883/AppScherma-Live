@@ -179,7 +179,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
               console.log('🗓️ FilterPanel - To date selected:', dateString);
               handleFilterChange('dateTo', dateString);
             }}
-            placeholder="Seleziona data fine"
+            placeholder="Data fine"
             disabled={!filters.dateFrom}
           />
           {filters.dateFrom && filters.dateTo && new Date(filters.dateTo) < new Date(filters.dateFrom) && (
@@ -194,7 +194,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
             <Label htmlFor="gender">Genere</Label>
             <Select value={filters.gender || 'all'} onValueChange={(value) => handleFilterChange('gender', value === 'all' ? undefined : value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Tutti i generi" />
+                <SelectValue placeholder="Genere" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tutti i generi</SelectItem>
@@ -209,7 +209,7 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
           <Label htmlFor="weapon">Arma</Label>
           <Select value={filters.weapon || 'all'} onValueChange={(value) => handleFilterChange('weapon', value === 'all' ? undefined : value)}>
             <SelectTrigger>
-              <SelectValue placeholder="Tutte le armi" />
+              <SelectValue placeholder="Arma" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutte le armi</SelectItem>
