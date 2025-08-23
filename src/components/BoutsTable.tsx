@@ -48,18 +48,12 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
       console.log('BoutsTable - isInstructor:', isInstructor);
       console.log('BoutsTable - Original filters:', filters);
       
-      // For students: if athlete filter is applied, find matches against selected athletes
+      // For students: always filter to see only their own matches
       // For instructors: use athlete filter as-is
       let athletesFilter = null;
       if (!isInstructor && user) {
-        if (filters.athletes && filters.athletes.length > 0) {
-          // Student with athlete filter: show matches where user plays against selected athletes
-          // We pass only the selected opponents, the SQL will filter for matches involving the user
-          athletesFilter = filters.athletes;
-        } else {
-          // Student without filter: show all their matches
-          athletesFilter = [user.id];
-        }
+        // Student: always show only their matches
+        athletesFilter = [user.id];
       } else if (isInstructor) {
         // Instructor: use filter as-is
         athletesFilter = filters.athletes || null;
