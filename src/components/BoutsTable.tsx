@@ -71,15 +71,6 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         toItalian: filters.dateTo ? filters.dateTo.split('-').reverse().join('/') : null
       });
 
-      // Special handling for student athlete filter
-      let finalAthletesFilter = athletesFilter;
-      if (!isInstructor && user && filters.athletes && filters.athletes.length > 0) {
-        // For students, we need a different approach: 
-        // We want matches where the student participates AND the opponent is in the selected list
-        // This requires a modified query approach
-        finalAthletesFilter = [user.id, ...filters.athletes];
-      }
-
       const rpcParams = {
         _from: filters.dateFrom || null,
         _to: filters.dateTo || null,
@@ -87,7 +78,7 @@ export const BoutsTable = ({ filters }: BoutsTableProps) => {
         _min_age: filters.minAge || null,
         _max_age: filters.maxAge || null,
         _weapon: filters.weapon || null,
-        _athletes: finalAthletesFilter,
+        _athletes: athletesFilter,
         _tipo_match: filters.tipoMatch || null,
         _turni: filters.turni || null
       };
