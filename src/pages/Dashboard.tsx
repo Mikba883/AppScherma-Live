@@ -2,16 +2,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useGym } from '@/hooks/useGym';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Navigation } from '@/components/Navigation';
 import { InstructorDashboard } from '@/components/InstructorDashboard';
 import { StudentDashboard } from '@/components/StudentDashboard';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock, Building2 } from 'lucide-react';
+import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock, Building2, AlertCircle } from 'lucide-react';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const { isInstructor, isStudent, loading: roleLoading } = useUserRole();
