@@ -93,6 +93,13 @@ const CreateGymPage = () => {
       }
 
       // Create gym and user using the new function
+      console.log('Calling create_gym_and_user with:', {
+        email: formData.ownerEmail,
+        name: formData.gymName,
+        owner: formData.ownerName,
+        shifts: shifts
+      });
+
       const { data, error } = await supabase
         .rpc('create_gym_and_user', {
           _email: formData.ownerEmail,
@@ -103,7 +110,12 @@ const CreateGymPage = () => {
           _shifts: shifts
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error details:', error);
+        throw error;
+      }
+
+      console.log('Gym created successfully:', data);
 
       // Sign in the user
       const { error: signInError } = await supabase.auth.signInWithPassword({
