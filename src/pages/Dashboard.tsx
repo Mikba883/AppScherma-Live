@@ -41,7 +41,7 @@ const Dashboard = () => {
   }
 
   // Check if user has a gym assigned
-  if (profile && !profile.gym_id) {
+  if (profile && (!profile.gym_id || !gym)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="max-w-md w-full mx-4">
@@ -49,25 +49,30 @@ const Dashboard = () => {
             <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <CardTitle>Benvenuto in Fanfulla Scherma</CardTitle>
             <CardDescription>
-              Non sei ancora associato a nessuna palestra. 
-              Puoi creare una nuova palestra o attendere un invito.
+              {!profile.gym_id 
+                ? "Non sei ancora associato a nessuna palestra. Puoi creare una nuova palestra o attendere un invito."
+                : "Caricamento informazioni palestra..."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Link to="/create-gym" className="block">
-              <Button className="w-full">
-                <Building2 className="h-4 w-4 mr-2" />
-                Crea Nuova Palestra
-              </Button>
-            </Link>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={signOut}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+            {!profile.gym_id && (
+              <>
+                <Link to="/create-gym" className="block">
+                  <Button className="w-full">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Crea Nuova Palestra
+                  </Button>
+                </Link>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={signOut}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
