@@ -59,17 +59,24 @@ export const InstallPrompt = ({ alwaysShow = false }: InstallPromptProps) => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+    if (!deferredPrompt) {
+      console.log('No deferred prompt available');
+      return;
     }
-    
-    setDeferredPrompt(null);
-    setShowPrompt(false);
+
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      }
+      
+      setDeferredPrompt(null);
+      setShowPrompt(false);
+    } catch (error) {
+      console.error('Error showing install prompt:', error);
+    }
   };
 
   const handleDismiss = () => {
@@ -106,7 +113,10 @@ export const InstallPrompt = ({ alwaysShow = false }: InstallPromptProps) => {
 
   // Standard PWA install prompt
   return (
-    <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20">
+    <Card 
+      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20 cursor-pointer hover:bg-background/98 transition-colors"
+      onClick={handleInstallClick}
+    >
       <div className="flex items-start gap-3">
         <div className="p-2 bg-primary/10 rounded-lg">
           <Download className="h-5 w-5 text-primary" />
@@ -114,7 +124,7 @@ export const InstallPrompt = ({ alwaysShow = false }: InstallPromptProps) => {
         <div className="flex-1">
           <h3 className="font-semibold text-sm mb-1">Installa En Garde</h3>
           <p className="text-xs text-muted-foreground">
-            Accedi rapidamente dalla tua home screen, funziona anche offline!
+            Tocca qui per installare l'app e accedere rapidamente dalla tua home screen!
           </p>
         </div>
       </div>
