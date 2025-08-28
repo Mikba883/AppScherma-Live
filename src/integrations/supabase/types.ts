@@ -379,6 +379,17 @@ export type Database = {
         }
         Returns: string
       }
+      create_gym_and_user: {
+        Args: {
+          _email: string
+          _full_name: string
+          _gym_logo_url?: string
+          _gym_name: string
+          _password: string
+          _shifts?: string[]
+        }
+        Returns: Json
+      }
       decide_bout: {
         Args: { _bout_id: string; _decision: string }
         Returns: undefined

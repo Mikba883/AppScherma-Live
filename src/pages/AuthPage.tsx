@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Building2 } from 'lucide-react';
 
 const AuthPage = () => {
   const { user, signIn, signUp, loading, resetPassword } = useAuth();
@@ -103,13 +104,13 @@ const AuthPage = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/lovable-uploads/065820b9-0536-4c73-aef4-c9b62284abc0.png" 
-              alt="Logo Fanfulla 1874" 
-              className="h-24 w-auto"
+              src="/en-garde-logo.png" 
+              alt="En Garde Logo" 
+              className="h-20 w-auto"
             />
           </div>
           <CardTitle className="text-2xl font-bold">
-            Fanfulla Scherma
+            En Garde
           </CardTitle>
           <CardDescription>
             {isSignUp ? 'Crea il tuo account' : 'Accedi al tuo account'}
@@ -266,6 +267,15 @@ const AuthPage = () => {
                 </Button>
               </div>
             )}
+            
+            <div className="mt-6 pt-6 border-t">
+              <Link to="/create-gym">
+                <Button variant="outline" className="w-full flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Sei il proprietario? Crea la tua palestra
+                </Button>
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
