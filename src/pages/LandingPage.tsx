@@ -73,23 +73,31 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4">
+      <section className="py-24 px-4 bg-gradient-to-b from-background via-secondary/5 to-background">
         <div className="container mx-auto">
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Tutto quello che serve per la tua palestra
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Una piattaforma completa per gestire, motivare e far crescere i tuoi atleti
+            </p>
+          </div>
+          <div className="grid lg:grid-cols-3 gap-12 max-w-7xl mx-auto">
             <FeatureCard 
-              icon={<Users className="h-10 w-10" />}
-              title="Gestione Atleti"
-              description="Traccia progressi, incontri e statistiche per ogni atleta della tua palestra"
+              icon={<Users className="h-12 w-12" />}
+              title="Gestione Allenamenti"
+              description="Pianifica sessioni, traccia progressi e monitora le performance di ogni atleta con strumenti professionali"
             />
             <FeatureCard 
-              icon={<Trophy className="h-10 w-10" />}
-              title="Sistema ELO"
-              description="Classifica automatica con sistema di rating ELO per valutare le performance"
+              icon={<Trophy className="h-12 w-12" />}
+              title="Sistema Gamification"
+              description="Aumenta l'engagement con badge, classifiche e obiettivi personalizzati che motivano gli atleti a migliorare"
             />
             <FeatureCard 
-              icon={<TrendingUp className="h-10 w-10" />}
+              icon={<TrendingUp className="h-12 w-12" />}
               title="Analytics Avanzate"
-              description="Monitora l'andamento della palestra con grafici e statistiche dettagliate"
+              description="Dashboard completa con metriche dettagliate per ottimizzare gli allenamenti e monitorare la crescita"
             />
           </div>
         </div>
