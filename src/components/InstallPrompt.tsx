@@ -8,7 +8,11 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export const InstallPrompt = () => {
+interface InstallPromptProps {
+  alwaysShow?: boolean;
+}
+
+export const InstallPrompt = ({ alwaysShow = false }: InstallPromptProps) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -23,13 +27,15 @@ export const InstallPrompt = () => {
       return;
     }
 
-    // Check if prompt was recently dismissed
-    const dismissed = localStorage.getItem('installPromptDismissed');
-    if (dismissed) {
-      const dismissedTime = parseInt(dismissed);
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 7) {
-        return;
+    // Check if prompt was recently dismissed (skip if alwaysShow is true)
+    if (!alwaysShow) {
+      const dismissed = localStorage.getItem('installPromptDismissed');
+      if (dismissed) {
+        const dismissedTime = parseInt(dismissed);
+        const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+        if (daysSinceDismissed < 7) {
+          return;
+        }
       }
     }
 

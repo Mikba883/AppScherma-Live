@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { InstallPrompt } from '@/components/InstallPrompt';
 
 interface PublicLink {
   id: string;
@@ -212,6 +213,7 @@ const JoinGymPublic = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background to-muted">
+      <InstallPrompt alwaysShow />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           {gym.logo_url && (

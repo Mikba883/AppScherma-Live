@@ -8,7 +8,7 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-      <InstallPrompt />
+      <InstallPrompt alwaysShow />
       
       {/* Hero Section */}
       <section className="relative overflow-hidden">
