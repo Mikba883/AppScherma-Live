@@ -579,6 +579,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      gym_has_active_public_link: {
+        Args: { _gym_id: string }
+        Returns: boolean
+      }
       list_bouts: {
         Args: {
           _athletes?: string[]
