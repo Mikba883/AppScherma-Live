@@ -73,6 +73,28 @@ const CreateGymPage = () => {
     setLoading(true);
 
     try {
+      // First, create the user through Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.ownerEmail,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: formData.ownerName,
+            role: 'capo_palestra'
+          }
+        }
+      });
+      
+      if (authError) {
+        console.error('Error creating user:', authError);
+        throw authError;
+      }
+      
+      if (!authData.user) {
+        throw new Error('Utente non creato');
+      }
+
       let logoUrl = null;
 
       // Upload logo if provided
@@ -92,18 +114,13 @@ const CreateGymPage = () => {
         logoUrl = publicUrl;
       }
 
-      // Create gym and user using the new function
-      console.log('Calling create_gym_and_user with:', {
-        email: formData.ownerEmail,
-        name: formData.gymName,
-        owner: formData.ownerName,
-        shifts: shifts
-      });
+      console.log('Calling create_gym_and_user with user_id:', authData.user.id);
 
+      // Call the RPC function to create gym and profile
       const { data, error } = await supabase
         .rpc('create_gym_and_user', {
+          _user_id: authData.user.id,
           _email: formData.ownerEmail,
-          _password: formData.password,
           _full_name: formData.ownerName,
           _gym_name: formData.gymName,
           _gym_logo_url: logoUrl,
