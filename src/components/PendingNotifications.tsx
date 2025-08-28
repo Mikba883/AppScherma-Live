@@ -42,10 +42,19 @@ export const PendingNotifications = () => {
           ...data.map((b: PendingBout) => b.athlete_b)
         ])];
 
+        // Get current user's gym_id
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('gym_id')
+          .eq('user_id', user?.id)
+          .single();
+
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, full_name')
-          .in('user_id', athleteIds);
+          .in('user_id', athleteIds)
+          .eq('gym_id', userProfile?.gym_id);
 
         if (profilesError) throw profilesError;
 

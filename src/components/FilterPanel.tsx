@@ -86,10 +86,23 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
 
   const fetchAvailableOptions = async () => {
     try {
-      // Fetch available weapons from bouts table
+      // Get current user's gym_id first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('gym_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!userProfile?.gym_id) return;
+
+      // Fetch available weapons from bouts table (only from same gym)
       const { data: weaponData, error: weaponError } = await supabase
         .from('bouts')
         .select('weapon')
+        .eq('gym_id', userProfile.gym_id)
         .not('weapon', 'is', null)
         .neq('weapon', '') // Exclude empty strings
         .order('weapon');
@@ -102,10 +115,11 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         })));
       }
 
-      // Fetch available match types from bouts table
+      // Fetch available match types from bouts table (only from same gym)
       const { data: typeData, error: typeError } = await supabase
         .from('bouts')
         .select('bout_type')
+        .eq('gym_id', userProfile.gym_id)
         .neq('bout_type', '') // Exclude empty strings
         .order('bout_type');
 
@@ -117,10 +131,11 @@ export const FilterPanel = ({ filters, onFiltersChange, isInstructor = true }: F
         })));
       }
 
-      // Fetch available turns from profiles table
+      // Fetch available turns from profiles table (only from same gym)
       const { data: turnData, error: turnError } = await supabase
         .from('profiles')
         .select('shift')
+        .eq('gym_id', userProfile.gym_id)
         .not('shift', 'is', null)
         .neq('shift', '') // Exclude empty strings
         .order('shift');
