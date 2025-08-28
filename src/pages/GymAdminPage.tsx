@@ -7,8 +7,9 @@ import { useProfile } from '@/hooks/useProfile';
 import { Navigate, useNavigate } from 'react-router-dom';
 import GymSettings from '@/components/gym/GymSettings';
 import InviteManager from '@/components/gym/InviteManager';
-import { Settings, UserPlus, Users, AlertCircle } from 'lucide-react';
+import { Settings, UserPlus, Users, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 const GymAdminPage = () => {
   const { gym, loading: gymLoading, isOwner } = useGym();
@@ -58,6 +59,14 @@ const GymAdminPage = () => {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Torna alla Dashboard
+        </Button>
         <h1 className="text-3xl font-bold">Amministrazione Palestra</h1>
         <p className="text-muted-foreground mt-2">
           Gestisci le impostazioni e gli inviti della tua palestra
