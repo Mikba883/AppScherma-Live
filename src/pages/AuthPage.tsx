@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building2 } from 'lucide-react';
 
 const AuthPage = () => {
   const { user, signIn, signUp, loading, resetPassword } = useAuth();
+  const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -219,54 +220,61 @@ const AuthPage = () => {
           </form>
 
           <div className="mt-4 text-center space-y-2">
-            <Button
-              variant="link"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm"
-            >
-              {isSignUp 
-                ? 'Hai già un account? Accedi' 
-                : 'Non hai un account? Registrati'
-              }
-            </Button>
-            
-            {!isSignUp && (
-              <div>
+            {isSignUp ? (
+              <Button
+                variant="link"
+                onClick={() => setIsSignUp(false)}
+                className="text-sm"
+              >
+                Hai già un account? Accedi
+              </Button>
+            ) : (
+              <>
                 <Button
                   variant="link"
-                  onClick={async () => {
-                    if (!formData.email) {
-                      toast({
-                        title: "Inserisci email",
-                        description: "Inserisci la tua email per il reset password",
-                        variant: "destructive"
-                      });
-                      return;
-                    }
-
-                    setIsResetting(true);
-                    const { error } = await resetPassword(formData.email);
-                    setIsResetting(false);
-
-                    if (error) {
-                      toast({
-                        title: "Errore",
-                        description: "Errore durante l'invio dell'email di reset",
-                        variant: "destructive"
-                      });
-                    } else {
-                      toast({
-                        title: "Email inviata",
-                        description: "Controlla la tua email per le istruzioni di reset password"
-                      });
-                    }
-                  }}
-                  className="text-xs text-muted-foreground"
-                  disabled={isResetting}
+                  onClick={() => navigate('/')}
+                  className="text-sm"
                 >
-                  {isResetting ? "Invio..." : "Password dimenticata?"}
+                  Torna alla Home
                 </Button>
-              </div>
+                
+                <div>
+                  <Button
+                    variant="link"
+                    onClick={async () => {
+                      if (!formData.email) {
+                        toast({
+                          title: "Inserisci email",
+                          description: "Inserisci la tua email per il reset password",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+
+                      setIsResetting(true);
+                      const { error } = await resetPassword(formData.email);
+                      setIsResetting(false);
+
+                      if (error) {
+                        toast({
+                          title: "Errore",
+                          description: "Errore durante l'invio dell'email di reset",
+                          variant: "destructive"
+                        });
+                      } else {
+                        toast({
+                          title: "Email inviata",
+                          description: "Controlla la tua email per le istruzioni di reset password"
+                        });
+                      }
+                    }}
+                    className="text-xs text-muted-foreground"
+                    disabled={isResetting}
+                  >
+                    {isResetting ? "Invio..." : "Password dimenticata?"}
+                  </Button>
+                </div>
+              </>
             )}
           </div>
         </CardContent>
