@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { useGym } from '@/hooks/useGym';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, Check, X, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ interface Invitation {
 
 const InviteManager = () => {
   const { gym } = useGym();
+  const { profile } = useProfile();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -76,13 +78,32 @@ const InviteManager = () => {
 
       if (error) throw error;
 
-      // Send invitation email (placeholder - would need edge function)
-      const inviteUrl = `${window.location.origin}/join-gym/${token}`;
+      // Send invitation email
+      const inviteUrl = `${window.location.origin}/accept-invitation/${token}`;
       
-      toast({
-        title: 'Invito creato con successo',
-        description: `Un invito è stato creato per ${formData.email}. Link: ${inviteUrl}`,
+      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          email: formData.email,
+          gymName: gym.name,
+          inviterName: profile?.full_name || 'Il capo palestra',
+          inviteLink: inviteUrl,
+          role: formData.role,
+        },
       });
+
+      if (emailError) {
+        console.error('Error sending email:', emailError);
+        toast({
+          title: 'Invito creato',
+          description: `L'invito è stato creato ma l'email non è stata inviata. Link: ${inviteUrl}`,
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'Invito inviato!',
+          description: `Un invito è stato inviato a ${formData.email}`,
+        });
+      }
 
       // Reset form
       setFormData({ email: '', role: 'allievo' });
