@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, Plus, X, Eye, EyeOff } from 'lucide-react';
+import { Upload, Plus, X, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const CreateGymPage = () => {
   const navigate = useNavigate();
@@ -165,11 +165,17 @@ const CreateGymPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
-          <img 
-            src="/en-garde-logo.png" 
-            alt="En Garde Logo" 
-            className="h-16 w-auto mx-auto mb-4"
-          />
+          <div className="flex items-center justify-between mb-4">
+            <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <img 
+              src="/en-garde-logo.png" 
+              alt="En Garde Logo" 
+              className="h-16 w-auto"
+            />
+            <div className="w-5" /> {/* Spacer for centering */}
+          </div>
           <CardTitle className="text-2xl">Crea la tua Palestra</CardTitle>
           <CardDescription>
             Registrati e crea la tua palestra di scherma su En Garde
@@ -323,19 +329,9 @@ const CreateGymPage = () => {
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/auth')}
-                disabled={loading}
-              >
-                Ho già un account
-              </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
-                {loading ? 'Creazione in corso...' : 'Crea Palestra e Registrati'}
-              </Button>
-            </div>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Creazione in corso...' : 'Crea Palestra e Registrati'}
+            </Button>
           </form>
         </CardContent>
       </Card>

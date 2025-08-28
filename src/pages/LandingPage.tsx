@@ -43,21 +43,21 @@ const LandingPage = () => {
             </div>
 
             {/* Secondary Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8">
               <Button 
                 variant="outline" 
                 size="lg"
                 onClick={() => navigate('/auth')}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto min-w-[200px]"
               >
                 Accedi come Atleta
               </Button>
-              <span className="text-muted-foreground">o</span>
+              <span className="text-muted-foreground hidden sm:inline">oppure</span>
               <Button 
                 variant="outline" 
                 size="lg"
                 onClick={() => navigate('/auth')}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto min-w-[200px]"
               >
                 Accedi come Istruttore
               </Button>

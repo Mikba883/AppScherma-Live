@@ -267,15 +267,6 @@ const AuthPage = () => {
                 </Button>
               </div>
             )}
-            
-            <div className="mt-6 pt-6 border-t">
-              <Link to="/create-gym">
-                <Button variant="outline" className="w-full flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Sei il proprietario? Crea la tua palestra
-                </Button>
-              </Link>
-            </div>
           </div>
         </CardContent>
       </Card>
