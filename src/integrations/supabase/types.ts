@@ -446,6 +446,10 @@ export type Database = {
           ranking_position: number
         }[]
       }
+      get_user_gym_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       list_bouts: {
         Args: {
           _athletes?: string[]
