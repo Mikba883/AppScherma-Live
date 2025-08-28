@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,7 @@ interface RegisterBoutFormProps {
 
 export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormProps) => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -34,18 +36,19 @@ export const RegisterBoutForm = ({ isInstructorMode = false }: RegisterBoutFormP
   });
 
   useEffect(() => {
-    if (user) {
+    if (user && profile?.gym_id) {
       fetchAthletes();
     }
-  }, [user]);
+  }, [user, profile?.gym_id]);
 
   const fetchAthletes = async () => {
-    if (!user) return;
+    if (!user || !profile?.gym_id) return;
 
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, full_name')
+        .eq('gym_id', profile.gym_id)
         .eq('role', 'allievo')
         .order('full_name');
 

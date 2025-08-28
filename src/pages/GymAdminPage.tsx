@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGym } from '@/hooks/useGym';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Navigate } from 'react-router-dom';
+import { useProfile } from '@/hooks/useProfile';
+import { Navigate, useNavigate } from 'react-router-dom';
 import GymSettings from '@/components/gym/GymSettings';
 import InviteManager from '@/components/gym/InviteManager';
-import { Settings, UserPlus, Users } from 'lucide-react';
+import { Settings, UserPlus, Users, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const GymAdminPage = () => {
-  const { gym, loading: gymLoading } = useGym();
+  const { gym, loading: gymLoading, isOwner } = useGym();
+  const { profile } = useProfile();
   const { isGymOwner, loading: roleLoading } = useUserRole();
+  const navigate = useNavigate();
 
   if (gymLoading || roleLoading) {
     return (
@@ -23,8 +27,32 @@ const GymAdminPage = () => {
     );
   }
 
-  if (!isGymOwner) {
-    return <Navigate to="/" replace />;
+  // Check if user has a gym
+  if (!profile?.gym_id) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Non sei associato a nessuna palestra. Devi prima creare o unirti a una palestra.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Check if user is the owner
+  if (!isOwner) {
+    return (
+      <div className="container mx-auto py-8">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Solo il proprietario della palestra può accedere a questa pagina.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
