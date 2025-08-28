@@ -1,7 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useGym } from '@/hooks/useGym';
+import { useProfileQuery } from '@/hooks/useProfileQuery';
+import { useGymQuery } from '@/hooks/useGymQuery';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,30 +9,26 @@ import { InstructorDashboard } from '@/components/InstructorDashboard';
 import { StudentDashboard } from '@/components/StudentDashboard';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock, Building2, AlertCircle } from 'lucide-react';
+import { DashboardSkeleton } from '@/components/LoadingSkeleton';
+import { useMemo } from 'react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
-  const { isInstructor, isStudent, loading: roleLoading } = useUserRole();
-  const { gym, loading: gymLoading } = useGym();
+  const { profile, loading: profileLoading } = useProfileQuery();
+  const { gym, loading: gymLoading } = useGymQuery();
+  
+  // Derive user role from profile
+  const isInstructor = useMemo(() => {
+    return profile?.role === 'istruttore' || profile?.role === 'capo_palestra';
+  }, [profile]);
+  
+  const isStudent = useMemo(() => {
+    return profile?.role === 'allievo';
+  }, [profile]);
 
-  // Debug logging
-  console.log('Dashboard - User:', user?.id);
-  console.log('Dashboard - Profile:', profile);
-  console.log('Dashboard - isInstructor:', isInstructor);
-  console.log('Dashboard - isStudent:', isStudent);
-  console.log('Dashboard - Loading states:', { authLoading, profileLoading, roleLoading });
-
-  if (authLoading || profileLoading || roleLoading || gymLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Caricamento...</p>
-        </div>
-      </div>
-    );
+  if (authLoading || profileLoading || gymLoading) {
+    return <DashboardSkeleton />;
   }
 
   if (!user) {

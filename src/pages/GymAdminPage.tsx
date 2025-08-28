@@ -1,31 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useGym } from '@/hooks/useGym';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useProfile } from '@/hooks/useProfile';
+import { useGymQuery } from '@/hooks/useGymQuery';
+import { useProfileQuery } from '@/hooks/useProfileQuery';
 import { Navigate, useNavigate } from 'react-router-dom';
-import GymSettings from '@/components/gym/GymSettings';
+import { GymSettingsOptimized } from '@/components/gym/GymSettingsOptimized';
 import InviteManager from '@/components/gym/InviteManager';
 import { Settings, UserPlus, Users, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { DashboardSkeleton } from '@/components/LoadingSkeleton';
 
 const GymAdminPage = () => {
-  const { gym, loading: gymLoading, isOwner } = useGym();
-  const { profile } = useProfile();
-  const { isGymOwner, loading: roleLoading } = useUserRole();
+  const { gym, loading: gymLoading, isOwner } = useGymQuery();
+  const { profile, loading: profileLoading } = useProfileQuery();
   const navigate = useNavigate();
 
-  if (gymLoading || roleLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Caricamento...</p>
-        </div>
-      </div>
-    );
+  if (gymLoading || profileLoading) {
+    return <DashboardSkeleton />;
   }
 
   // Check if user has a gym
@@ -108,7 +100,7 @@ const GymAdminPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <GymSettings />
+              <GymSettingsOptimized />
             </CardContent>
           </Card>
         </TabsContent>
