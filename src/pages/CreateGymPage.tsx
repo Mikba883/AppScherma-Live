@@ -170,7 +170,7 @@ const CreateGymPage = () => {
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <img 
-              src="/en-garde-logo.png" 
+              src="https://topkzcumjilaxbprufyo.supabase.co/storage/v1/object/public/gym-logos/ChatGPT%20Image%2028%20ago%202025,%2007_37_57.png" 
               alt="En Garde Logo" 
               className="h-16 w-auto"
             />

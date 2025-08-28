@@ -105,7 +105,7 @@ const AuthPage = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/en-garde-logo.png" 
+              src="https://topkzcumjilaxbprufyo.supabase.co/storage/v1/object/public/gym-logos/ChatGPT%20Image%2028%20ago%202025,%2007_37_57.png" 
               alt="En Garde Logo" 
               className="h-20 w-auto"
             />

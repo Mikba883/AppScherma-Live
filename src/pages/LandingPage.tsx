@@ -14,7 +14,7 @@ const LandingPage = () => {
             {/* Logo and Title */}
             <div className="flex justify-center mb-6">
               <img 
-                src="/en-garde-logo.png" 
+                src="https://topkzcumjilaxbprufyo.supabase.co/storage/v1/object/public/gym-logos/ChatGPT%20Image%2028%20ago%202025,%2007_37_57.png" 
                 alt="En Garde" 
                 className="h-32 w-auto object-contain"
               />
