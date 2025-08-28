@@ -23,6 +23,7 @@ interface Gym {
   name: string;
   logo_url: string | null;
   owner_name: string;
+  shifts?: string[] | null;
 }
 
 const JoinGymPublic = () => {
@@ -34,6 +35,7 @@ const JoinGymPublic = () => {
   const [submitting, setSubmitting] = useState(false);
   const [publicLink, setPublicLink] = useState<PublicLink | null>(null);
   const [gym, setGym] = useState<Gym | null>(null);
+  const [gymShifts, setGymShifts] = useState<string[]>([]);
   
   // Form fields
   const [email, setEmail] = useState('');
@@ -88,7 +90,7 @@ const JoinGymPublic = () => {
       // Fetch gym details
       const { data: gymData, error: gymError } = await supabase
         .from('gyms')
-        .select('id, name, logo_url, owner_name')
+        .select('id, name, logo_url, owner_name, shifts')
         .eq('id', linkData.gym_id)
         .single();
 
@@ -103,6 +105,10 @@ const JoinGymPublic = () => {
       }
 
       setGym(gymData);
+      // Set gym shifts if available
+      if (gymData.shifts && gymData.shifts.length > 0) {
+        setGymShifts(gymData.shifts);
+      }
     } catch (error) {
       console.error('Error fetching public link:', error);
       toast({
@@ -284,20 +290,21 @@ const JoinGymPublic = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="shift">Turno (opzionale)</Label>
-              <Select value={shift} onValueChange={setShift}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona turno (opzionale)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mattina">Mattina</SelectItem>
-                  <SelectItem value="pomeriggio">Pomeriggio</SelectItem>
-                  <SelectItem value="sera">Sera</SelectItem>
-                  <SelectItem value="infrasettimanale">Infrasettimanale</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {gymShifts.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="shift">Turno</Label>
+                <Select value={shift} onValueChange={setShift}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona turno" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {gymShifts.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <Alert>
               <Users className="h-4 w-4" />
