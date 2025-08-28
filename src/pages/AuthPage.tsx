@@ -199,9 +199,10 @@ const AuthPage = () => {
                       <SelectValue placeholder="Seleziona turno (opzionale)" />
                     </SelectTrigger>
                     <SelectContent className="min-w-full">
-                      <SelectItem value="1">Turno 1</SelectItem>
-                      <SelectItem value="2">Turno 2</SelectItem>
-                      <SelectItem value="3">Turno 3</SelectItem>
+                      <SelectItem value="mattina">Mattina</SelectItem>
+                      <SelectItem value="pomeriggio">Pomeriggio</SelectItem>
+                      <SelectItem value="sera">Sera</SelectItem>
+                      <SelectItem value="infrasettimanale">Infrasettimanale</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

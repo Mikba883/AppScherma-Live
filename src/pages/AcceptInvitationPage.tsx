@@ -23,7 +23,7 @@ export default function AcceptInvitationPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [gender, setGender] = useState<'M' | 'F' | 'X'>('M');
+  const [gender, setGender] = useState<'M' | 'F'>('M');
   const [shift, setShift] = useState('');
 
   useEffect(() => {
@@ -257,14 +257,13 @@ export default function AcceptInvitationPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="gender">Genere</Label>
-                    <Select value={gender} onValueChange={(value: 'M' | 'F' | 'X') => setGender(value)}>
+                    <Select value={gender} onValueChange={(value: 'M' | 'F') => setGender(value)}>
                       <SelectTrigger id="gender">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="M">Maschio</SelectItem>
                         <SelectItem value="F">Femmina</SelectItem>
-                        <SelectItem value="X">Altro</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

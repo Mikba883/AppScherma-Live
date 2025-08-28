@@ -40,7 +40,7 @@ const JoinGymPublic = () => {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [gender, setGender] = useState<'M' | 'F' | 'X'>('M');
+  const [gender, setGender] = useState<'M' | 'F'>('M');
   const [shift, setShift] = useState('');
 
   useEffect(() => {
@@ -273,27 +273,30 @@ const JoinGymPublic = () => {
 
             <div className="space-y-2">
               <Label htmlFor="gender">Genere</Label>
-              <Select value={gender} onValueChange={(value: 'M' | 'F' | 'X') => setGender(value)}>
+              <Select value={gender} onValueChange={(value: 'M' | 'F') => setGender(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleziona genere" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="M">Maschio</SelectItem>
                   <SelectItem value="F">Femmina</SelectItem>
-                  <SelectItem value="X">Altro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="shift">Turno (opzionale)</Label>
-              <Input
-                id="shift"
-                type="text"
-                value={shift}
-                onChange={(e) => setShift(e.target.value)}
-                placeholder="Es: Martedì e Giovedì 19:00"
-              />
+              <Select value={shift} onValueChange={setShift}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona turno (opzionale)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mattina">Mattina</SelectItem>
+                  <SelectItem value="pomeriggio">Pomeriggio</SelectItem>
+                  <SelectItem value="sera">Sera</SelectItem>
+                  <SelectItem value="infrasettimanale">Infrasettimanale</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Alert>
