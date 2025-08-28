@@ -73,17 +73,17 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 sm:py-20 md:py-28 lg:py-40 xl:py-48 px-4 bg-gradient-to-b from-background via-secondary/5 to-background">
-        <div className="container mx-auto">
+      <section className="py-16 sm:py-20 md:py-28 lg:py-40 xl:py-48 px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-20 bg-gradient-to-b from-background via-secondary/5 to-background">
+        <div className="w-full">
           <div className="text-center mb-12 sm:mb-16 lg:mb-24 xl:mb-32">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 lg:mb-8">
               Tutto quello che serve per la tua palestra
             </h2>
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto px-4">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto px-4">
               Una piattaforma completa per gestire, motivare e far crescere i tuoi atleti
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-16 xl:gap-20 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 xl:gap-16 2xl:gap-24 max-w-full lg:max-w-screen-xl xl:max-w-screen-2xl 2xl:max-w-full mx-auto">
             <FeatureCard 
               icon={<Users className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 xl:h-20 xl:w-20" />}
               title="Gestione Allenamenti"
