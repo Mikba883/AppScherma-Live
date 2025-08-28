@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -91,6 +92,14 @@ export const InstallPrompt = ({ alwaysShow = false }: InstallPromptProps) => {
   if (isIOS) {
     return (
       <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20">
+        <Button
+          onClick={handleDismiss}
+          size="icon"
+          variant="ghost"
+          className="absolute top-2 right-2 h-6 w-6"
+        >
+          <X className="h-4 w-4" />
+        </Button>
         <div className="flex items-start gap-3">
           <div className="p-2 bg-primary/10 rounded-lg">
             <Download className="h-5 w-5 text-primary" />
@@ -113,19 +122,31 @@ export const InstallPrompt = ({ alwaysShow = false }: InstallPromptProps) => {
 
   // Standard PWA install prompt
   return (
-    <Card 
-      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20 cursor-pointer hover:bg-background/98 transition-colors"
-      onClick={handleInstallClick}
-    >
+    <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20">
+      <Button
+        onClick={handleDismiss}
+        size="icon"
+        variant="ghost"
+        className="absolute top-2 right-2 h-6 w-6"
+      >
+        <X className="h-4 w-4" />
+      </Button>
       <div className="flex items-start gap-3">
         <div className="p-2 bg-primary/10 rounded-lg">
           <Download className="h-5 w-5 text-primary" />
         </div>
         <div className="flex-1">
           <h3 className="font-semibold text-sm mb-1">Installa En Garde</h3>
-          <p className="text-xs text-muted-foreground">
-            Tocca qui per installare l'app e accedere rapidamente dalla tua home screen!
+          <p className="text-xs text-muted-foreground mb-3">
+            Accedi rapidamente dalla tua home screen con funzionalità offline!
           </p>
+          <Button 
+            onClick={handleInstallClick}
+            size="sm"
+            className="w-full"
+          >
+            Installa App
+          </Button>
         </div>
       </div>
     </Card>
