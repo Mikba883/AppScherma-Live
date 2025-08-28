@@ -30,9 +30,31 @@ export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => 
 
   const fetchAthletes = async () => {
     try {
+      // Get current user's gym_id first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setAthletes([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('gym_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!userProfile?.gym_id) {
+        setAthletes([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch only athletes from the same gym
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, full_name, shift')
+        .eq('gym_id', userProfile.gym_id)
         .order('full_name');
 
       if (error) throw error;

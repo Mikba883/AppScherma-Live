@@ -41,10 +41,45 @@ export const GlobalStats = ({ filters }: GlobalStatsProps) => {
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
       const oneMonthAgoStr = oneMonthAgo.toISOString().split('T')[0];
 
-      // 1. Totale utenti registrati (con filtri demografici)
+      // Get current user's gym_id first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setStats({
+          totalUsers: 0,
+          activeUsers: 0,
+          totalMatches: 0,
+          genderStats: [],
+          ageGroupStats: [],
+          shiftStats: []
+        });
+        setLoading(false);
+        return;
+      }
+
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('gym_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!userProfile?.gym_id) {
+        setStats({
+          totalUsers: 0,
+          activeUsers: 0,
+          totalMatches: 0,
+          genderStats: [],
+          ageGroupStats: [],
+          shiftStats: []
+        });
+        setLoading(false);
+        return;
+      }
+
+      // 1. Totale utenti registrati (con filtri demografici) - solo della stessa palestra
       let profilesQuery = supabase
         .from('profiles')
-        .select('user_id, gender, birth_date, shift');
+        .select('user_id, gender, birth_date, shift')
+        .eq('gym_id', userProfile.gym_id);
 
       if (filters.gender) {
         profilesQuery = profilesQuery.eq('gender', filters.gender);
