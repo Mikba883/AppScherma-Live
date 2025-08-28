@@ -9,6 +9,7 @@ import ChangePasswordPage from "./pages/ChangePasswordPage";
 import ConsultationPage from "./pages/ConsultationPage";
 import CreateGymPage from "./pages/CreateGymPage";
 import GymAdminPage from "./pages/GymAdminPage";
+import JoinGymPage from "./pages/JoinGymPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,9 @@ const App = () => (
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/change-password" element={<ChangePasswordPage />} />
           <Route path="/consultation" element={<ConsultationPage />} />
+          <Route path="/create-gym" element={<CreateGymPage />} />
+          <Route path="/gym-admin" element={<GymAdminPage />} />
+          <Route path="/join-gym/:token" element={<JoinGymPage />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

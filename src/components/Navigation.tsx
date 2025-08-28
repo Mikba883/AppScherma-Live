@@ -1,9 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Table, Home } from 'lucide-react';
+import { Table, Home, Building2, Settings } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export const Navigation = () => {
   const location = useLocation();
+  const { isGymOwner } = useUserRole();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -30,6 +32,19 @@ export const Navigation = () => {
           <span className="hidden sm:inline">Consultazione</span>
         </Button>
       </Link>
+
+      {isGymOwner && (
+        <Link to="/gym-admin">
+          <Button 
+            variant={isActive('/gym-admin') ? "secondary" : "outline"} 
+            size="default"
+            className="flex items-center gap-1 sm:gap-2 text-sm px-2 sm:px-4 font-medium mobile-button sm:h-10"
+          >
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Gestione Palestra</span>
+          </Button>
+        </Link>
+      )}
 
     </nav>
   );
