@@ -7,7 +7,8 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import ConsultationPage from "./pages/ConsultationPage";
-
+import CreateGymPage from "./pages/CreateGymPage";
+import GymAdminPage from "./pages/GymAdminPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

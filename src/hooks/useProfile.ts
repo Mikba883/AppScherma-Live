@@ -7,9 +7,10 @@ export interface Profile {
   full_name: string;
   birth_date: string;
   gender: 'M' | 'F' | 'X';
-  role: 'allievo' | 'istruttore';
+  role: 'allievo' | 'istruttore' | 'capo_palestra';
   email?: string;
   shift?: string;
+  gym_id?: string;
   created_at: string;
 }
 

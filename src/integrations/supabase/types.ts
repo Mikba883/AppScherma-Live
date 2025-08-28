@@ -19,6 +19,7 @@ export type Database = {
           activity_points: number
           athlete_id: string
           created_at: string | null
+          gym_id: string | null
           id: string
           matches_count: number
           week_start: string
@@ -27,6 +28,7 @@ export type Database = {
           activity_points?: number
           athlete_id: string
           created_at?: string | null
+          gym_id?: string | null
           id?: string
           matches_count?: number
           week_start: string
@@ -35,6 +37,7 @@ export type Database = {
           activity_points?: number
           athlete_id?: string
           created_at?: string | null
+          gym_id?: string | null
           id?: string
           matches_count?: number
           week_start?: string
@@ -51,6 +54,7 @@ export type Database = {
           bout_type: string
           created_at: string | null
           created_by: string
+          gym_id: string | null
           id: string
           notes: string | null
           rejected_at: string | null
@@ -69,6 +73,7 @@ export type Database = {
           bout_type?: string
           created_at?: string | null
           created_by: string
+          gym_id?: string | null
           id?: string
           notes?: string | null
           rejected_at?: string | null
@@ -87,6 +92,7 @@ export type Database = {
           bout_type?: string
           created_at?: string | null
           created_by?: string
+          gym_id?: string | null
           id?: string
           notes?: string | null
           rejected_at?: string | null
@@ -134,11 +140,95 @@ export type Database = {
           },
         ]
       }
+      gym_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          created_by: string
+          email: string
+          expires_at: string
+          gym_id: string
+          id: string
+          role: string
+          status: string | null
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          created_by: string
+          email: string
+          expires_at?: string
+          gym_id: string
+          id?: string
+          role: string
+          status?: string | null
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          created_by?: string
+          email?: string
+          expires_at?: string
+          gym_id?: string
+          id?: string
+          role?: string
+          status?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_invitations_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gyms: {
+        Row: {
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_email: string
+          owner_id: string
+          owner_name: string
+          shifts: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          owner_email: string
+          owner_id: string
+          owner_name: string
+          shifts?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          owner_email?: string
+          owner_id?: string
+          owner_name?: string
+          shifts?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           athlete_id: string
           created_at: string
           created_by: string | null
+          gym_id: string | null
           id: string
           message: string
           read: boolean
@@ -150,6 +240,7 @@ export type Database = {
           athlete_id: string
           created_at?: string
           created_by?: string | null
+          gym_id?: string | null
           id?: string
           message: string
           read?: boolean
@@ -161,6 +252,7 @@ export type Database = {
           athlete_id?: string
           created_at?: string
           created_by?: string | null
+          gym_id?: string | null
           id?: string
           message?: string
           read?: boolean
@@ -177,6 +269,7 @@ export type Database = {
           email: string | null
           full_name: string
           gender: string
+          gym_id: string | null
           role: string
           shift: string | null
           user_id: string
@@ -187,6 +280,7 @@ export type Database = {
           email?: string | null
           full_name: string
           gender: string
+          gym_id?: string | null
           role?: string
           shift?: string | null
           user_id: string
@@ -197,11 +291,20 @@ export type Database = {
           email?: string | null
           full_name?: string
           gender?: string
+          gym_id?: string | null
           role?: string
           shift?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rankings: {
         Row: {
@@ -211,6 +314,7 @@ export type Database = {
           elo_rating: number
           frequency_multiplier: number
           frequency_streak: number
+          gym_id: string | null
           last_activity_date: string | null
           last_updated: string | null
           matches_played: number
@@ -225,6 +329,7 @@ export type Database = {
           elo_rating?: number
           frequency_multiplier?: number
           frequency_streak?: number
+          gym_id?: string | null
           last_activity_date?: string | null
           last_updated?: string | null
           matches_played?: number
@@ -239,6 +344,7 @@ export type Database = {
           elo_rating?: number
           frequency_multiplier?: number
           frequency_streak?: number
+          gym_id?: string | null
           last_activity_date?: string | null
           last_updated?: string | null
           matches_played?: number
@@ -262,6 +368,16 @@ export type Database = {
           _player_won: boolean
         }
         Returns: number
+      }
+      create_gym: {
+        Args: {
+          _logo_url: string
+          _name: string
+          _owner_email: string
+          _owner_name: string
+          _shifts: string[]
+        }
+        Returns: string
       }
       decide_bout: {
         Args: { _bout_id: string; _decision: string }
