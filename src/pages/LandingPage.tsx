@@ -1,100 +1,116 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Swords, Shield, Trophy, Users } from 'lucide-react';
+import { Swords, Users, TrendingUp, Trophy } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       {/* Hero Section */}
-      <div className="relative isolate px-6 pt-14 lg:px-8">
-        <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
-          <div className="text-center">
-            <img 
-              src="/en-garde-logo.png" 
-              alt="En Garde" 
-              className="mx-auto h-24 w-auto mb-8"
-            />
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-              En Garde
+      <section className="relative overflow-hidden">
+        <div className="container mx-auto px-4 py-16 sm:py-24">
+          <div className="text-center space-y-8">
+            {/* Logo and Title */}
+            <div className="flex justify-center mb-6">
+              <img 
+                src="/en-garde-logo.png" 
+                alt="En Garde" 
+                className="h-32 w-auto object-contain"
+              />
+            </div>
+            
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight">
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                En Garde
+              </span>
             </h1>
-            <p className="mt-6 text-lg leading-8 text-muted-foreground">
-              Il sistema di gestione completo per la tua palestra di scherma. 
-              Traccia incontri, monitora progressi e gestisci i tuoi atleti con facilità.
+            
+            <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto">
+              Il sistema di gestione completo per la tua palestra di scherma
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Button
-                size="lg"
+
+            {/* Main CTA */}
+            <div className="pt-8">
+              <Button 
+                size="lg" 
+                className="text-lg px-8 py-6 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                 onClick={() => navigate('/create-gym')}
-                className="text-lg px-8 py-6"
               >
                 <Swords className="mr-2 h-5 w-5" />
                 Registra la tua Palestra
               </Button>
-              <Button
-                variant="outline"
+            </div>
+
+            {/* Secondary Actions */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+              <Button 
+                variant="outline" 
                 size="lg"
                 onClick={() => navigate('/auth')}
-                className="text-lg px-8 py-6"
+                className="w-full sm:w-auto"
               >
-                Accedi
+                Accedi come Atleta
+              </Button>
+              <span className="text-muted-foreground">o</span>
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => navigate('/auth')}
+                className="w-full sm:w-auto"
+              >
+                Accedi come Istruttore
               </Button>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute left-[50%] top-0 h-[500px] w-[500px] -translate-x-[50%] rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute right-[20%] top-[20%] h-[300px] w-[300px] rounded-full bg-primary/10 blur-2xl" />
+        </div>
+      </section>
 
       {/* Features Section */}
-      <div className="py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl lg:text-center">
-            <h2 className="text-base font-semibold leading-7 text-primary">
-              Tutto ciò che serve
-            </h2>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Gestione completa per palestre di scherma
-            </p>
-          </div>
-          <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-            <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
-              <div className="flex flex-col">
-                <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-foreground">
-                  <Trophy className="h-5 w-5 flex-none text-primary" />
-                  Tracciamento Incontri
-                </dt>
-                <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-muted-foreground">
-                  <p className="flex-auto">
-                    Registra e monitora tutti gli incontri di sparring e gara dei tuoi atleti.
-                  </p>
-                </dd>
-              </div>
-              <div className="flex flex-col">
-                <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-foreground">
-                  <Shield className="h-5 w-5 flex-none text-primary" />
-                  Sistema ELO
-                </dt>
-                <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-muted-foreground">
-                  <p className="flex-auto">
-                    Classifica automatica degli atleti basata sulle performance con sistema ELO avanzato.
-                  </p>
-                </dd>
-              </div>
-              <div className="flex flex-col">
-                <dt className="flex items-center gap-x-3 text-base font-semibold leading-7 text-foreground">
-                  <Users className="h-5 w-5 flex-none text-primary" />
-                  Gestione Atleti
-                </dt>
-                <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-muted-foreground">
-                  <p className="flex-auto">
-                    Organizza atleti per turni, monitora progressi e gestisci tornei interni.
-                  </p>
-                </dd>
-              </div>
-            </dl>
+      <section className="py-16 px-4">
+        <div className="container mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <FeatureCard 
+              icon={<Users className="h-10 w-10" />}
+              title="Gestione Atleti"
+              description="Traccia progressi, incontri e statistiche per ogni atleta della tua palestra"
+            />
+            <FeatureCard 
+              icon={<Trophy className="h-10 w-10" />}
+              title="Sistema ELO"
+              description="Classifica automatica con sistema di rating ELO per valutare le performance"
+            />
+            <FeatureCard 
+              icon={<TrendingUp className="h-10 w-10" />}
+              title="Analytics Avanzate"
+              description="Monitora l'andamento della palestra con grafici e statistiche dettagliate"
+            />
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="mt-auto py-8 px-4 border-t">
+        <div className="container mx-auto text-center text-muted-foreground">
+          <p>&copy; 2024 En Garde - Sistema di Gestione per Palestre di Scherma</p>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
+  return (
+    <div className="bg-card p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      <div className="text-primary mb-4">{icon}</div>
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <p className="text-muted-foreground text-sm">{description}</p>
     </div>
   );
 };
