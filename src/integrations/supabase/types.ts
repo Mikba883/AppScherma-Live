@@ -461,6 +461,14 @@ export type Database = {
         Args: { _bout_id: string }
         Returns: undefined
       }
+      get_current_user_gym_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_gym_member_names: {
         Args: Record<PropertyKey, never>
         Returns: {
