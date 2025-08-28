@@ -4,12 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useGym } from '@/hooks/useGym';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, Check, X, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import PublicLinkManager from './PublicLinkManager';
 
 interface Invitation {
   id: string;
@@ -150,10 +151,12 @@ const InviteManager = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email dell'invitato</Label>
+    <div className="space-y-8">
+      <div className="space-y-6">
+        <h3 className="text-lg font-semibold">Inviti Personali</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email dell'invitato</Label>
           <Input
             id="email"
             type="email"
@@ -218,6 +221,9 @@ const InviteManager = () => {
           </div>
         </div>
       )}
+      </div>
+
+      <PublicLinkManager />
     </div>
   );
 };

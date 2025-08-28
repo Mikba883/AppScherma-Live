@@ -11,6 +11,7 @@ import CreateGymPage from "./pages/CreateGymPage";
 import GymAdminPage from "./pages/GymAdminPage";
 import JoinGymPage from "./pages/JoinGymPage";
 import AcceptInvitationPage from "./pages/AcceptInvitationPage";
+import JoinGymPublic from "./pages/JoinGymPublic";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/gym-admin" element={<GymAdminPage />} />
           <Route path="/join-gym/:token" element={<JoinGymPage />} />
           <Route path="/accept-invitation/:token" element={<AcceptInvitationPage />} />
+          <Route path="/join/:token" element={<JoinGymPublic />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

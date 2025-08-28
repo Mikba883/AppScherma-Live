@@ -64,31 +64,17 @@ const GymAdminPage = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="settings">
+      <Tabs defaultValue="invites">
         <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Impostazioni
-          </TabsTrigger>
           <TabsTrigger value="invites" className="flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
             Inviti
           </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Impostazioni
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="settings" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Impostazioni Palestra</CardTitle>
-              <CardDescription>
-                Modifica le informazioni e i turni della tua palestra
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <GymSettings />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="invites" className="mt-6">
           <Card>
@@ -100,6 +86,20 @@ const GymAdminPage = () => {
             </CardHeader>
             <CardContent>
               <InviteManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Impostazioni Palestra</CardTitle>
+              <CardDescription>
+                Modifica le informazioni e i turni della tua palestra
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <GymSettings />
             </CardContent>
           </Card>
         </TabsContent>

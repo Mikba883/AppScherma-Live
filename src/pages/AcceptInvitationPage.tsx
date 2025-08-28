@@ -186,7 +186,7 @@ export default function AcceptInvitationPage() {
               />
             ) : (
               <div className="h-16 w-16 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Shield className="h-8 w-8 text-primary" />
+                <UserPlus className="h-8 w-8 text-primary" />
               </div>
             )}
           </div>
@@ -238,52 +238,56 @@ export default function AcceptInvitationPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="birthDate">
-                  <Calendar className="inline h-4 w-4 mr-1" />
-                  Data di Nascita
-                </Label>
-                <Input
-                  id="birthDate"
-                  type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  required
-                />
-              </div>
+            {invitation.role === 'allievo' && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="birthDate">
+                      <Calendar className="inline h-4 w-4 mr-1" />
+                      Data di Nascita
+                    </Label>
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      required
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="gender">Genere</Label>
-                <Select value={gender} onValueChange={(value: 'M' | 'F' | 'X') => setGender(value)}>
-                  <SelectTrigger id="gender">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="M">Maschio</SelectItem>
-                    <SelectItem value="F">Femmina</SelectItem>
-                    <SelectItem value="X">Altro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Genere</Label>
+                    <Select value={gender} onValueChange={(value: 'M' | 'F' | 'X') => setGender(value)}>
+                      <SelectTrigger id="gender">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="M">Maschio</SelectItem>
+                        <SelectItem value="F">Femmina</SelectItem>
+                        <SelectItem value="X">Altro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            {invitation.gyms?.shifts && invitation.gyms.shifts.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="shift">Turno</Label>
-                <Select value={shift} onValueChange={setShift}>
-                  <SelectTrigger id="shift">
-                    <SelectValue placeholder="Seleziona un turno" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {invitation.gyms.shifts.map((s: string) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                {invitation.gyms?.shifts && invitation.gyms.shifts.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="shift">Turno</Label>
+                    <Select value={shift} onValueChange={setShift}>
+                      <SelectTrigger id="shift">
+                        <SelectValue placeholder="Seleziona un turno" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {invitation.gyms.shifts.map((s: string) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
 
