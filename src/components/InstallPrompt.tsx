@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Download, Home } from 'lucide-react';
+import { X, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -8,15 +8,10 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-interface InstallPromptProps {
-  showFixedButton?: boolean;
-}
-
-export const InstallPrompt = ({ showFixedButton = true }: InstallPromptProps) => {
+export const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
     // Check if iOS
@@ -28,35 +23,35 @@ export const InstallPrompt = ({ showFixedButton = true }: InstallPromptProps) =>
       return;
     }
 
+    // Check if prompt was recently dismissed
+    const dismissed = localStorage.getItem('installPromptDismissed');
+    if (dismissed) {
+      const dismissedTime = parseInt(dismissed);
+      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+      if (daysSinceDismissed < 7) {
+        return;
+      }
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setCanInstall(true);
       
-      // Show prompt after a short delay if not showing fixed button
-      if (!showFixedButton) {
-        setTimeout(() => {
-          setShowPrompt(true);
-        }, 2000);
-      }
+      // Show prompt immediately
+      setShowPrompt(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // For iOS, show the prompt if not in standalone mode
+    // For iOS, show the prompt immediately if not in standalone mode
     if (isIOSDevice && !window.matchMedia('(display-mode: standalone)').matches) {
-      setCanInstall(true);
-      if (!showFixedButton) {
-        setTimeout(() => {
-          setShowPrompt(true);
-        }, 2000);
-      }
+      setShowPrompt(true);
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, [showFixedButton]);
+  }, []);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -78,118 +73,77 @@ export const InstallPrompt = ({ showFixedButton = true }: InstallPromptProps) =>
     localStorage.setItem('installPromptDismissed', Date.now().toString());
   };
 
-  // Check if prompt was recently dismissed
-  useEffect(() => {
-    const dismissed = localStorage.getItem('installPromptDismissed');
-    if (dismissed) {
-      const dismissedTime = parseInt(dismissed);
-      const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      if (daysSinceDismissed < 7) {
-        setShowPrompt(false);
-      }
-    }
-  }, []);
-
-  const handleOpenPrompt = () => {
-    setShowPrompt(true);
-  };
-
-  // Fixed button for installation
-  const FixedInstallButton = () => {
-    if (!canInstall || !showFixedButton) return null;
-    
-    return (
-      <Button
-        onClick={isIOS ? handleOpenPrompt : handleInstallClick}
-        className="fixed bottom-6 right-6 z-50 rounded-full shadow-lg h-14 w-14 p-0"
-        size="icon"
-        title="Installa App"
-      >
-        <Home className="h-6 w-6" />
-      </Button>
-    );
-  };
+  if (!showPrompt) return null;
 
   // iOS specific instructions
-  if (isIOS && showPrompt) {
+  if (isIOS) {
     return (
-      <>
-        <FixedInstallButton />
-        <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20">
-          <button
-            onClick={handleDismiss}
-            className="absolute top-2 right-2 p-1 rounded-full hover:bg-secondary/80 transition-colors"
-            aria-label="Chiudi"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Download className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm mb-1">Installa En Garde</h3>
-              <p className="text-xs text-muted-foreground mb-2">
-                Per installare l'app su iOS:
-              </p>
-              <ol className="text-xs text-muted-foreground space-y-1">
-                <li>1. Tocca il pulsante Condividi <span className="inline-block">⎋</span></li>
-                <li>2. Scorri e seleziona "Aggiungi a Home"</li>
-                <li>3. Tocca "Aggiungi" in alto a destra</li>
-              </ol>
-            </div>
+      <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20">
+        <button
+          onClick={handleDismiss}
+          className="absolute top-2 right-2 p-1 rounded-full hover:bg-secondary/80 transition-colors"
+          aria-label="Chiudi"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Download className="h-5 w-5 text-primary" />
           </div>
-        </Card>
-      </>
+          <div className="flex-1">
+            <h3 className="font-semibold text-sm mb-1">Installa En Garde</h3>
+            <p className="text-xs text-muted-foreground mb-2">
+              Per installare l'app su iOS:
+            </p>
+            <ol className="text-xs text-muted-foreground space-y-1">
+              <li>1. Tocca il pulsante Condividi <span className="inline-block">⎋</span></li>
+              <li>2. Scorri e seleziona "Aggiungi a Home"</li>
+              <li>3. Tocca "Aggiungi" in alto a destra</li>
+            </ol>
+          </div>
+        </div>
+      </Card>
     );
   }
 
   // Standard PWA install prompt
-  if (showPrompt) {
-    return (
-      <>
-        <FixedInstallButton />
-        <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20">
-          <button
-            onClick={handleDismiss}
-            className="absolute top-2 right-2 p-1 rounded-full hover:bg-secondary/80 transition-colors"
-            aria-label="Chiudi"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Download className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-sm mb-1">Installa En Garde</h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Accedi rapidamente dalla tua home screen, funziona anche offline!
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleInstallClick}
-                  className="text-xs"
-                >
-                  Installa ora
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleDismiss}
-                  className="text-xs"
-                >
-                  Più tardi
-                </Button>
-              </div>
-            </div>
+  return (
+    <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 p-4 shadow-lg z-50 bg-background/95 backdrop-blur border-primary/20">
+      <button
+        onClick={handleDismiss}
+        className="absolute top-2 right-2 p-1 rounded-full hover:bg-secondary/80 transition-colors"
+        aria-label="Chiudi"
+      >
+        <X className="h-4 w-4" />
+      </button>
+      <div className="flex items-start gap-3">
+        <div className="p-2 bg-primary/10 rounded-lg">
+          <Download className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-sm mb-1">Installa En Garde</h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Accedi rapidamente dalla tua home screen, funziona anche offline!
+          </p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={handleInstallClick}
+              className="text-xs"
+            >
+              Installa ora
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDismiss}
+              className="text-xs"
+            >
+              Più tardi
+            </Button>
           </div>
-        </Card>
-      </>
-    );
-  }
-
-  // Only show fixed button when prompt is not visible
-  return <FixedInstallButton />;
+        </div>
+      </div>
+    </Card>
+  );
 };
