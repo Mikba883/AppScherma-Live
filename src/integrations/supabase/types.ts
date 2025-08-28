@@ -222,6 +222,47 @@ export type Database = {
           },
         ]
       }
+      gym_public_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          gym_id: string
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          token: string
+          uses_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          gym_id: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          token: string
+          uses_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          gym_id?: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          token?: string
+          uses_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_public_links_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gyms: {
         Row: {
           created_at: string | null
