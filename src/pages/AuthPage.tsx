@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building2 } from 'lucide-react';
+import { InstallPrompt } from '@/components/InstallPrompt';
 
 const AuthPage = () => {
   const { user, signIn, signUp, loading, resetPassword } = useAuth();
@@ -101,6 +102,7 @@ const AuthPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <InstallPrompt />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">

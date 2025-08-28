@@ -10,6 +10,7 @@ import { StudentDashboard } from '@/components/StudentDashboard';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock, Building2, AlertCircle } from 'lucide-react';
 import { DashboardSkeleton } from '@/components/LoadingSkeleton';
+import { InstallPrompt } from '@/components/InstallPrompt';
 import { useMemo } from 'react';
 
 const Dashboard = () => {
@@ -76,6 +77,8 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <InstallPrompt />
+      
       {/* Header */}
       <header className="border-b bg-card">
         <div className="w-full px-6 py-6">
