@@ -111,10 +111,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "bouts_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_limited"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "bouts_athlete_a_fkey"
             columns: ["athlete_a"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_athlete_a_fkey"
+            columns: ["athlete_a"]
+            isOneToOne: false
+            referencedRelation: "profiles_limited"
             referencedColumns: ["user_id"]
           },
           {
@@ -125,8 +139,29 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "bouts_athlete_b_fkey"
+            columns: ["athlete_b"]
+            isOneToOne: false
+            referencedRelation: "profiles_limited"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "bouts_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_limited"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_rejected_by_fkey"
+            columns: ["rejected_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
@@ -135,7 +170,7 @@ export type Database = {
             foreignKeyName: "bouts_rejected_by_fkey"
             columns: ["rejected_by"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "profiles_limited"
             referencedColumns: ["user_id"]
           },
         ]
@@ -356,7 +391,35 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_limited: {
+        Row: {
+          full_name: string | null
+          gym_id: string | null
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          full_name?: string | null
+          gym_id?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          full_name?: string | null
+          gym_id?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_elo_change: {
@@ -397,6 +460,14 @@ export type Database = {
       delete_bout_with_notification: {
         Args: { _bout_id: string }
         Returns: undefined
+      }
+      get_gym_member_names: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          full_name: string
+          role: string
+          user_id: string
+        }[]
       }
       get_my_pending_bouts: {
         Args: Record<PropertyKey, never>
