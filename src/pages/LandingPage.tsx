@@ -73,29 +73,29 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 sm:py-20 md:py-24 lg:py-32 px-4 bg-gradient-to-b from-background via-secondary/5 to-background">
+      <section className="py-16 sm:py-20 md:py-28 lg:py-40 xl:py-48 px-4 bg-gradient-to-b from-background via-secondary/5 to-background">
         <div className="container mx-auto">
-          <div className="text-center mb-12 sm:mb-16 lg:mb-20">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
+          <div className="text-center mb-12 sm:mb-16 lg:mb-24 xl:mb-32">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 lg:mb-8">
               Tutto quello che serve per la tua palestra
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto px-4">
               Una piattaforma completa per gestire, motivare e far crescere i tuoi atleti
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12 xl:gap-16 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-16 xl:gap-20 max-w-7xl mx-auto">
             <FeatureCard 
-              icon={<Users className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14" />}
+              icon={<Users className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 xl:h-20 xl:w-20" />}
               title="Gestione Allenamenti"
               description="Pianifica sessioni, traccia progressi e monitora le performance di ogni atleta con strumenti professionali"
             />
             <FeatureCard 
-              icon={<Trophy className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14" />}
+              icon={<Trophy className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 xl:h-20 xl:w-20" />}
               title="Sistema Gamification"
               description="Aumenta l'engagement con badge, classifiche e obiettivi personalizzati che motivano gli atleti a migliorare"
             />
             <FeatureCard 
-              icon={<TrendingUp className="h-10 w-10 sm:h-12 sm:w-12 lg:h-14 lg:w-14" />}
+              icon={<TrendingUp className="h-10 w-10 sm:h-12 sm:w-12 lg:h-16 lg:w-16 xl:h-20 xl:w-20" />}
               title="Analytics Avanzate"
               description="Dashboard completa con metriche dettagliate per ottimizzare gli allenamenti e monitorare la crescita"
             />
@@ -115,10 +115,10 @@ const LandingPage = () => {
 
 const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
   return (
-    <div className="bg-card p-6 sm:p-8 lg:p-10 rounded-xl lg:rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
-      <div className="text-primary mb-4 sm:mb-6 lg:mb-8">{icon}</div>
-      <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-3 sm:mb-4">{title}</h3>
-      <p className="text-muted-foreground text-sm sm:text-base lg:text-lg leading-relaxed flex-grow">{description}</p>
+    <div className="bg-card p-6 sm:p-8 lg:p-12 xl:p-16 rounded-xl lg:rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
+      <div className="text-primary mb-4 sm:mb-6 lg:mb-10 xl:mb-12">{icon}</div>
+      <h3 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold mb-3 sm:mb-4 lg:mb-6">{title}</h3>
+      <p className="text-muted-foreground text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed flex-grow">{description}</p>
     </div>
   );
 };
