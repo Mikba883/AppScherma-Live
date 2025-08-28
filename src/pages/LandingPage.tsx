@@ -1,12 +1,15 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Swords, Users, TrendingUp, Trophy } from 'lucide-react';
+import { InstallPrompt } from '@/components/InstallPrompt';
 
 const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+      <InstallPrompt />
+      
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="container mx-auto px-4 py-16 sm:py-24">
