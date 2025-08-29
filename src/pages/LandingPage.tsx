@@ -1,8 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Download, Users, TrendingUp, Trophy } from 'lucide-react';
+import { Swords, Users, TrendingUp, Trophy } from 'lucide-react';
 import { InstallPrompt } from '@/components/InstallPrompt';
-import { AppLogo } from '@/components/AppLogo';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -17,7 +16,11 @@ const LandingPage = () => {
           <div className="text-center space-y-8">
             {/* Logo and Title */}
             <div className="flex justify-center mb-6">
-              <AppLogo size="xl" />
+              <img 
+                src="https://topkzcumjilaxbprufyo.supabase.co/storage/v1/object/public/gym-logos/ChatGPT%20Image%2028%20ago%202025,%2007_37_57.png" 
+                alt="En Garde" 
+                className="h-32 w-auto object-contain"
+              />
             </div>
             
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight">
@@ -37,7 +40,7 @@ const LandingPage = () => {
                 className="text-lg px-8 py-6 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                 onClick={() => navigate('/create-gym')}
               >
-                <Download className="mr-2 h-5 w-5" />
+                <Swords className="mr-2 h-5 w-5" />
                 Registra la tua Palestra
               </Button>
             </div>
