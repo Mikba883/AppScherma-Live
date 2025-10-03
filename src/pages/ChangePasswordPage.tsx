@@ -23,17 +23,12 @@ const ChangePasswordPage = () => {
 
   // Check if this is a password reset flow from email
   useEffect(() => {
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
     const type = searchParams.get('type');
     
-    if (accessToken && refreshToken && type === 'recovery') {
+    // Supabase automatically handles the session when user clicks the recovery link
+    // We just need to check if this is a recovery type
+    if (type === 'recovery') {
       setIsResetFlow(true);
-      // Set the session with the tokens from the URL
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      });
     }
   }, [searchParams]);
 
