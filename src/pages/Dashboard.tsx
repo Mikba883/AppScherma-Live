@@ -8,7 +8,7 @@ import { Navigation } from '@/components/Navigation';
 import { InstructorDashboard } from '@/components/InstructorDashboard';
 import { StudentDashboard } from '@/components/StudentDashboard';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock, Building2, AlertCircle } from 'lucide-react';
+import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock, Building2, AlertCircle, Settings } from 'lucide-react';
 import { DashboardSkeleton } from '@/components/LoadingSkeleton';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { useMemo } from 'react';
@@ -26,6 +26,10 @@ const Dashboard = () => {
   
   const isStudent = useMemo(() => {
     return profile?.role === 'allievo';
+  }, [profile]);
+
+  const isGymAdmin = useMemo(() => {
+    return profile?.role === 'capo_palestra';
   }, [profile]);
 
   if (authLoading || profileLoading || gymLoading) {
@@ -151,6 +155,14 @@ const Dashboard = () => {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
+              
+              {isGymAdmin && (
+                <Link to="/gym-admin">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </Link>
+              )}
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
