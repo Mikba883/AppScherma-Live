@@ -69,7 +69,7 @@ export const GymSettingsOptimized = () => {
         const filePath = `gym-logos/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('gym-assets')
+          .from('gym-logos')
           .upload(filePath, logoFile, {
             upsert: true
           });
@@ -77,7 +77,7 @@ export const GymSettingsOptimized = () => {
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
-          .from('gym-assets')
+          .from('gym-logos')
           .getPublicUrl(filePath);
 
         logoUrl = publicUrl;

@@ -10,7 +10,7 @@ export const Navigation = () => {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="flex items-center gap-2 sm:gap-6">
+    <nav className="flex flex-wrap items-center gap-2">
       <Link to="/">
         <Button 
           variant={isActive('/') ? "default" : "ghost"} 
@@ -41,7 +41,7 @@ export const Navigation = () => {
             className="flex items-center gap-1 sm:gap-2 text-sm px-2 sm:px-4 font-medium mobile-button sm:h-10"
           >
             <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Gestione Palestra</span>
+            <span className="hidden sm:inline">Gestione</span>
           </Button>
         </Link>
       )}
