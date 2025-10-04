@@ -116,7 +116,7 @@ const AuthPage = () => {
             En Garde
           </CardTitle>
           <CardDescription>
-            {isSignUp ? 'Crea il tuo account' : 'Accedi al tuo account'}
+            {isSignUp ? 'Crea il tuo account' : 'Accedi con le tue credenziali'}
           </CardDescription>
         </CardHeader>
         <CardContent>

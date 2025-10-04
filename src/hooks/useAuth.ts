@@ -115,6 +115,7 @@ export const useAuth = () => {
   const resetPassword = async (email: string) => {
     try {
       console.log('🔄 Tentativo reset password per:', email);
+      // Supabase automatically adds type=recovery parameter
       const redirectUrl = `${window.location.origin}/change-password`;
       console.log('🔗 Redirect URL:', redirectUrl);
       

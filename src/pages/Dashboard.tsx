@@ -131,38 +131,23 @@ const Dashboard = () => {
           </div>
 
           {/* Mobile Layout */}
-          <div className="md:hidden flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              {gym?.logo_url && (
-                <img 
-                  src={gym.logo_url} 
-                  alt={gym.name} 
-                  className="h-8 w-8 object-contain"
-                />
-              )}
-              <div>
-                <h1 className="text-xl font-bold text-primary">{gym?.name || 'Fanfulla Scherma'}</h1>
-                <p className="text-sm text-muted-foreground">
-                  {profile?.full_name || user.email}
-                </p>
+          <div className="md:hidden">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                {gym?.logo_url && (
+                  <img 
+                    src={gym.logo_url} 
+                    alt={gym.name} 
+                    className="h-8 w-8 object-contain"
+                  />
+                )}
+                <div>
+                  <h1 className="text-xl font-bold text-primary">{gym?.name || 'Fanfulla Scherma'}</h1>
+                  <p className="text-sm text-muted-foreground">
+                    {profile?.full_name || user.email}
+                  </p>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Link to="/consultation">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <span>Analisi</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              
-              {isGymAdmin && (
-                <Link to="/gym-admin">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                </Link>
-              )}
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -170,7 +155,7 @@ const Dashboard = () => {
                     <User className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuContent align="end" className="w-44 bg-card z-50">
                   <DropdownMenuItem asChild>
                     <Link to="/change-password" className="flex items-center">
                       <Lock className="w-4 h-4 mr-2" />
@@ -184,6 +169,25 @@ const Dashboard = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
+            
+            {/* Mobile Navigation Buttons */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <Link to="/consultation">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 whitespace-nowrap">
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Analisi</span>
+                </Button>
+              </Link>
+              
+              {isGymAdmin && (
+                <Link to="/gym-admin">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 whitespace-nowrap">
+                    <Settings className="w-4 h-4" />
+                    <span>Gestione</span>
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

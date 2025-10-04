@@ -24,10 +24,11 @@ const ChangePasswordPage = () => {
   // Check if this is a password reset flow from email
   useEffect(() => {
     const type = searchParams.get('type');
+    const accessToken = searchParams.get('access_token');
+    const refreshToken = searchParams.get('refresh_token');
     
-    // Supabase automatically handles the session when user clicks the recovery link
-    // We just need to check if this is a recovery type
-    if (type === 'recovery') {
+    // Check if this is a recovery flow - either by type parameter or presence of tokens
+    if (type === 'recovery' || (accessToken && refreshToken)) {
       setIsResetFlow(true);
     }
   }, [searchParams]);
