@@ -1,7 +1,12 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import App from './App.tsx'
 import './index.css'
+
+const queryClient = new QueryClient();
 
 // Register service worker for PWA functionality
 if ('serviceWorker' in navigator) {
@@ -22,5 +27,13 @@ if ('serviceWorker' in navigator) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <App />
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <TooltipProvider>
+          <App />
+        </TooltipProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
