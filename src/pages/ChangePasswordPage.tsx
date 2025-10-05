@@ -25,11 +25,12 @@ const ChangePasswordPage = () => {
   useEffect(() => {
     const type = searchParams.get('type');
     const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
     
-    // Check if this is a recovery flow - either by type parameter or presence of tokens
-    if (type === 'recovery' || (accessToken && refreshToken)) {
+    // Always assume reset flow if we have any recovery indicators
+    // This simplifies UX by never asking for old password during reset
+    if (type === 'recovery' || accessToken || window.location.hash.includes('type=recovery')) {
       setIsResetFlow(true);
+      console.log('Password reset flow detected');
     }
   }, [searchParams]);
 

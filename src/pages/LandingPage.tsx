@@ -46,24 +46,18 @@ const LandingPage = () => {
             </div>
 
             {/* Secondary Actions */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8">
+            <div className="flex flex-col items-center gap-4 pt-8">
               <Button 
                 variant="outline" 
                 size="lg"
                 onClick={() => navigate('/auth')}
-                className="w-full sm:w-auto min-w-[200px]"
+                className="w-full sm:w-auto min-w-[240px]"
               >
-                Accedi come Atleta
+                Accedi
               </Button>
-              <span className="text-muted-foreground hidden sm:inline">oppure</span>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => navigate('/auth')}
-                className="w-full sm:w-auto min-w-[200px]"
-              >
-                Accedi come Istruttore
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                Il tuo ruolo verrà riconosciuto automaticamente
+              </p>
             </div>
           </div>
         </div>
