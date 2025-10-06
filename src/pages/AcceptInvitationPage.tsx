@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UserPlus, Shield, Mail, Lock, User, Calendar } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function AcceptInvitationPage() {
   const { token } = useParams();
@@ -25,6 +26,27 @@ export default function AcceptInvitationPage() {
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState<'M' | 'F'>('M');
   const [shift, setShift] = useState('');
+  const [parentalConsent, setParentalConsent] = useState(false);
+  const [isMinor, setIsMinor] = useState(false);
+
+  const calculateAge = (birthDate: string): number => {
+    if (!birthDate) return 0;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const handleBirthDateChange = (date: string) => {
+    setBirthDate(date);
+    const age = calculateAge(date);
+    setIsMinor(age < 18);
+    if (age >= 18) setParentalConsent(false);
+  };
 
   useEffect(() => {
     fetchInvitation();
@@ -100,6 +122,15 @@ export default function AcceptInvitationPage() {
       toast({
         title: "Password troppo corta",
         description: "La password deve essere di almeno 6 caratteri.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isMinor && !parentalConsent) {
+      toast({
+        title: "Consenso obbligatorio",
+        description: "Il consenso del genitore/tutore è obbligatorio per i minorenni",
         variant: "destructive",
       });
       return;
@@ -250,7 +281,7 @@ export default function AcceptInvitationPage() {
                       id="birthDate"
                       type="date"
                       value={birthDate}
-                      onChange={(e) => setBirthDate(e.target.value)}
+                      onChange={(e) => handleBirthDateChange(e.target.value)}
                       required
                     />
                   </div>
@@ -268,6 +299,28 @@ export default function AcceptInvitationPage() {
                     </Select>
                   </div>
                 </div>
+
+                {isMinor && (
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/50">
+                    <Checkbox
+                      id="parentalConsent"
+                      checked={parentalConsent}
+                      onCheckedChange={(checked) => setParentalConsent(checked as boolean)}
+                      required
+                    />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label
+                        htmlFor="parentalConsent"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Consenso del genitore/tutore
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Dichiaro di avere il consenso del genitore o tutore legale per la registrazione
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {invitation.gyms?.shifts && invitation.gyms.shifts.length > 0 && (
                   <div className="space-y-2">
@@ -288,6 +341,17 @@ export default function AcceptInvitationPage() {
                 )}
               </>
             )}
+
+            <div className="text-xs text-muted-foreground text-center mt-2">
+              Registrandoti accetti i nostri{' '}
+              <Link to="/legal" target="_blank" className="text-primary hover:underline">
+                Termini e Condizioni
+              </Link>
+              {' '}e la{' '}
+              <Link to="/legal" target="_blank" className="text-primary hover:underline">
+                Privacy Policy
+              </Link>
+            </div>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-3">

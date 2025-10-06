@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, Link } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building2 } from 'lucide-react';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const AuthPage = () => {
   const { user, signIn, signUp, loading, resetPassword } = useAuth();
@@ -25,6 +26,27 @@ const AuthPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [parentalConsent, setParentalConsent] = useState(false);
+  const [isMinor, setIsMinor] = useState(false);
+
+  const calculateAge = (birthDate: string): number => {
+    if (!birthDate) return 0;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const handleBirthDateChange = (date: string) => {
+    setFormData(prev => ({ ...prev, birthDate: date }));
+    const age = calculateAge(date);
+    setIsMinor(age < 18);
+    if (age >= 18) setParentalConsent(false);
+  };
 
   if (loading) {
     return (
@@ -51,6 +73,15 @@ const AuthPage = () => {
           toast({
             title: "Errore",
             description: "Nome, data di nascita, genere e ruolo sono obbligatori",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (isMinor && !parentalConsent) {
+          toast({
+            title: "Consenso obbligatorio",
+            description: "Il consenso del genitore/tutore è obbligatorio per i minorenni",
             variant: "destructive"
           });
           return;
@@ -164,12 +195,34 @@ const AuthPage = () => {
                     id="birthDate"
                     type="date"
                     value={formData.birthDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                    onChange={(e) => handleBirthDateChange(e.target.value)}
                     required
                   />
                 </div>
 
-                 <div className="space-y-2">
+                {isMinor && (
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/50">
+                    <Checkbox
+                      id="parentalConsent"
+                      checked={parentalConsent}
+                      onCheckedChange={(checked) => setParentalConsent(checked as boolean)}
+                      required
+                    />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label
+                        htmlFor="parentalConsent"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Consenso del genitore/tutore
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Dichiaro di avere il consenso del genitore o tutore legale per la registrazione
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
                   <Label htmlFor="gender">Genere</Label>
                   <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
                     <SelectTrigger className="h-12 text-base">
@@ -208,6 +261,17 @@ const AuthPage = () => {
                       <SelectItem value="infrasettimanale">Infrasettimanale</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="text-xs text-muted-foreground mt-4 text-center">
+                  Registrandoti accetti i nostri{' '}
+                  <Link to="/legal" target="_blank" className="text-primary hover:underline">
+                    Termini e Condizioni
+                  </Link>
+                  {' '}e la{' '}
+                  <Link to="/legal" target="_blank" className="text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
                 </div>
               </>
             )}

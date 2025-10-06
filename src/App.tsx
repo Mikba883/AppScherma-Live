@@ -11,6 +11,7 @@ import GymAdminPage from "./pages/GymAdminPage";
 import JoinGymPage from "./pages/JoinGymPage";
 import AcceptInvitationPage from "./pages/AcceptInvitationPage";
 import JoinGymPublic from "./pages/JoinGymPublic";
+import LegalPage from "./pages/LegalPage";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -27,6 +28,7 @@ const App = () => (
       <Route path="/join-gym/:token" element={<JoinGymPage />} />
       <Route path="/accept-invitation/:token" element={<AcceptInvitationPage />} />
       <Route path="/join/:token" element={<JoinGymPublic />} />
+      <Route path="/legal" element={<LegalPage />} />
       
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />

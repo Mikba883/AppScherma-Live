@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface PublicLink {
   id: string;
@@ -45,6 +46,27 @@ const JoinGymPublic = () => {
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState<'M' | 'F'>('M');
   const [shift, setShift] = useState('');
+  const [parentalConsent, setParentalConsent] = useState(false);
+  const [isMinor, setIsMinor] = useState(false);
+
+  const calculateAge = (birthDate: string): number => {
+    if (!birthDate) return 0;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const handleBirthDateChange = (date: string) => {
+    setBirthDate(date);
+    const age = calculateAge(date);
+    setIsMinor(age < 18);
+    if (age >= 18) setParentalConsent(false);
+  };
 
   useEffect(() => {
     fetchPublicLink();
@@ -133,6 +155,15 @@ const JoinGymPublic = () => {
       toast({
         title: 'Password troppo corta',
         description: 'La password deve essere di almeno 6 caratteri.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isMinor && !parentalConsent) {
+      toast({
+        title: 'Consenso obbligatorio',
+        description: 'Il consenso del genitore/tutore è obbligatorio per i minorenni',
         variant: 'destructive',
       });
       return;
@@ -273,11 +304,33 @@ const JoinGymPublic = () => {
                 id="birthDate"
                 type="date"
                 value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
+                onChange={(e) => handleBirthDateChange(e.target.value)}
                 required
                 max={new Date().toISOString().split('T')[0]}
               />
             </div>
+
+            {isMinor && (
+              <div className="flex items-start space-x-3 p-3 border rounded-lg bg-muted/50">
+                <Checkbox
+                  id="parentalConsent"
+                  checked={parentalConsent}
+                  onCheckedChange={(checked) => setParentalConsent(checked as boolean)}
+                  required
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <Label
+                    htmlFor="parentalConsent"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Consenso del genitore/tutore
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Dichiaro di avere il consenso del genitore o tutore legale per la registrazione
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="gender">Genere</Label>
@@ -307,6 +360,17 @@ const JoinGymPublic = () => {
                 </Select>
               </div>
             )}
+
+            <div className="text-xs text-muted-foreground text-center">
+              Registrandoti accetti i nostri{' '}
+              <Link to="/legal" target="_blank" className="text-primary hover:underline">
+                Termini e Condizioni
+              </Link>
+              {' '}e la{' '}
+              <Link to="/legal" target="_blank" className="text-primary hover:underline">
+                Privacy Policy
+              </Link>
+            </div>
 
             <Alert>
               <Users className="h-4 w-4" />
