@@ -102,11 +102,21 @@ const ChangePasswordPage = () => {
 
         navigate('/');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating password:', error);
+      
+      // Handle specific error cases
+      let errorMessage = "Errore durante l'aggiornamento della password";
+      
+      if (error?.message?.includes('same password')) {
+        errorMessage = "La nuova password deve essere diversa da quella attuale";
+      } else if (error?.message?.includes('Password')) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Errore",
-        description: "Errore durante l'aggiornamento della password",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
