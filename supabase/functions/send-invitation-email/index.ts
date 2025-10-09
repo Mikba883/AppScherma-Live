@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
     const roleText = role === 'istruttore' ? 'istruttore' : 'allievo';
 
     const emailResponse = await resend.emails.send({
-      from: "En Garde <onboarding@resend.dev>",
+      from: "En Garde <app.scherma@engardes.com>",
       to: [email],
       subject: `Invito a unirsi a ${gymName}`,
       html: `
