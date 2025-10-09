@@ -24,7 +24,6 @@ interface Gym {
   id: string;
   name: string;
   logo_url: string | null;
-  owner_name: string;
   shifts?: string[] | null;
 }
 
@@ -110,14 +109,13 @@ const JoinGymPublic = () => {
 
       setPublicLink(linkData);
 
-      // Fetch gym details
+      // Fetch gym details using secure function
       const { data: gymData, error: gymError } = await supabase
-        .from('gyms')
-        .select('id, name, logo_url, owner_name, shifts')
-        .eq('id', linkData.gym_id)
-        .single();
+        .rpc('get_public_gym_by_token', { _token: token })
+        .maybeSingle();
 
       if (gymError || !gymData) {
+        console.error('Error fetching gym:', gymError);
         toast({
           title: 'Errore',
           description: 'Impossibile trovare la palestra.',

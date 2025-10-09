@@ -220,6 +220,13 @@ export type Database = {
             referencedRelation: "gyms"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "gym_invitations_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "public_gym_info"
+            referencedColumns: ["id"]
+          },
         ]
       }
       gym_public_links: {
@@ -259,6 +266,13 @@ export type Database = {
             columns: ["gym_id"]
             isOneToOne: false
             referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_public_links_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "public_gym_info"
             referencedColumns: ["id"]
           },
         ]
@@ -380,6 +394,13 @@ export type Database = {
             referencedRelation: "gyms"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "profiles_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "public_gym_info"
+            referencedColumns: ["id"]
+          },
         ]
       }
       rankings: {
@@ -480,7 +501,38 @@ export type Database = {
             referencedRelation: "gyms"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "profiles_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "public_gym_info"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      public_gym_info: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          logo_url: string | null
+          name: string | null
+          shifts: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          shifts?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          shifts?: string[] | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -575,6 +627,15 @@ export type Database = {
           matches_played: number
           peak_rating: number
           ranking_position: number
+        }[]
+      }
+      get_public_gym_by_token: {
+        Args: { _token: string }
+        Returns: {
+          id: string
+          logo_url: string
+          name: string
+          shifts: string[]
         }[]
       }
       get_rankings: {
