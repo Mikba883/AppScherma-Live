@@ -17,12 +17,25 @@ interface TournamentMatrixProps {
   matches: TournamentMatch[];
   onUpdateMatch: (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => void;
   onResetTournament: () => void;
+  onSaveResults?: (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => Promise<void>;
+  saving?: boolean;
+  isStudentMode?: boolean;
 }
 
-export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTournament }: TournamentMatrixProps) => {
+export const TournamentMatrix = ({ 
+  athletes, 
+  matches, 
+  onUpdateMatch, 
+  onResetTournament,
+  onSaveResults,
+  saving: externalSaving,
+  isStudentMode = false 
+}: TournamentMatrixProps) => {
   const [saving, setSaving] = useState(false);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const navigate = useNavigate();
+  
+  const isSaving = externalSaving || saving;
 
   const getMatch = (athleteA: string, athleteB: string): TournamentMatch | undefined => {
     return matches.find(match => 
@@ -160,6 +173,19 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
   };
 
   const handleSaveResults = async () => {
+    if (isStudentMode && onSaveResults) {
+      // For students, use the custom save handler
+      const tournamentName = `Torneo ${new Date().toLocaleDateString('it-IT')}`;
+      const tournamentDate = new Date().toISOString().split('T')[0];
+      const firstMatch = matches.find(m => m.weapon);
+      const weapon = firstMatch?.weapon || '';
+      const boutType = 'sparring'; // Default for student tournaments
+      
+      await onSaveResults(tournamentName, tournamentDate, weapon, boutType);
+      setShowFinishDialog(false);
+      return;
+    }
+    
     const completedMatches = matches.filter(match => 
       match.scoreA !== null && match.scoreB !== null && match.weapon !== null
     );
@@ -374,17 +400,26 @@ export const TournamentMatrix = ({ athletes, matches, onUpdateMatch, onResetTour
           <AlertDialogHeader>
             <AlertDialogTitle>Finalizza Torneo</AlertDialogTitle>
             <AlertDialogDescription>
-              Vuoi salvare i risultati del torneo? Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
-              {getCompletedMatches() > 0 && " I risultati saranno registrati nel database e i ranking aggiornati."}
+              {isStudentMode ? (
+                <>
+                  Vuoi salvare il torneo? Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
+                  {getCompletedMatches() > 0 && " Gli atleti coinvolti dovranno approvare i loro match prima che vengano registrati."}
+                </>
+              ) : (
+                <>
+                  Vuoi salvare i risultati del torneo? Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
+                  {getCompletedMatches() > 0 && " I risultati saranno registrati nel database e i ranking aggiornati."}
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>No</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleSaveResults}
-              disabled={getCompletedMatches() === 0 || saving}
+              disabled={getCompletedMatches() === 0 || isSaving}
             >
-              {saving ? 'Salvataggio...' : 'Sì, Salva'}
+              {isSaving ? 'Salvataggio...' : 'Sì, Salva'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

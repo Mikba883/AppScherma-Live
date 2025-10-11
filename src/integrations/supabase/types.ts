@@ -48,6 +48,8 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          approved_by_a: string | null
+          approved_by_b: string | null
           athlete_a: string
           athlete_b: string
           bout_date: string
@@ -62,11 +64,14 @@ export type Database = {
           score_a: number
           score_b: number
           status: string
+          tournament_id: string | null
           weapon: string | null
         }
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          approved_by_a?: string | null
+          approved_by_b?: string | null
           athlete_a: string
           athlete_b: string
           bout_date: string
@@ -81,11 +86,14 @@ export type Database = {
           score_a: number
           score_b: number
           status?: string
+          tournament_id?: string | null
           weapon?: string | null
         }
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          approved_by_a?: string | null
+          approved_by_b?: string | null
           athlete_a?: string
           athlete_b?: string
           bout_date?: string
@@ -100,6 +108,7 @@ export type Database = {
           score_a?: number
           score_b?: number
           status?: string
+          tournament_id?: string | null
           weapon?: string | null
         }
         Relationships: [
@@ -137,6 +146,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -416,6 +432,57 @@ export type Database = {
         }
         Relationships: []
       }
+      tournaments: {
+        Row: {
+          bout_type: string
+          created_at: string | null
+          created_by: string
+          gym_id: string | null
+          id: string
+          name: string
+          status: string
+          tournament_date: string
+          weapon: string | null
+        }
+        Insert: {
+          bout_type: string
+          created_at?: string | null
+          created_by: string
+          gym_id?: string | null
+          id?: string
+          name: string
+          status?: string
+          tournament_date: string
+          weapon?: string | null
+        }
+        Update: {
+          bout_type?: string
+          created_at?: string | null
+          created_by?: string
+          gym_id?: string | null
+          id?: string
+          name?: string
+          status?: string
+          tournament_date?: string
+          weapon?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournaments_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournaments_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "public_gym_info"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -465,6 +532,10 @@ export type Database = {
       }
     }
     Functions: {
+      approve_tournament_match: {
+        Args: { _bout_id: string }
+        Returns: undefined
+      }
       calculate_elo_change: {
         Args: {
           _frequency_multiplier?: number
@@ -543,6 +614,26 @@ export type Database = {
           score_a: number
           score_b: number
           status: string
+          weapon: string
+        }[]
+      }
+      get_my_tournament_matches: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bout_date: string
+          bout_id: string
+          bout_type: string
+          created_by: string
+          i_approved: boolean
+          my_score: number
+          opponent_approved: boolean
+          opponent_id: string
+          opponent_name: string
+          opponent_score: number
+          status: string
+          tournament_date: string
+          tournament_id: string
+          tournament_name: string
           weapon: string
         }[]
       }
@@ -650,6 +741,16 @@ export type Database = {
           _bout_type: string
           _score_a: number
           _score_b: number
+          _weapon: string
+        }
+        Returns: string
+      }
+      register_tournament_matches: {
+        Args: {
+          _bout_type: string
+          _matches: Json
+          _tournament_date: string
+          _tournament_name: string
           _weapon: string
         }
         Returns: string
