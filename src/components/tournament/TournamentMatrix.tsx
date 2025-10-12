@@ -20,6 +20,9 @@ interface TournamentMatrixProps {
   onSaveResults?: (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => Promise<void>;
   saving?: boolean;
   isStudentMode?: boolean;
+  currentUserId?: string | null;
+  tournamentCreatorId?: string | null;
+  activeTournamentId?: string | null;
 }
 
 export const TournamentMatrix = ({ 
@@ -29,13 +32,23 @@ export const TournamentMatrix = ({
   onResetTournament,
   onSaveResults,
   saving: externalSaving,
-  isStudentMode = false 
+  isStudentMode = false,
+  currentUserId = null,
+  tournamentCreatorId = null,
+  activeTournamentId = null
 }: TournamentMatrixProps) => {
   const [saving, setSaving] = useState(false);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const navigate = useNavigate();
   
   const isSaving = externalSaving || saving;
+  const isCreator = currentUserId && tournamentCreatorId && currentUserId === tournamentCreatorId;
+  
+  const canEditMatch = (athleteA: string, athleteB: string): boolean => {
+    if (!currentUserId) return false;
+    if (isCreator) return true;
+    return athleteA === currentUserId || athleteB === currentUserId;
+  };
 
   const getMatch = (athleteA: string, athleteB: string): TournamentMatch | undefined => {
     return matches.find(match => 
@@ -255,13 +268,15 @@ export const TournamentMatrix = ({
               <Badge variant="secondary">
                 {getCompletedMatches()}/{getTotalMatches()} incontri completati
               </Badge>
-              <Button 
-                onClick={() => setShowFinishDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <Trophy className="w-4 h-4" />
-                FINE
-              </Button>
+              {isCreator && (
+                <Button 
+                  onClick={() => setShowFinishDialog(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Trophy className="w-4 h-4" />
+                  FINE
+                </Button>
+              )}
             </div>
           </CardTitle>
         </CardHeader>
@@ -376,14 +391,15 @@ export const TournamentMatrix = ({
                          <div className="text-sm font-medium mb-3">
                            {match.athleteA.full_name} vs {match.athleteB.full_name}
                          </div>
-                         <MatchInputs
-                           athleteA={match.athleteA.id}
-                           athleteB={match.athleteB.id}
-                           athleteAName={match.athleteA.full_name}
-                           athleteBName={match.athleteB.full_name}
-                           match={matchData}
-                           onUpdate={handleScoreChange}
-                         />
+                           <MatchInputs
+                            athleteA={match.athleteA.id}
+                            athleteB={match.athleteB.id}
+                            athleteAName={match.athleteA.full_name}
+                            athleteBName={match.athleteB.full_name}
+                            match={matchData}
+                            onUpdate={handleScoreChange}
+                            canEdit={canEditMatch(match.athleteA.id, match.athleteB.id)}
+                          />
                        </div>
                      );
                    })}
@@ -480,9 +496,10 @@ interface MatchInputsProps {
   athleteBName: string;
   match?: TournamentMatch;
   onUpdate: (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => void;
+  canEdit?: boolean;
 }
 
-const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate }: MatchInputsProps) => {
+const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true }: MatchInputsProps) => {
   const [scoreA, setScoreA] = useState(match?.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
@@ -492,6 +509,38 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   const scoreBNum = parseInt(scoreB) || 0;
   const isAWinning = isComplete && scoreANum > scoreBNum;
   const isBWinning = isComplete && scoreBNum > scoreANum;
+
+  if (!canEdit && isComplete) {
+    return (
+      <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+        <div className="text-xs text-muted-foreground">Arma: {weapon}</div>
+        <div className="flex justify-between items-center">
+          <div className="text-sm">
+            <div className="font-medium">{athleteAName}</div>
+            <div className={`text-2xl ${isAWinning ? 'text-green-600 font-bold' : 'text-red-600'}`}>
+              {scoreA}
+            </div>
+          </div>
+          <div className="text-muted-foreground">-</div>
+          <div className="text-sm text-right">
+            <div className="font-medium">{athleteBName}</div>
+            <div className={`text-2xl ${isBWinning ? 'text-green-600 font-bold' : 'text-red-600'}`}>
+              {scoreB}
+            </div>
+          </div>
+        </div>
+        <Badge variant="default" className="text-xs bg-green-100 text-green-800 w-full justify-center">Completato</Badge>
+      </div>
+    );
+  }
+
+  if (!canEdit) {
+    return (
+      <div className="p-3 bg-muted/30 rounded-lg text-center text-xs text-muted-foreground">
+        In attesa di dati
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentMatrix } from './TournamentMatrix';
-import { TournamentParticipantView } from './TournamentParticipantView';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -14,38 +13,126 @@ interface TournamentSectionProps {
 }
 
 export const TournamentSection = ({ onTournamentStateChange }: TournamentSectionProps) => {
-  const [mode, setMode] = useState<'menu' | 'create' | 'participate'>('menu');
+  const [mode, setMode] = useState<'menu' | 'matrix'>('menu');
   const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [tournamentStarted, setTournamentStarted] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [hasActiveTournament, setHasActiveTournament] = useState(false);
+  const [activeTournamentId, setActiveTournamentId] = useState<string | null>(null);
+  const [tournamentCreatorId, setTournamentCreatorId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    checkParticipation();
+    loadCurrentUser();
+    checkActiveTournament();
   }, []);
 
   useEffect(() => {
-    // Notify parent about unsaved changes
     onTournamentStateChange?.(hasUnsavedChanges);
   }, [hasUnsavedChanges, onTournamentStateChange]);
 
-  const checkParticipation = async () => {
-    try {
-      const { data } = await supabase.rpc('get_my_tournament_matches');
-      if (data && data.length > 0) {
-        setHasActiveTournament(true);
-        setMode('participate');
-      }
-    } catch (error) {
-      console.error('Error checking participation:', error);
+  const loadCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setCurrentUserId(user.id);
     }
   };
 
-  const handleStartTournament = (athletes: TournamentAthlete[]) => {
+  const checkActiveTournament = async () => {
+    try {
+      const { data } = await supabase.rpc('get_my_tournament_matches');
+      if (data && data.length > 0) {
+        // Load tournament data
+        const tournamentId = data[0].tournament_id;
+        setActiveTournamentId(tournamentId);
+        setTournamentCreatorId(data[0].created_by);
+        
+        // Load tournament details
+        await loadTournamentData(tournamentId);
+        setMode('matrix');
+      }
+    } catch (error) {
+      console.error('Error checking tournament:', error);
+    }
+  };
+
+  const loadTournamentData = async (tournamentId: string) => {
+    try {
+      // Get all bouts for this tournament
+      const { data: bouts, error: boutsError } = await supabase
+        .from('bouts')
+        .select('athlete_a, athlete_b, score_a, score_b, weapon')
+        .eq('tournament_id', tournamentId);
+
+      if (boutsError) throw boutsError;
+
+      // Get unique athletes
+      const athleteIds = new Set<string>();
+      bouts?.forEach(bout => {
+        athleteIds.add(bout.athlete_a);
+        athleteIds.add(bout.athlete_b);
+      });
+
+      // Get athlete profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', Array.from(athleteIds));
+
+      if (profilesError) throw profilesError;
+
+      const athletes: TournamentAthlete[] = profiles?.map(p => ({
+        id: p.user_id,
+        full_name: p.full_name
+      })) || [];
+
+      const matches: TournamentMatch[] = bouts?.map(b => ({
+        athleteA: b.athlete_a,
+        athleteB: b.athlete_b,
+        scoreA: b.score_a,
+        scoreB: b.score_b,
+        weapon: b.weapon
+      })) || [];
+
+      setSelectedAthletes(athletes);
+      setMatches(matches);
+      setTournamentStarted(true);
+      
+      // Subscribe to real-time updates
+      subscribeToTournamentUpdates(tournamentId);
+    } catch (error) {
+      console.error('Error loading tournament:', error);
+    }
+  };
+
+  const subscribeToTournamentUpdates = (tournamentId: string) => {
+    const channel = supabase
+      .channel('tournament-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bouts',
+          filter: `tournament_id=eq.${tournamentId}`
+        },
+        (payload) => {
+          console.log('Tournament update:', payload);
+          // Reload tournament data on any change
+          loadTournamentData(tournamentId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const handleStartTournament = async (athletes: TournamentAthlete[]) => {
     setSelectedAthletes(athletes);
     
     const newMatches: TournamentMatch[] = [];
@@ -66,9 +153,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setMatches(newMatches);
     setTournamentStarted(true);
     setHasUnsavedChanges(false);
+    setMode('matrix');
+    
+    // Set current user as creator
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setTournamentCreatorId(user.id);
+    }
   };
 
-  const handleUpdateMatch = (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => {
+  const handleUpdateMatch = async (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => {
     setMatches(prev => 
       prev.map(match => {
         if (match.athleteA === athleteA && match.athleteB === athleteB) {
@@ -80,7 +174,28 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         return match;
       })
     );
-    setHasUnsavedChanges(true);
+    
+    // If tournament is already created (has ID), update in real-time
+    if (activeTournamentId) {
+      try {
+        const { error } = await supabase
+          .from('bouts')
+          .update({
+            score_a: scoreA,
+            score_b: scoreB,
+            weapon: weapon
+          })
+          .eq('tournament_id', activeTournamentId)
+          .eq('athlete_a', athleteA)
+          .eq('athlete_b', athleteB);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error updating match:', error);
+      }
+    } else {
+      setHasUnsavedChanges(true);
+    }
   };
 
   const handleExitTournament = () => {
@@ -144,16 +259,17 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       if (error) throw error;
 
+      // Set the tournament ID for real-time updates
+      if (data) {
+        setActiveTournamentId(data);
+      }
+
       toast({
         title: 'Torneo Salvato!',
         description: 'Il torneo è stato creato. Gli atleti riceveranno una notifica per approvare i loro match.',
       });
 
       setHasUnsavedChanges(false);
-      exitTournament();
-      
-      // Check if now we're participating in a tournament
-      await checkParticipation();
 
     } catch (error: any) {
       console.error('Error saving tournament:', error);
@@ -179,22 +295,12 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
   return (
     <div className="space-y-6">
-      {mode === 'menu' && (
+      {mode === 'menu' && !activeTournamentId && (
         <div className="space-y-4">
-          {hasActiveTournament && (
-            <Button 
-              onClick={() => setMode('participate')}
-              className="w-full"
-              variant="default"
-            >
-              <Trophy className="mr-2 w-4 h-4" />
-              Vedi Tornei in Corso
-            </Button>
-          )}
           <Button 
-            onClick={() => setMode('create')}
+            onClick={() => setMode('matrix')}
             className="w-full"
-            variant={hasActiveTournament ? "outline" : "default"}
+            variant="default"
           >
             <Plus className="mr-2 w-4 h-4" />
             Crea Nuovo Torneo
@@ -202,7 +308,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         </div>
       )}
 
-      {mode === 'create' && (
+      {mode === 'matrix' && (
         <div>
           {tournamentStarted && (
             <Button 
@@ -226,18 +332,12 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               onSaveResults={handleSaveTournament}
               saving={saving}
               isStudentMode={true}
+              currentUserId={currentUserId}
+              tournamentCreatorId={tournamentCreatorId}
+              activeTournamentId={activeTournamentId}
             />
           )}
         </div>
-      )}
-
-      {mode === 'participate' && (
-        <TournamentParticipantView 
-          onExit={() => {
-            setMode('menu');
-            setHasActiveTournament(false);
-          }} 
-        />
       )}
 
       {/* Exit confirmation dialog */}
