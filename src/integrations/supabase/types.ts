@@ -546,6 +546,10 @@ export type Database = {
         }
         Returns: number
       }
+      close_old_tournaments: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_gym: {
         Args: {
           _logo_url: string
