@@ -204,15 +204,51 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
   };
 
-  const handleExitTournament = () => {
+  const handleExitTournament = async () => {
     if (hasUnsavedChanges) {
       setShowExitDialog(true);
     } else {
-      exitTournament();
+      await exitTournament();
     }
   };
 
-  const exitTournament = () => {
+  const exitTournament = async () => {
+    // Se c'è un torneo attivo nel database, cancellalo
+    if (activeTournamentId) {
+      try {
+        // Aggiorna lo status a 'cancelled'
+        const { error: updateError } = await supabase
+          .from('tournaments')
+          .update({ status: 'cancelled' })
+          .eq('id', activeTournamentId);
+        
+        if (updateError) throw updateError;
+        
+        // Cancella i bouts pending
+        const { error: deleteError } = await supabase
+          .from('bouts')
+          .delete()
+          .eq('tournament_id', activeTournamentId)
+          .eq('status', 'pending');
+          
+        if (deleteError) throw deleteError;
+        
+        console.log('Tournament cancelled on exit');
+        toast({
+          title: "Torneo Cancellato",
+          description: "Il torneo è stato cancellato con successo.",
+        });
+      } catch (error) {
+        console.error('Error cancelling tournament:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile cancellare il torneo.",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    // Reset dello stato locale
     setMode('menu');
     setTournamentStarted(false);
     setSelectedAthletes([]);
@@ -223,40 +259,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setTournamentCreatorId(null);
   };
 
-  const handleCancelTournament = async () => {
-    if (!activeTournamentId) return;
-    
-    try {
-      // Aggiorna lo status a 'cancelled'
-      const { error } = await supabase
-        .from('tournaments')
-        .update({ status: 'cancelled' })
-        .eq('id', activeTournamentId);
-        
-      if (error) throw error;
-      
-      // Cancella tutti i bouts pending associati
-      await supabase
-        .from('bouts')
-        .delete()
-        .eq('tournament_id', activeTournamentId)
-        .eq('status', 'pending');
-      
-      toast({
-        title: 'Torneo Cancellato',
-        description: 'Il torneo è stato cancellato e i match in sospeso sono stati eliminati',
-      });
-      
-      exitTournament();
-    } catch (error: any) {
-      console.error('Error cancelling tournament:', error);
-      toast({
-        title: 'Errore',
-        description: 'Impossibile cancellare il torneo',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const handleSaveTournament = async (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => {
     setSaving(true);
@@ -437,7 +439,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               onUpdateMatch={handleUpdateMatch}
               onResetTournament={handleResetTournament}
               onSaveResults={handleSaveTournament}
-              onCancelTournament={handleCancelTournament}
               saving={saving}
               isStudentMode={true}
               currentUserId={currentUserId}
