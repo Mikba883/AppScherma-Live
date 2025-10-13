@@ -322,6 +322,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           title: 'Torneo Salvato!',
           description: 'Il torneo è stato creato. Gli atleti riceveranno una notifica per approvare i loro match.',
         });
+        
+        // Exit and reset tournament
+        setActiveTournamentId(null);
+        setTournamentCreatorId(null);
+        exitTournament();
       }
 
       setHasUnsavedChanges(false);
