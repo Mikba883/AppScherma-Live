@@ -45,15 +45,19 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
   const checkActiveTournament = async () => {
     try {
-      const { data } = await supabase.rpc('get_my_tournament_matches');
-      if (data && data.length > 0) {
-        // Load tournament data
-        const tournamentId = data[0].tournament_id;
-        setActiveTournamentId(tournamentId);
-        setTournamentCreatorId(data[0].created_by);
-        
-        // Load tournament details
-        await loadTournamentData(tournamentId);
+      // Check for active tournaments with status='in_progress'
+      const { data: activeTournament } = await supabase
+        .from('tournaments')
+        .select('id, created_by')
+        .eq('status', 'in_progress')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (activeTournament) {
+        setActiveTournamentId(activeTournament.id);
+        setTournamentCreatorId(activeTournament.created_by);
+        await loadTournamentData(activeTournament.id);
         setMode('matrix');
       }
     } catch (error) {
@@ -258,6 +262,14 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           savedCount++;
         }
 
+        // Update tournament status to completed
+        if (activeTournamentId) {
+          await supabase
+            .from('tournaments')
+            .update({ status: 'completed' })
+            .eq('id', activeTournamentId);
+        }
+
         toast({
           title: 'Torneo Salvato!',
           description: `${savedCount} match salvati e registrati nel database`,
@@ -297,9 +309,13 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
         if (error) throw error;
 
-        // Set the tournament ID for real-time updates
+        // Set the tournament ID and update status to completed
         if (data) {
           setActiveTournamentId(data);
+          await supabase
+            .from('tournaments')
+            .update({ status: 'completed' })
+            .eq('id', data);
         }
 
         toast({
