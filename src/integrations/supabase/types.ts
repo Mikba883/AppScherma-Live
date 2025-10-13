@@ -604,6 +604,19 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_invitation_by_token: {
+        Args: { _token: string }
+        Returns: {
+          expires_at: string
+          gym_id: string
+          gym_logo_url: string
+          gym_name: string
+          gym_shifts: string[]
+          id: string
+          role: string
+          status: string
+        }[]
+      }
       get_my_pending_bouts: {
         Args: Record<PropertyKey, never>
         Returns: {

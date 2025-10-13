@@ -55,55 +55,40 @@ export default function AcceptInvitationPage() {
   const fetchInvitation = async () => {
     try {
       const { data, error } = await supabase
-        .from('gym_invitations')
-        .select(`
-          *,
-          gyms:gym_id (
-            id,
-            name,
-            logo_url,
-            shifts
-          )
-        `)
-        .eq('token', token)
-        .single();
+        .rpc('get_invitation_by_token', { _token: token });
 
       if (error) throw error;
 
-      if (!data) {
+      if (!data || data.length === 0) {
         toast({
           title: "Invito non trovato",
-          description: "Il link di invito non è valido.",
+          description: "Il link di invito non è valido o è scaduto.",
           variant: "destructive",
         });
         navigate('/');
         return;
       }
 
-      if (data.status !== 'pending') {
-        toast({
-          title: "Invito già utilizzato",
-          description: "Questo invito è già stato accettato.",
-          variant: "destructive",
-        });
-        navigate('/');
-        return;
-      }
-
-      if (new Date(data.expires_at) < new Date()) {
-        toast({
-          title: "Invito scaduto",
-          description: "Questo invito è scaduto.",
-          variant: "destructive",
-        });
-        navigate('/');
-        return;
-      }
-
-      setInvitation(data);
-      setEmail(data.email);
+      const invData = data[0];
+      
+      // Structure the data to match expected format
+      setInvitation({
+        id: invData.id,
+        gym_id: invData.gym_id,
+        role: invData.role,
+        status: invData.status,
+        expires_at: invData.expires_at,
+        gyms: {
+          id: invData.gym_id,
+          name: invData.gym_name,
+          logo_url: invData.gym_logo_url,
+          shifts: invData.gym_shifts,
+        },
+      });
+      
+      // Email no longer exposed for security, user will provide it
+      setEmail('');
     } catch (error) {
-      console.error('Error fetching invitation:', error);
       toast({
         title: "Errore",
         description: "Impossibile verificare l'invito.",
@@ -231,12 +216,20 @@ export default function AcceptInvitationPage() {
         
         <form onSubmit={handleAccept}>
           <CardContent className="space-y-4">
-            <Alert>
-              <Mail className="h-4 w-4" />
-              <AlertDescription>
-                Registrazione per: <strong>{email}</strong>
-              </AlertDescription>
-            </Alert>
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                <Mail className="inline h-4 w-4 mr-1" />
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="tua.email@esempio.com"
+              />
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="fullName">

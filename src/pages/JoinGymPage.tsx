@@ -37,35 +37,29 @@ const JoinGymPage = () => {
   const fetchInvitation = async () => {
     try {
       const { data, error } = await supabase
-        .from('gym_invitations')
-        .select(`
-          *,
-          gym:gyms(name, logo_url)
-        `)
-        .eq('token', token)
-        .single();
+        .rpc('get_invitation_by_token', { _token: token });
 
       if (error) throw error;
 
-      if (!data) {
-        setError('Invito non trovato');
+      if (!data || data.length === 0) {
+        setError('Invito non trovato o scaduto');
         return;
       }
 
-      // Check if invitation is expired
-      if (new Date(data.expires_at) < new Date()) {
-        setError('Questo invito è scaduto');
-        return;
-      }
-
-      if (data.status === 'accepted') {
-        setError('Questo invito è già stato utilizzato');
-        return;
-      }
-
-      setInvitation(data as any);
+      const invData = data[0];
+      setInvitation({
+        id: invData.id,
+        gym_id: invData.gym_id,
+        email: '', // Email not exposed anymore
+        role: invData.role as 'allievo' | 'istruttore',
+        status: invData.status,
+        expires_at: invData.expires_at,
+        gym: {
+          name: invData.gym_name,
+          logo_url: invData.gym_logo_url,
+        },
+      });
     } catch (error) {
-      console.error('Error fetching invitation:', error);
       setError('Errore nel recupero dell\'invito');
     } finally {
       setLoading(false);
