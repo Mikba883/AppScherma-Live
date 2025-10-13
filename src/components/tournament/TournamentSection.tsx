@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Plus, Trophy } from 'lucide-react';
+import { useUserRoleOptimized } from '@/hooks/useUserRoleOptimized';
 
 interface TournamentSectionProps {
   onTournamentStateChange?: (hasUnsavedMatches: boolean) => void;
@@ -24,6 +25,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [tournamentCreatorId, setTournamentCreatorId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { isInstructor } = useUserRoleOptimized();
 
   useEffect(() => {
     loadCurrentUser();
@@ -233,41 +235,78 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         return;
       }
 
-      const uniqueMatches: any[] = [];
-      const seenPairs = new Set<string>();
-
-      completedMatches.forEach(match => {
-        const pairKey = [match.athleteA, match.athleteB].sort().join('-');
-        if (!seenPairs.has(pairKey)) {
-          seenPairs.add(pairKey);
-          uniqueMatches.push({
-            athlete_a: match.athleteA,
-            athlete_b: match.athleteB,
-            score_a: match.scoreA,
-            score_b: match.scoreB,
+      if (isInstructor) {
+        // CASO ISTRUTTORE: Salva direttamente ogni match come approved
+        console.log('[TournamentSection] Instructor mode - saving matches directly');
+        
+        let savedCount = 0;
+        for (const match of completedMatches) {
+          const { error } = await supabase.rpc('register_bout_instructor', {
+            _athlete_a: match.athleteA,
+            _athlete_b: match.athleteB,
+            _bout_date: tournamentDate,
+            _weapon: weapon || null,
+            _bout_type: boutType,
+            _score_a: match.scoreA!,
+            _score_b: match.scoreB!
           });
+
+          if (error) {
+            console.error('[TournamentSection] Error saving match:', error);
+            throw error;
+          }
+          savedCount++;
         }
-      });
 
-      const { data, error } = await supabase.rpc('register_tournament_matches', {
-        _tournament_name: tournamentName,
-        _tournament_date: tournamentDate,
-        _weapon: weapon || '',
-        _bout_type: boutType,
-        _matches: uniqueMatches,
-      });
+        toast({
+          title: 'Torneo Salvato!',
+          description: `${savedCount} match salvati e registrati nel database`,
+        });
+        
+        // Exit and reset tournament
+        setActiveTournamentId(null);
+        setTournamentCreatorId(null);
+        exitTournament();
+      } else {
+        // CASO ALLIEVO: Usa il sistema di approvazione con notifiche
+        console.log('[TournamentSection] Student mode - creating tournament with approval flow');
+        
+        const uniqueMatches: any[] = [];
+        const seenPairs = new Set<string>();
 
-      if (error) throw error;
+        completedMatches.forEach(match => {
+          const pairKey = [match.athleteA, match.athleteB].sort().join('-');
+          if (!seenPairs.has(pairKey)) {
+            seenPairs.add(pairKey);
+            uniqueMatches.push({
+              athlete_a: match.athleteA,
+              athlete_b: match.athleteB,
+              score_a: match.scoreA,
+              score_b: match.scoreB,
+            });
+          }
+        });
 
-      // Set the tournament ID for real-time updates
-      if (data) {
-        setActiveTournamentId(data);
+        const { data, error } = await supabase.rpc('register_tournament_matches', {
+          _tournament_name: tournamentName,
+          _tournament_date: tournamentDate,
+          _weapon: weapon || '',
+          _bout_type: boutType,
+          _matches: uniqueMatches,
+        });
+
+        if (error) throw error;
+
+        // Set the tournament ID for real-time updates
+        if (data) {
+          setActiveTournamentId(data);
+        }
+
+        toast({
+          title: 'Torneo Salvato!',
+          description: 'Il torneo è stato creato. Gli atleti riceveranno una notifica per approvare i loro match.',
+        });
       }
-
-      toast({
-        title: 'Torneo Salvato!',
-        description: 'Il torneo è stato creato. Gli atleti riceveranno una notifica per approvare i loro match.',
-      });
 
       setHasUnsavedChanges(false);
 
@@ -335,6 +374,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               currentUserId={currentUserId}
               tournamentCreatorId={tournamentCreatorId}
               activeTournamentId={activeTournamentId}
+              organizerRole={isInstructor ? 'instructor' : 'student'}
             />
           )}
         </div>

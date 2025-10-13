@@ -23,6 +23,7 @@ interface TournamentMatrixProps {
   currentUserId?: string | null;
   tournamentCreatorId?: string | null;
   activeTournamentId?: string | null;
+  organizerRole?: 'instructor' | 'student';
 }
 
 export const TournamentMatrix = ({ 
@@ -35,7 +36,8 @@ export const TournamentMatrix = ({
   isStudentMode = false,
   currentUserId = null,
   tournamentCreatorId = null,
-  activeTournamentId = null
+  activeTournamentId = null,
+  organizerRole = 'student'
 }: TournamentMatrixProps) => {
   const [saving, setSaving] = useState(false);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
@@ -416,16 +418,12 @@ export const TournamentMatrix = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Finalizza Torneo</AlertDialogTitle>
             <AlertDialogDescription>
-              {isStudentMode ? (
-                <>
-                  Vuoi salvare il torneo? Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
-                  {getCompletedMatches() > 0 && " Gli atleti coinvolti dovranno approvare i loro match prima che vengano registrati."}
-                </>
+              Vuoi salvare il torneo? Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
+              <br /><br />
+              {organizerRole === 'instructor' ? (
+                <strong>Come istruttore, i risultati saranno registrati immediatamente nel database e i ranking aggiornati.</strong>
               ) : (
-                <>
-                  Vuoi salvare i risultati del torneo? Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
-                  {getCompletedMatches() > 0 && " I risultati saranno registrati nel database e i ranking aggiornati."}
-                </>
+                <strong>Come allievo, gli atleti coinvolti dovranno approvare i loro match prima che vengano registrati.</strong>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
