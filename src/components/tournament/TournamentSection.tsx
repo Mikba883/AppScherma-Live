@@ -291,11 +291,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const exitTournament = async () => {
-    // Salva l'ID prima di resettare lo stato
-    const tournamentToCancel = activeTournamentId;
-    const isCreator = tournamentCreatorId === (await supabase.auth.getUser()).data.user?.id;
-    
-    // Reset dello stato locale PRIMA
+    // Reset local state only - tournament remains in_progress in DB
+    // It will reappear until creator explicitly closes it or it's auto-closed after 24h
     setMode('menu');
     setTournamentStarted(false);
     setSelectedAthletes([]);
@@ -304,24 +301,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setShowExitDialog(false);
     setActiveTournamentId(null);
     setTournamentCreatorId(null);
-    
-    // Solo il creatore può cancellare il torneo dal database
-    if (tournamentToCancel && isCreator) {
-      try {
-        await supabase
-          .from('tournaments')
-          .update({ status: 'cancelled' })
-          .eq('id', tournamentToCancel);
-        
-        await supabase
-          .from('bouts')
-          .delete()
-          .eq('tournament_id', tournamentToCancel)
-          .eq('status', 'pending');
-      } catch (error) {
-        console.error('Error cancelling tournament:', error);
-      }
-    }
   };
 
 

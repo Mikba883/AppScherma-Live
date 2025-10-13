@@ -187,6 +187,38 @@ export const TournamentMatrix = ({
     return countedMatches.size;
   };
 
+  const handleCancelTournament = async () => {
+    if (!activeTournamentId) return;
+    
+    try {
+      // Mark tournament as cancelled
+      const { error: tournamentError } = await supabase
+        .from('tournaments')
+        .update({ status: 'cancelled' })
+        .eq('id', activeTournamentId);
+      
+      if (tournamentError) throw tournamentError;
+      
+      // Delete all pending bouts
+      const { error: boutsError } = await supabase
+        .from('bouts')
+        .delete()
+        .eq('tournament_id', activeTournamentId)
+        .eq('status', 'pending');
+      
+      if (boutsError) throw boutsError;
+      
+      toast.success('Torneo chiuso senza salvare i dati');
+      
+      setShowFinishDialog(false);
+      onResetTournament();
+      navigate('/');
+    } catch (error) {
+      console.error('Error cancelling tournament:', error);
+      toast.error('Impossibile chiudere il torneo');
+    }
+  };
+
   const handleSaveResults = async () => {
     if (isStudentMode && onSaveResults) {
       // For students, use the custom save handler
@@ -422,23 +454,31 @@ export const TournamentMatrix = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Finalizza Torneo</AlertDialogTitle>
             <AlertDialogDescription>
-              Vuoi salvare il torneo? Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
+              Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
               <br /><br />
-              {organizerRole === 'instructor' ? (
-                <strong>Come istruttore, i risultati saranno registrati immediatamente nel database e i ranking aggiornati.</strong>
-              ) : (
-                <strong>Come allievo, gli atleti coinvolti dovranno approvare i loro match prima che vengano registrati.</strong>
-              )}
+              <strong>Scegli come vuoi chiudere il torneo:</strong>
+              <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
+                <li><strong>Salva i Dati:</strong> I match completati verranno registrati nel database.</li>
+                <li><strong>Non Salvare:</strong> Il torneo verrà chiuso senza registrare nessun match.</li>
+              </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>No</AlertDialogCancel>
-            <AlertDialogAction 
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => setShowFinishDialog(false)}>
+              Annulla
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleCancelTournament}
+            >
+              FINE senza Salvare
+            </Button>
+            <Button
               onClick={handleSaveResults}
               disabled={getCompletedMatches() === 0 || isSaving}
             >
-              {isSaving ? 'Salvataggio...' : 'Sì, Salva'}
-            </AlertDialogAction>
+              {isSaving ? 'Salvataggio...' : 'FINE e Salva i Dati'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
