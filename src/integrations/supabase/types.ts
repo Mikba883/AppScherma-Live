@@ -617,6 +617,17 @@ export type Database = {
           status: string
         }[]
       }
+      get_my_active_tournament: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bout_type: string
+          created_by: string
+          tournament_date: string
+          tournament_id: string
+          tournament_name: string
+          weapon: string
+        }[]
+      }
       get_my_pending_bouts: {
         Args: Record<PropertyKey, never>
         Returns: {

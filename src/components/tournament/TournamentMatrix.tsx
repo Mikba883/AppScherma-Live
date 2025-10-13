@@ -317,10 +317,14 @@ export const TournamentMatrix = ({
                                  <Target className="w-4 h-4 text-muted-foreground" />
                                </div>
                              ) : (
-                               <ReadOnlyMatchCell
+                               <MatchInputs
                                  athleteA={athleteA.id}
                                  athleteB={athleteB.id}
+                                 athleteAName={athleteA.full_name}
+                                 athleteBName={athleteB.full_name}
                                  match={getMatch(athleteA.id, athleteB.id)}
+                                 onUpdate={handleScoreChange}
+                                 canEdit={canEditMatch(athleteA.id, athleteB.id)}
                                />
                              )}
                           </TableCell>
