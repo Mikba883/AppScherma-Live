@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trophy, Save, RotateCcw, Target } from 'lucide-react';
+import { Trophy, Save, RotateCcw, Target, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +18,7 @@ interface TournamentMatrixProps {
   onUpdateMatch: (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => void;
   onResetTournament: () => void;
   onSaveResults?: (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => Promise<void>;
+  onCancelTournament?: () => void;
   saving?: boolean;
   isStudentMode?: boolean;
   currentUserId?: string | null;
@@ -32,6 +33,7 @@ export const TournamentMatrix = ({
   onUpdateMatch, 
   onResetTournament,
   onSaveResults,
+  onCancelTournament,
   saving: externalSaving,
   isStudentMode = false,
   currentUserId = null,
@@ -271,13 +273,24 @@ export const TournamentMatrix = ({
                 {getCompletedMatches()}/{getTotalMatches()} incontri completati
               </Badge>
               {isCreator && (
-                <Button 
-                  onClick={() => setShowFinishDialog(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Trophy className="w-4 h-4" />
-                  FINE
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="destructive"
+                    size="sm"
+                    onClick={onCancelTournament}
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Cancella
+                  </Button>
+                  <Button 
+                    onClick={() => setShowFinishDialog(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Trophy className="w-4 h-4" />
+                    FINE
+                  </Button>
+                </div>
               )}
             </div>
           </CardTitle>
