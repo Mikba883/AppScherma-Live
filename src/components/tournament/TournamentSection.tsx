@@ -45,11 +45,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
   const checkActiveTournament = async () => {
     try {
-      // Check for active tournaments with status='in_progress'
+      // Calcola 24 ore fa per filtrare tornei vecchi
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      // Cerca solo tornei in_progress creati nelle ultime 24 ore
       const { data: activeTournament } = await supabase
         .from('tournaments')
         .select('id, created_by')
         .eq('status', 'in_progress')
+        .gte('created_at', twentyFourHoursAgo.toISOString())
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -213,42 +218,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const exitTournament = async () => {
-    // Se c'è un torneo attivo nel database, cancellalo
-    if (activeTournamentId) {
-      try {
-        // Aggiorna lo status a 'cancelled'
-        const { error: updateError } = await supabase
-          .from('tournaments')
-          .update({ status: 'cancelled' })
-          .eq('id', activeTournamentId);
-        
-        if (updateError) throw updateError;
-        
-        // Cancella i bouts pending
-        const { error: deleteError } = await supabase
-          .from('bouts')
-          .delete()
-          .eq('tournament_id', activeTournamentId)
-          .eq('status', 'pending');
-          
-        if (deleteError) throw deleteError;
-        
-        console.log('Tournament cancelled on exit');
-        toast({
-          title: "Torneo Cancellato",
-          description: "Il torneo è stato cancellato con successo.",
-        });
-      } catch (error) {
-        console.error('Error cancelling tournament:', error);
-        toast({
-          title: "Errore",
-          description: "Impossibile cancellare il torneo.",
-          variant: "destructive",
-        });
-      }
-    }
+    // Salva l'ID prima di resettare lo stato
+    const tournamentToCancel = activeTournamentId;
     
-    // Reset dello stato locale
+    // Reset dello stato locale PRIMA
     setMode('menu');
     setTournamentStarted(false);
     setSelectedAthletes([]);
@@ -257,6 +230,30 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setShowExitDialog(false);
     setActiveTournamentId(null);
     setTournamentCreatorId(null);
+    
+    // POI cancella dal database
+    if (tournamentToCancel) {
+      try {
+        await supabase
+          .from('tournaments')
+          .update({ status: 'cancelled' })
+          .eq('id', tournamentToCancel);
+        
+        await supabase
+          .from('bouts')
+          .delete()
+          .eq('tournament_id', tournamentToCancel)
+          .eq('status', 'pending');
+        
+        toast({
+          title: "Torneo Cancellato",
+          description: "Il torneo è stato cancellato con successo.",
+        });
+      } catch (error) {
+        console.error('Error cancelling tournament:', error);
+        // Non mostrare errore all'utente, è già uscito
+      }
+    }
   };
 
 

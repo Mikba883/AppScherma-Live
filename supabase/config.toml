@@ -1,1 +1,11 @@
 project_id = "topkzcumjilaxbprufyo"
+
+[functions.close-old-tournaments]
+verify_jwt = false
+
+[cron]
+enabled = true
+
+[[cron.jobs]]
+function_name = "close-old-tournaments"
+schedule = "0 * * * *"
