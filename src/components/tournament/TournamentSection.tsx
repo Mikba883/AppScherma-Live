@@ -219,6 +219,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setMatches([]);
     setHasUnsavedChanges(false);
     setShowExitDialog(false);
+    setActiveTournamentId(null);
+    setTournamentCreatorId(null);
   };
 
   const handleSaveTournament = async (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => {
