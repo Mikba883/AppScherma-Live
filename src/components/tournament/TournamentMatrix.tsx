@@ -84,16 +84,23 @@ export const TournamentMatrix = ({
   };
 
   const getMatch = (athleteA: string, athleteB: string): TournamentMatch | undefined => {
-    const match = matches.find(match => 
-      (match.athleteA === athleteA && match.athleteB === athleteB) ||
-      (match.athleteA === athleteB && match.athleteB === athleteA)
-    );
+    // Normalizza ordine atleti per ricerca coerente
+    const [normalizedA, normalizedB] = [athleteA, athleteB].sort();
+    
+    const match = matches.find(match => {
+      const [matchA, matchB] = [match.athleteA, match.athleteB].sort();
+      return matchA === normalizedA && matchB === normalizedB;
+    });
     
     // Debug logging
     if (!match) {
       console.log('⚠️ Match NON trovato:', {
         cercato: `${athleteA} vs ${athleteB}`,
-        disponibili: matches.map(m => `${m.athleteA} vs ${m.athleteB}`)
+        normalizzato: `${normalizedA} vs ${normalizedB}`,
+        disponibili: matches.map(m => {
+          const [a, b] = [m.athleteA, m.athleteB].sort();
+          return `${a} vs ${b}`;
+        })
       });
     }
     
