@@ -45,6 +45,20 @@ export const TournamentMatrix = ({
   const [showFinishDialog, setShowFinishDialog] = useState(false);
   const navigate = useNavigate();
   
+  // Fix 3: Check atleti vuoti
+  if (!athletes || athletes.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center">
+            <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Nessun atleta nel torneo</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   const isSaving = externalSaving || saving;
   const isCreator = currentUserId && tournamentCreatorId && currentUserId === tournamentCreatorId;
   

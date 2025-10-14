@@ -155,6 +155,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      console.error('[TournamentSection] User not authenticated');
       toast({
         title: "Errore",
         description: "Utente non autenticato",
@@ -164,22 +165,27 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
 
     // Ottieni gym_id dal profilo
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('gym_id')
       .eq('user_id', user.id)
       .single();
 
+    console.log('[TournamentSection] Profile data:', profile, 'Error:', profileError);
+
     if (!profile?.gym_id) {
+      console.error('[TournamentSection] Profile not found or gym_id missing');
       toast({
         title: "Errore",
-        description: "Profilo non trovato",
+        description: "Profilo non trovato o gym_id mancante",
         variant: "destructive",
       });
       return;
     }
 
     try {
+      console.log('[TournamentSection] Creating tournament with gym_id:', profile.gym_id);
+      
       // 1. Crea il torneo nel database
       const { data: tournament, error: tournamentError } = await supabase
         .from('tournaments')
@@ -194,7 +200,17 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         .select()
         .single();
 
-      if (tournamentError) throw tournamentError;
+      console.log('[TournamentSection] Tournament created:', tournament, 'Error:', tournamentError);
+
+      if (tournamentError) {
+        console.error('[TournamentSection] Tournament creation error:', tournamentError);
+        toast({
+          title: "Errore Creazione Torneo",
+          description: tournamentError.message || "Impossibile creare il torneo",
+          variant: "destructive",
+        });
+        throw tournamentError;
+      }
 
       // 2. Genera tutti i match
       const allMatches: TournamentMatch[] = [];
@@ -227,12 +243,27 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         }
       }
 
+      console.log('[TournamentSection] Inserting bouts:', boutsToInsert.length);
+
       // 3. Inserisci tutti i bouts nel database
       const { error: boutsError } = await supabase
         .from('bouts')
         .insert(boutsToInsert);
 
-      if (boutsError) throw boutsError;
+      if (boutsError) {
+        console.error('[TournamentSection] Bouts insertion error:', boutsError);
+        toast({
+          title: "Errore Inserimento Match",
+          description: boutsError.message || "Impossibile creare i match del torneo",
+          variant: "destructive",
+        });
+        throw boutsError;
+      }
+
+      console.log('[TournamentSection] Bouts inserted successfully');
+
+      // Fix 4: Aspetta 500ms per sincronizzazione database
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // 4. Imposta lo stato locale
       setActiveTournamentId(tournament.id);
@@ -241,6 +272,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       setTournamentStarted(true);
       setHasUnsavedChanges(false);
       setMode('matrix');
+      
+      console.log('[TournamentSection] State updated, switching to matrix mode');
       
       // 5. Sottoscrivi agli updates real-time
       subscribeToTournamentUpdates(tournament.id);
@@ -251,11 +284,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         title: "Torneo Creato",
         description: "Gli altri atleti possono ora vedere e inserire i risultati.",
       });
-    } catch (error) {
-      console.error('Error creating tournament:', error);
+    } catch (error: any) {
+      console.error('[TournamentSection] Error creating tournament:', error);
       toast({
         title: "Errore",
-        description: "Impossibile creare il torneo",
+        description: error.message || "Impossibile creare il torneo",
         variant: "destructive",
       });
     }
