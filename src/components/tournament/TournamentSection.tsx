@@ -383,7 +383,9 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const handleUpdateMatch = async (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => {
-    // Aggiorna stato locale
+    console.log('[handleUpdateMatch] Ricevuto:', { athleteA, athleteB, scoreA, scoreB, weapon });
+    
+    // 1. Aggiorna stato locale (mantieni ordine ricevuto dall'interfaccia)
     setMatches(prev => 
       prev.map(match => {
         if (match.athleteA === athleteA && match.athleteB === athleteB) {
@@ -396,23 +398,65 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       })
     );
     
-    // Se torneo già creato, aggiorna database
+    // 2. Se torneo già creato, aggiorna database
     if (activeTournamentId) {
       try {
-        const { error } = await supabase
+        // 2a. Trova il match nel database (può essere in entrambi gli ordini)
+        const { data: existingBouts, error: searchError } = await supabase
+          .from('bouts')
+          .select('id, athlete_a, athlete_b')
+          .eq('tournament_id', activeTournamentId)
+          .or(`and(athlete_a.eq.${athleteA},athlete_b.eq.${athleteB}),and(athlete_a.eq.${athleteB},athlete_b.eq.${athleteA})`);
+
+        if (searchError) {
+          console.error('[handleUpdateMatch] Errore ricerca bout:', searchError);
+          throw searchError;
+        }
+
+        if (!existingBouts || existingBouts.length === 0) {
+          console.error('[handleUpdateMatch] Nessun bout trovato per:', { athleteA, athleteB });
+          throw new Error('Match non trovato nel database');
+        }
+
+        const bout = existingBouts[0];
+        console.log('[handleUpdateMatch] Bout trovato nel DB:', bout);
+
+        // 2b. Determina l'ordine corretto dei punteggi basandoti sull'ordine del DB
+        const finalScoreA = bout.athlete_a === athleteA ? scoreA : scoreB;
+        const finalScoreB = bout.athlete_a === athleteA ? scoreB : scoreA;
+
+        console.log('[handleUpdateMatch] Aggiorno con:', { 
+          bout_id: bout.id, 
+          db_athlete_a: bout.athlete_a,
+          db_athlete_b: bout.athlete_b,
+          finalScoreA, 
+          finalScoreB,
+          weapon 
+        });
+
+        // 2c. UPDATE usando l'ID del bout
+        const { error: updateError } = await supabase
           .from('bouts')
           .update({
-            score_a: scoreA,
-            score_b: scoreB,
+            score_a: finalScoreA,
+            score_b: finalScoreB,
             weapon: weapon
           })
-          .eq('tournament_id', activeTournamentId)
-          .eq('athlete_a', athleteA)
-          .eq('athlete_b', athleteB);
+          .eq('id', bout.id);
 
-        if (error) throw error;
+        if (updateError) {
+          console.error('[handleUpdateMatch] Errore update:', updateError);
+          throw updateError;
+        }
+
+        console.log('[handleUpdateMatch] ✅ Update riuscito');
       } catch (error) {
-        console.error('Error updating match:', error);
+        console.error('[handleUpdateMatch] ❌ Errore completo:', error);
+        toast({
+          title: "Errore",
+          description: "Impossibile aggiornare il match",
+          variant: "destructive",
+        });
       }
     } else {
       setHasUnsavedChanges(true);
