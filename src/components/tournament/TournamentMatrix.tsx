@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trophy, Save, RotateCcw, Target, Edit2 } from 'lucide-react';
+import { Trophy, Save, RotateCcw, Target, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -605,16 +605,12 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             </div>
           </div>
         </div>
-        <Badge variant="default" className="text-xs bg-green-100 text-green-800 w-full justify-center">
-          Completato
-        </Badge>
-        
-        {/* Bottone per riaprire il match se canEdit */}
-        {canEdit && (
+        {/* Badge "Completato" cliccabile per annullare */}
+        {canEdit ? (
           <Button
             variant="ghost"
             size="sm"
-            className="absolute top-2 right-2 h-7 w-7 p-0"
+            className="w-full bg-green-100 hover:bg-red-100 text-green-800 hover:text-red-800 transition-colors"
             onClick={async () => {
               if (!activeTournamentId) {
                 toast('Errore: torneo non trovato', { duration: 2000 });
@@ -640,15 +636,21 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
                 setScoreA('');
                 setScoreB('');
                 
-                toast('Match riaperto per modifica', { duration: 2000 });
+                toast('Match annullato - puoi reinserire i dati', { duration: 2000 });
               } catch (error) {
                 console.error('Errore riapertura match:', error);
-                toast('Errore durante la riapertura del match', { duration: 2000 });
+                toast('Errore durante l\'annullamento del match', { duration: 2000 });
               }
             }}
           >
-            <Edit2 className="h-3 w-3" />
+            <Check className="h-3 w-3 mr-1" />
+            Completato
+            <RotateCcw className="h-3 w-3 ml-1 opacity-50" />
           </Button>
+        ) : (
+          <Badge variant="default" className="text-xs bg-green-100 text-green-800 w-full justify-center">
+            Completato
+          </Badge>
         )}
       </div>
     );
