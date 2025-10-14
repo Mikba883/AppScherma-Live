@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentMatrix } from './TournamentMatrix';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
@@ -27,6 +27,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
   const { isInstructor } = useUserRoleOptimized();
+  const isSubscribed = useRef(false);
 
   useEffect(() => {
     loadCurrentUser();
@@ -121,14 +122,19 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       setMatches([...matches]);
       setTournamentStarted(true);
       
-      // Subscribe to real-time updates
-      subscribeToTournamentUpdates(tournamentId);
+      // Subscribe to real-time updates ONLY if not already subscribed
+      if (!isSubscribed.current) {
+        subscribeToTournamentUpdates(tournamentId);
+        isSubscribed.current = true;
+      }
     } catch (error) {
       console.error('Error loading tournament:', error);
     }
   };
 
   const subscribeToTournamentUpdates = (tournamentId: string) => {
+    console.log('[Subscription] Sottoscritto a torneo', tournamentId);
+    
     const channel = supabase
       .channel('tournament-updates')
       .on(
@@ -524,6 +530,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setTournamentStarted(false);
     setSelectedAthletes([]);
     setMatches([]);
+    isSubscribed.current = false;
   };
 
   return (
