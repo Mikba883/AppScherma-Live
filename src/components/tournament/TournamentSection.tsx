@@ -82,7 +82,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       // Get all bouts for this tournament
       const { data: bouts, error: boutsError } = await supabase
         .from('bouts')
-        .select('athlete_a, athlete_b, score_a, score_b, weapon')
+        .select('athlete_a, athlete_b, score_a, score_b, weapon, status')
         .eq('tournament_id', tournamentId);
 
       if (boutsError) throw boutsError;
@@ -112,7 +112,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         athleteB: b.athlete_b,
         scoreA: b.score_a,
         scoreB: b.score_b,
-        weapon: b.weapon
+        weapon: b.weapon,
+        status: b.status
       })) || [];
 
       console.log('[loadTournamentData] Matches caricati:', matches.length);
@@ -323,6 +324,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               scoreA: null,
               scoreB: null,
               weapon: null,
+              status: 'pending'
             });
             
             boutsToInsert.push({

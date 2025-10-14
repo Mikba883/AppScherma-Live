@@ -9,4 +9,5 @@ export interface TournamentMatch {
   scoreA: number | null;
   scoreB: number | null;
   weapon: string | null;
+  status: string;
 }
