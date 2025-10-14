@@ -581,7 +581,8 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   const isAWinning = isComplete && scoreANum !== null && scoreBNum !== null && scoreANum > scoreBNum;
   const isBWinning = isComplete && scoreBNum !== null && scoreANum !== null && scoreBNum > scoreANum;
 
-  if (!canEdit && isComplete) {
+  // ✅ PRIMA: Match completato → sempre visibile in read-only
+  if (isComplete) {
     return (
       <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
         <div className="text-xs text-muted-foreground">Arma: {weapon}</div>
@@ -605,107 +606,109 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
     );
   }
 
-  if (!canEdit) {
-    const isInvolved = currentUserId && (athleteA === currentUserId || athleteB === currentUserId);
-    
-    if (isInvolved && !isComplete) {
-      return (
-        <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-center space-y-2">
-          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-            Il tuo avversario deve ancora inserire i dati
-          </div>
-          <Badge variant="outline" className="text-xs border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">
-            In attesa dell'avversario
-          </Badge>
-        </div>
-      );
-    }
-    
+  // ✅ SECONDA: Match non completato + può modificare → form di input
+  if (canEdit) {
     return (
-      <div className="p-3 bg-muted/30 rounded-lg text-center text-xs text-muted-foreground">
-        In attesa di dati
+      <div className="space-y-3">
+        {/* Weapon Selection */}
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
+          <Select 
+            value={weapon} 
+            onValueChange={(value) => {
+              setWeapon(value);
+              onUpdate(athleteA, athleteB, scoreA, scoreB, value);
+            }}
+          >
+            <SelectTrigger className="h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fioretto">Fioretto</SelectItem>
+              <SelectItem value="spada">Spada</SelectItem>
+              <SelectItem value="sciabola">Sciabola</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Scores */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">{athleteAName}</label>
+            <Input
+              type="number"
+              min="0"
+              max="15"
+              value={scoreA === null || scoreA === '' ? '' : scoreA}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setScoreA(newValue);
+                // Solo salva se entrambi i punteggi sono inseriti
+                if (newValue !== '' && scoreB !== '') {
+                  onUpdate(athleteA, athleteB, newValue, scoreB, weapon);
+                }
+              }}
+              className={cn(
+                "text-center",
+                isComplete && isAWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
+                isComplete && isBWinning && "bg-red-100 border-red-300 text-red-800"
+              )}
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">{athleteBName}</label>
+            <Input
+              type="number"
+              min="0"
+              max="15"
+              value={scoreB === null || scoreB === '' ? '' : scoreB}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setScoreB(newValue);
+                // Solo salva se entrambi i punteggi sono inseriti
+                if (scoreA !== '' && newValue !== '') {
+                  onUpdate(athleteA, athleteB, scoreA, newValue, weapon);
+                }
+              }}
+              className={cn(
+                "text-center",
+                isComplete && isBWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
+                isComplete && isAWinning && "bg-red-100 border-red-300 text-red-800"
+              )}
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        {isComplete && (
+          <div className="flex items-center justify-center">
+            <Badge variant="default" className="text-xs bg-green-100 text-green-800">Completato</Badge>
+          </div>
+        )}
       </div>
     );
   }
 
+  // ✅ TERZA: Match non completato + NON può modificare → messaggi di attesa
+  const isInvolved = currentUserId && (athleteA === currentUserId || athleteB === currentUserId);
+  
+  if (isInvolved) {
+    return (
+      <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-center space-y-2">
+        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+          Il tuo avversario deve ancora inserire i dati
+        </div>
+        <Badge variant="outline" className="text-xs border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">
+          In attesa dell'avversario
+        </Badge>
+      </div>
+    );
+  }
+  
   return (
-    <div className="space-y-3">
-      {/* Weapon Selection */}
-      <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
-        <Select 
-          value={weapon} 
-          onValueChange={(value) => {
-            setWeapon(value);
-            onUpdate(athleteA, athleteB, scoreA, scoreB, value);
-          }}
-        >
-          <SelectTrigger className="h-8">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="fioretto">Fioretto</SelectItem>
-            <SelectItem value="spada">Spada</SelectItem>
-            <SelectItem value="sciabola">Sciabola</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Scores */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">{athleteAName}</label>
-          <Input
-            type="number"
-            min="0"
-            max="15"
-            value={scoreA === null || scoreA === '' ? '' : scoreA}
-            onChange={(e) => {
-              const newValue = e.target.value;
-              setScoreA(newValue);
-              // Solo salva se entrambi i punteggi sono inseriti
-              if (newValue !== '' && scoreB !== '') {
-                onUpdate(athleteA, athleteB, newValue, scoreB, weapon);
-              }
-            }}
-            className={cn(
-              "text-center",
-              isComplete && isAWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
-              isComplete && isBWinning && "bg-red-100 border-red-300 text-red-800"
-            )}
-            placeholder="-"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">{athleteBName}</label>
-          <Input
-            type="number"
-            min="0"
-            max="15"
-            value={scoreB === null || scoreB === '' ? '' : scoreB}
-            onChange={(e) => {
-              const newValue = e.target.value;
-              setScoreB(newValue);
-              // Solo salva se entrambi i punteggi sono inseriti
-              if (scoreA !== '' && newValue !== '') {
-                onUpdate(athleteA, athleteB, scoreA, newValue, weapon);
-              }
-            }}
-            className={cn(
-              "text-center",
-              isComplete && isBWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
-              isComplete && isAWinning && "bg-red-100 border-red-300 text-red-800"
-            )}
-            placeholder="0"
-          />
-        </div>
-      </div>
-
-      {isComplete && (
-        <div className="flex items-center justify-center">
-          <Badge variant="default" className="text-xs bg-green-100 text-green-800">Completato</Badge>
-        </div>
-      )}
+    <div className="p-3 bg-muted/30 rounded-lg text-center text-xs text-muted-foreground">
+      In attesa di dati
     </div>
   );
 };
