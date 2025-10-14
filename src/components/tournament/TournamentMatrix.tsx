@@ -636,7 +636,10 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
 
-  const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
+    const isComplete = match?.status === 'approved' && 
+                       match?.scoreA !== null && 
+                       match?.scoreB !== null && 
+                       match?.weapon;
   // FIX: Non convertire stringhe vuote in 0
   const scoreANum = scoreA === '' ? null : parseInt(scoreA);
   const scoreBNum = scoreB === '' ? null : parseInt(scoreB);
