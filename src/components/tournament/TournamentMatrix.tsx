@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
+import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TournamentMatrixProps {
   athletes: TournamentAthlete[];
@@ -330,39 +332,74 @@ export const TournamentMatrix = ({
                      <TableRow>
                        <TableHead className="w-40">Atleta</TableHead>
                        {athletes.map((athlete) => (
-                         <TableHead key={athlete.id} className="text-center min-w-24 text-xs">
-                           {athlete.full_name}
+                         <TableHead key={athlete.id} className="text-center w-32 text-xs px-1">
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <div className="truncate cursor-help">
+                                   {athlete.full_name}
+                                 </div>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>{athlete.full_name}</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
                          </TableHead>
                        ))}
                      </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {athletes.map((athleteA) => (
-                      <TableRow key={athleteA.id}>
-                        <TableCell className="font-medium text-sm">
-                          {athleteA.full_name}
-                        </TableCell>
-                        {athletes.map((athleteB) => (
-                          <TableCell key={athleteB.id} className="p-1">
+                     {athletes.map((athleteA) => (
+                       <TableRow key={athleteA.id}>
+                         <TableCell className="font-medium text-sm w-40 px-2 sticky left-0 bg-background">
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <div className="truncate cursor-help">
+                                   {athleteA.full_name}
+                                 </div>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>{athleteA.full_name}</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                         </TableCell>
+                         {athletes.map((athleteB) => {
+                           const match = getMatch(athleteA.id, athleteB.id);
+                           const canEdit = canEditMatch(athleteA.id, athleteB.id);
+                           const hasNoScores = !match?.scoreA && !match?.scoreB;
+                           
+                           return (
+                             <TableCell 
+                               key={athleteB.id} 
+                               className={cn(
+                                 "p-1 w-32",
+                                 canEdit && hasNoScores && "ring-2 ring-blue-400/50 bg-blue-50/30"
+                               )}
+                             >
                              {athleteA.id === athleteB.id ? (
                                <div className="w-20 h-16 bg-muted rounded flex items-center justify-center">
                                  <Target className="w-4 h-4 text-muted-foreground" />
                                </div>
                              ) : (
-                               <MatchInputs
-                                 athleteA={athleteA.id}
-                                 athleteB={athleteB.id}
-                                 athleteAName={athleteA.full_name}
-                                 athleteBName={athleteB.full_name}
-                                 match={getMatch(athleteA.id, athleteB.id)}
-                                 onUpdate={handleScoreChange}
-                                 canEdit={canEditMatch(athleteA.id, athleteB.id)}
-                               />
-                             )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
+                                <MatchInputs
+                                  athleteA={athleteA.id}
+                                  athleteB={athleteB.id}
+                                  athleteAName={athleteA.full_name}
+                                  athleteBName={athleteB.full_name}
+                                  match={match}
+                                  onUpdate={handleScoreChange}
+                                  canEdit={canEdit}
+                                  currentUserId={currentUserId}
+                                />
+                              )}
+                             </TableCell>
+                           );
+                         })}
+                       </TableRow>
+                     ))}
                   </TableBody>
                 </Table>
               </div>
@@ -539,9 +576,10 @@ interface MatchInputsProps {
   match?: TournamentMatch;
   onUpdate: (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => void;
   canEdit?: boolean;
+  currentUserId?: string | null;
 }
 
-const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true }: MatchInputsProps) => {
+const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true, currentUserId }: MatchInputsProps) => {
   const [scoreA, setScoreA] = useState(match?.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
@@ -577,6 +615,21 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   }
 
   if (!canEdit) {
+    const isInvolved = currentUserId && (athleteA === currentUserId || athleteB === currentUserId);
+    
+    if (isInvolved && !isComplete) {
+      return (
+        <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-center space-y-2">
+          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+            Il tuo avversario deve ancora inserire i dati
+          </div>
+          <Badge variant="outline" className="text-xs border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">
+            In attesa dell'avversario
+          </Badge>
+        </div>
+      );
+    }
+    
     return (
       <div className="p-3 bg-muted/30 rounded-lg text-center text-xs text-muted-foreground">
         In attesa di dati

@@ -205,8 +205,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               status: 'pending',
               created_by: user.id,
               gym_id: profile.gym_id,
-              score_a: 0,
-              score_b: 0
+              score_a: null,
+              score_b: null
             });
           }
         }
