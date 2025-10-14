@@ -657,6 +657,12 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
 
   // ✅ AUTO-SAVE: Salva automaticamente quando TUTTI i campi sono completi
   useEffect(() => {
+    // ✅ Validazione: Non salvare se atleti sono uguali (match invalido)
+    if (athleteA === athleteB) {
+      console.error('[MatchInputs] ❌ Match invalido: stesso atleta A e B');
+      return;
+    }
+    
     // Solo se il match NON è già completato
     if (isComplete) return;
     

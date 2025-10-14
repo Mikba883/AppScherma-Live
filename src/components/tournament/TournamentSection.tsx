@@ -139,7 +139,14 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         scoreB: b.score_b,
         weapon: b.weapon,
         status: b.status
-      })) || [];
+      })).filter(m => {
+        // ✅ RIMUOVI match invalidi (stesso atleta)
+        if (m.athleteA === m.athleteB) {
+          console.warn('[loadTournamentData] ⚠️ Match invalido rimosso:', m);
+          return false;
+        }
+        return true;
+      }) || [];
 
       console.log('[loadTournamentData] Matches caricati:', matches.length);
 
@@ -362,31 +369,34 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       
       for (let i = 0; i < athletes.length; i++) {
         for (let j = 0; j < athletes.length; j++) {
-          if (i !== j) {
-            allMatches.push({
-              athleteA: athletes[i].id,
-              athleteB: athletes[j].id,
-              scoreA: null,
-              scoreB: null,
-              weapon: null,
-              status: 'pending'
-            });
-            
-            boutsToInsert.push({
-              tournament_id: tournament.id,
-              athlete_a: athletes[i].id,
-              athlete_b: athletes[j].id,
-              bout_date: new Date().toISOString().split('T')[0],
-              bout_type: 'sparring',
-              status: 'pending',
-              created_by: user.id,
-              gym_id: profile.gym_id,
-              score_a: null,
-              score_b: null
-            });
-          }
+          // ✅ VALIDAZIONE RIGOROSA: Salta se stesso atleta
+          if (i === j) continue;
+          
+          allMatches.push({
+            athleteA: athletes[i].id,
+            athleteB: athletes[j].id,
+            scoreA: null,
+            scoreB: null,
+            weapon: null,
+            status: 'pending'
+          });
+          
+          boutsToInsert.push({
+            tournament_id: tournament.id,
+            athlete_a: athletes[i].id,
+            athlete_b: athletes[j].id,
+            bout_date: new Date().toISOString().split('T')[0],
+            bout_type: 'sparring',
+            status: 'pending',
+            created_by: user.id,
+            gym_id: profile.gym_id,
+            score_a: null,
+            score_b: null
+          });
         }
       }
+      
+      console.log('[TournamentSection] Match generati:', allMatches.length, 'per', athletes.length, 'atleti');
 
       console.log('[TournamentSection] Inserting bouts:', boutsToInsert.length);
 
@@ -449,10 +459,28 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     console.log('[handleUpdateMatch] START:', { athleteA, athleteB, scoreA, scoreB, weapon });
     
     // ✅ Trova il match nello stato locale per ottenere l'ID
-    const localMatch = matches.find(m => 
-      (m.athleteA === athleteA && m.athleteB === athleteB) ||
-      (m.athleteA === athleteB && m.athleteB === athleteA)
-    );
+    const localMatch = matches.find(m => {
+      // ✅ VALIDAZIONE: Escludi match con stesso atleta
+      if (m.athleteA === m.athleteB) {
+        console.warn('[handleUpdateMatch] ⚠️ Match invalido ignorato:', m);
+        return false;
+      }
+      
+      return (m.athleteA === athleteA && m.athleteB === athleteB) ||
+             (m.athleteA === athleteB && m.athleteB === athleteA);
+    });
+    
+    console.log('[handleUpdateMatch] 🔍 Ricerca match:', {
+      cercato: `${athleteA} vs ${athleteB}`,
+      totaleMatches: matches.length,
+      matchTrovato: localMatch ? 'SÌ' : 'NO',
+      matchDisponibili: matches.slice(0, 5).map(m => ({
+        id: m.id,
+        athleteA: m.athleteA,
+        athleteB: m.athleteB,
+        status: m.status
+      }))
+    });
     
     if (!localMatch?.id) {
       console.error('[handleUpdateMatch] Match ID non trovato nello stato locale');
