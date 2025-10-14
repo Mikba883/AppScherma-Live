@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,10 +84,20 @@ export const TournamentMatrix = ({
   };
 
   const getMatch = (athleteA: string, athleteB: string): TournamentMatch | undefined => {
-    return matches.find(match => 
+    const match = matches.find(match => 
       (match.athleteA === athleteA && match.athleteB === athleteB) ||
       (match.athleteA === athleteB && match.athleteB === athleteA)
     );
+    
+    // Debug logging
+    if (!match) {
+      console.log('⚠️ Match NON trovato:', {
+        cercato: `${athleteA} vs ${athleteB}`,
+        disponibili: matches.map(m => `${m.athleteA} vs ${m.athleteB}`)
+      });
+    }
+    
+    return match;
   };
 
   const getAthleteStats = (athleteId: string) => {
@@ -169,6 +179,10 @@ export const TournamentMatrix = ({
         
         // Skip if either athlete is the "bye" placeholder
         if (athlete1.id !== 'bye' && athlete2.id !== 'bye') {
+          console.log(`Turno ${round + 1}, Match ${i + 1}:`, {
+            athleteA: athlete1.full_name,
+            athleteB: athlete2.full_name
+          });
           roundMatches.push({
             athleteA: athlete1,
             athleteB: athlete2
@@ -196,6 +210,22 @@ export const TournamentMatrix = ({
   const rounds = useMemo(() => {
     return generateRounds();
   }, [athletes, matches]);
+
+  // Debug: log matches ogni volta che cambiano
+  useEffect(() => {
+    console.log('=== MATCHES AGGIORNATI ===');
+    console.log('Numero totale matches:', matches.length);
+    matches.forEach((m, idx) => {
+      console.log(`Match ${idx + 1}:`, {
+        athleteA: athletes.find(a => a.id === m.athleteA)?.full_name || m.athleteA,
+        athleteB: athletes.find(a => a.id === m.athleteB)?.full_name || m.athleteB,
+        scoreA: m.scoreA,
+        scoreB: m.scoreB,
+        weapon: m.weapon
+      });
+    });
+    console.log('===================');
+  }, [matches, athletes]);
 
   const getCompletedMatches = () => {
     const countedMatches = new Set<string>();
