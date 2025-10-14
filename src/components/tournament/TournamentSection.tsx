@@ -184,49 +184,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     
     const channel = supabase
       .channel('tournament-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'bouts',
-          filter: `tournament_id=eq.${tournamentId}`
-        },
-        async (payload) => {
-          const updatedBout = payload.new as any;
-          
-          console.log('[Real-time] 🔄 UPDATE ricevuto:', {
-            id: updatedBout.id,
-            score_a: updatedBout.score_a,
-            score_b: updatedBout.score_b,
-            weapon: updatedBout.weapon,
-            status: updatedBout.status
-          });
-          
-          // ✅ SEMPRE aggiorna lo stato locale (DB è fonte di verità)
-          setMatches(prev => prev.map(match => {
-            if (match.id === updatedBout.id) {
-              const isNormalOrder = match.athleteA === updatedBout.athlete_a;
-              return {
-                ...match,
-                scoreA: isNormalOrder ? updatedBout.score_a : updatedBout.score_b,
-                scoreB: isNormalOrder ? updatedBout.score_b : updatedBout.score_a,
-                weapon: updatedBout.weapon,
-                status: updatedBout.status
-              };
-            }
-            return match;
-          }));
-          
-          // ✅ Toast SOLO se update da altri
-          if (updatedBout.created_by !== currentUserId) {
-            toast({
-              title: "Match aggiornato",
-              duration: 1500,
-            });
-          }
-        }
-      )
+      // ❌ Real-time UPDATE disabilitato per "Organizzazione Turni"
+      // Gli utenti salvano manualmente, la Matrice/Classifica si aggiorna via polling o refresh
       .on(
         'postgres_changes',
         {
@@ -729,6 +688,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             tournamentCreatorId={tournamentCreatorId}
             activeTournamentId={activeTournamentId}
             organizerRole={isInstructor ? 'instructor' : 'student'}
+            isInstructor={isInstructor}
           />
         </div>
       )}

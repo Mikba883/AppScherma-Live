@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface TournamentMatrixProps {
   athletes: TournamentAthlete[];
   matches: TournamentMatch[];
-  version?: number;  // ← Version counter per forzare re-render
+  version?: number;
   onUpdateMatch: (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => void;
   onResetTournament: () => void;
   onSaveResults?: (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => Promise<void>;
@@ -27,12 +27,13 @@ interface TournamentMatrixProps {
   tournamentCreatorId?: string | null;
   activeTournamentId?: string | null;
   organizerRole?: 'instructor' | 'student';
+  isInstructor?: boolean;
 }
 
 export const TournamentMatrix = ({ 
   athletes, 
   matches,
-  version,  // ← Aggiungi version
+  version,
   onUpdateMatch, 
   onResetTournament,
   onSaveResults,
@@ -41,7 +42,8 @@ export const TournamentMatrix = ({
   currentUserId = null,
   tournamentCreatorId = null,
   activeTournamentId = null,
-  organizerRole = 'student'
+  organizerRole = 'student',
+  isInstructor = false
 }: TournamentMatrixProps) => {
   const [saving, setSaving] = useState(false);
   const [showFinishDialog, setShowFinishDialog] = useState(false);
@@ -211,8 +213,22 @@ export const TournamentMatrix = ({
   };
 
   const rounds = useMemo(() => {
-    return generateRounds();
-  }, [athletes, matches]);
+    const allRounds = generateRounds();
+    
+    // ✅ Se sei organizzatore (istruttore) → vedi tutto
+    if (isInstructor) {
+      return allRounds;
+    }
+    
+    // ✅ Se sei atleta → vedi SOLO i tuoi match
+    return allRounds.map(round => ({
+      ...round,
+      matches: round.matches.filter(match => 
+        match.athleteA.id === currentUserId || match.athleteB.id === currentUserId
+      )
+    })).filter(round => round.matches.length > 0); // Rimuovi round vuoti
+    
+  }, [athletes, matches, isInstructor, currentUserId]);
 
 
   // Debug: log matches ogni volta che cambiano
@@ -623,10 +639,11 @@ interface MatchInputsProps {
 }
 
 const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, canEdit = true, canCancel = false, currentUserId }: MatchInputsProps) => {
-  // ✅ Usa direttamente i valori dalle props (DB è fonte di verità)
-  const scoreA = match?.scoreA?.toString() || '';
-  const scoreB = match?.scoreB?.toString() || '';
-  const weapon = match?.weapon || 'fioretto';
+  // ✅ Stato locale per form controllato
+  const [localScoreA, setLocalScoreA] = useState(match?.scoreA?.toString() || '');
+  const [localScoreB, setLocalScoreB] = useState(match?.scoreB?.toString() || '');
+  const [localWeapon, setLocalWeapon] = useState(match?.weapon || 'fioretto');
+  const [isSaving, setIsSaving] = useState(false);
   
   const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
   const isAWinning = isComplete && match.scoreA! > match.scoreB!;
@@ -696,22 +713,46 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
     );
   }
 
-  // ✅ Match non completato + può modificare → form di input con salvataggio immediato
+  // ✅ Match non completato + può modificare → form con salvataggio esplicito
   if (canEdit) {
+    const handleSave = async () => {
+      if (!match?.id) return;
+      
+      if (!localScoreA || !localScoreB || !localWeapon) {
+        toast.error('Compila tutti i campi');
+        return;
+      }
+      
+      setIsSaving(true);
+      try {
+        const { error } = await supabase
+          .from('bouts')
+          .update({
+            score_a: parseInt(localScoreA),
+            score_b: parseInt(localScoreB),
+            weapon: localWeapon,
+            status: 'pending'
+          })
+          .eq('id', match.id);
+        
+        if (error) throw error;
+        toast.success('Match salvato!');
+      } catch (error) {
+        console.error(error);
+        toast.error('Errore nel salvataggio');
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
     return (
       <div className="space-y-3">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
           <Select 
-            value={weapon} 
-            onValueChange={async (newWeapon) => {
-              if (!match?.id) return;
-              const { error } = await supabase
-                .from('bouts')
-                .update({ weapon: newWeapon })
-                .eq('id', match.id);
-              if (error) console.error(error);
-            }}
+            value={localWeapon} 
+            onValueChange={setLocalWeapon}
+            disabled={isSaving}
           >
             <SelectTrigger className="h-8">
               <SelectValue />
@@ -731,16 +772,9 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
               type="number"
               min="0"
               max="15"
-              defaultValue={scoreA}
-              onBlur={async (e) => {
-                if (!match?.id) return;
-                const newScore = e.target.value === '' ? null : parseInt(e.target.value);
-                const { error } = await supabase
-                  .from('bouts')
-                  .update({ score_a: newScore })
-                  .eq('id', match.id);
-                if (error) console.error(error);
-              }}
+              value={localScoreA}
+              onChange={(e) => setLocalScoreA(e.target.value)}
+              disabled={isSaving}
               className="text-center"
               placeholder="0"
             />
@@ -751,21 +785,23 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
               type="number"
               min="0"
               max="15"
-              defaultValue={scoreB}
-              onBlur={async (e) => {
-                if (!match?.id) return;
-                const newScore = e.target.value === '' ? null : parseInt(e.target.value);
-                const { error } = await supabase
-                  .from('bouts')
-                  .update({ score_b: newScore })
-                  .eq('id', match.id);
-                if (error) console.error(error);
-              }}
+              value={localScoreB}
+              onChange={(e) => setLocalScoreB(e.target.value)}
+              disabled={isSaving}
               className="text-center"
               placeholder="0"
             />
           </div>
         </div>
+
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving}
+          className="w-full"
+          size="sm"
+        >
+          {isSaving ? 'Salvataggio...' : 'Salva Match'}
+        </Button>
       </div>
     );
   }
