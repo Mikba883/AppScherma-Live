@@ -430,7 +430,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         const bout = bouts[0];
         
         // ✅ CONTROLLO CRITICO: Se il match è già completato, blocca l'aggiornamento
-        const isCompleted = bout.score_a !== null && bout.score_b !== null && bout.weapon !== null;
+        const isCompleted = bout.status === 'approved' || (bout.score_a !== null && bout.score_b !== null && bout.weapon !== null);
         
         if (isCompleted && !isInstructor) {
           console.log('[handleUpdateMatch] ❌ Match già completato, aggiornamento bloccato');
@@ -450,8 +450,9 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           score_a: isNormalOrder ? scoreA : scoreB,
           score_b: isNormalOrder ? scoreB : scoreA,
           weapon: weapon,
-          // Se entrambi i punteggi sono inseriti, mantieni status pending
-          status: (scoreA !== null && scoreB !== null && weapon !== null) ? 'pending' : 'pending'
+          // ✅ Se tutti i campi sono compilati → status: 'approved' (COMPLETATO)
+          // ❌ Se manca qualcosa → status: 'pending' (MODIFICABILE)
+          status: (scoreA !== null && scoreB !== null && weapon !== null) ? 'approved' : 'pending'
         };
 
         console.log('[handleUpdateMatch] UPDATE DB:', { bout_id: bout.id, ...updates });
