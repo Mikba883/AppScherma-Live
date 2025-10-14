@@ -64,7 +64,9 @@ export const TournamentMatrix = ({
   
   const canEditMatch = (athleteA: string, athleteB: string): boolean => {
     if (!currentUserId) return false;
-    if (isCreator) return true;
+    // Gli organizzatori (creator o istruttori) possono modificare tutto
+    if (isCreator || organizerRole === 'instructor') return true;
+    // I partecipanti possono modificare solo i propri match
     return athleteA === currentUserId || athleteB === currentUserId;
   };
 

@@ -127,8 +127,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const subscribeToTournamentUpdates = (tournamentId: string) => {
-    let debounceTimer: NodeJS.Timeout;
-    
     const channel = supabase
       .channel('tournament-updates')
       .on(
@@ -139,16 +137,19 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           table: 'bouts',
           filter: `tournament_id=eq.${tournamentId}`
         },
-        () => {
-          // Debounce reload to avoid excessive updates
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(async () => {
-            await loadTournamentData(tournamentId);
+        async (payload) => {
+          // Reload immediato senza debounce
+          await loadTournamentData(tournamentId);
+          
+          // Toast solo se l'aggiornamento non è stato fatto da me
+          const updatedBout = payload.new as any;
+          if (updatedBout.created_by !== currentUserId) {
             toast({
-              title: "Dati aggiornati",
-              description: "I risultati del torneo sono stati aggiornati",
+              title: "Risultato aggiornato",
+              description: "Un altro partecipante ha inserito un risultato",
+              duration: 2000,
             });
-          }, 500);
+          }
         }
       )
       .on(
@@ -173,7 +174,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       .subscribe();
 
     return () => {
-      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   };
