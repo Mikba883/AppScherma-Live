@@ -61,8 +61,8 @@ export type Database = {
           notes: string | null
           rejected_at: string | null
           rejected_by: string | null
-          score_a: number
-          score_b: number
+          score_a: number | null
+          score_b: number | null
           status: string
           tournament_id: string | null
           weapon: string | null
@@ -83,8 +83,8 @@ export type Database = {
           notes?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
-          score_a: number
-          score_b: number
+          score_a?: number | null
+          score_b?: number | null
           status?: string
           tournament_id?: string | null
           weapon?: string | null
@@ -105,8 +105,8 @@ export type Database = {
           notes?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
-          score_a?: number
-          score_b?: number
+          score_a?: number | null
+          score_b?: number | null
           status?: string
           tournament_id?: string | null
           weapon?: string | null
