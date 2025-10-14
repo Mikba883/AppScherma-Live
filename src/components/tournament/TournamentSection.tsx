@@ -116,7 +116,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       })) || [];
 
       setSelectedAthletes(athletes);
-      setMatches(matches);
+      setMatches([...matches]); // Forza re-render
       setTournamentStarted(true);
       
       // Subscribe to real-time updates
@@ -138,8 +138,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           filter: `tournament_id=eq.${tournamentId}`
         },
         async (payload) => {
+          console.log('[Real-time] Bout aggiornato:', payload);
           // Reload immediato senza debounce
           await loadTournamentData(tournamentId);
+          console.log('[Real-time] Dati ricaricati');
           
           // Toast solo se l'aggiornamento non è stato fatto da me
           const updatedBout = payload.new as any;
@@ -170,6 +172,36 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               description: "Un altro partecipante ha aggiunto un nuovo incontro",
               duration: 2000,
             });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rankings',
+        },
+        async (payload) => {
+          console.log('[Real-time] Ranking aggiornato:', payload);
+          const updatedRanking = payload.new as any;
+          
+          // Verifica se l'atleta aggiornato è nel torneo attivo
+          const isInTournament = selectedAthletes.some(
+            a => a.id === updatedRanking.athlete_id
+          );
+          
+          if (isInTournament) {
+            await loadTournamentData(tournamentId);
+            console.log('[Real-time] Classifica ricaricata');
+            
+            if (updatedRanking.athlete_id !== currentUserId) {
+              toast({
+                title: "Classifica aggiornata",
+                description: "La classifica del torneo è stata aggiornata",
+                duration: 1500,
+              });
+            }
           }
         }
       )

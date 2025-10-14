@@ -458,15 +458,16 @@ export const TournamentMatrix = ({
                          <div className="text-sm font-medium mb-3">
                            {match.athleteA.full_name} vs {match.athleteB.full_name}
                          </div>
-                           <MatchInputs
-                            athleteA={match.athleteA.id}
-                            athleteB={match.athleteB.id}
-                            athleteAName={match.athleteA.full_name}
-                            athleteBName={match.athleteB.full_name}
-                            match={matchData}
-                            onUpdate={handleScoreChange}
-                            canEdit={canEditMatch(match.athleteA.id, match.athleteB.id)}
-                          />
+                            <MatchInputs
+                             athleteA={match.athleteA.id}
+                             athleteB={match.athleteB.id}
+                             athleteAName={match.athleteA.full_name}
+                             athleteBName={match.athleteB.full_name}
+                             match={matchData}
+                             onUpdate={handleScoreChange}
+                             canEdit={canEditMatch(match.athleteA.id, match.athleteB.id)}
+                             activeTournamentId={activeTournamentId}
+                           />
                        </div>
                      );
                    })}
@@ -569,9 +570,10 @@ interface MatchInputsProps {
   onUpdate: (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => void;
   canEdit?: boolean;
   currentUserId?: string | null;
+  activeTournamentId?: string | null;
 }
 
-const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true, currentUserId }: MatchInputsProps) => {
+const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true, currentUserId, activeTournamentId }: MatchInputsProps) => {
   const [scoreA, setScoreA] = useState(match?.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
@@ -613,11 +615,36 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             variant="ghost"
             size="sm"
             className="absolute top-2 right-2 h-7 w-7 p-0"
-            onClick={() => {
-              setScoreA('');
-              setScoreB('');
-              setWeapon(weapon || 'fioretto');
-              onUpdate(athleteA, athleteB, null, null, weapon);
+            onClick={async () => {
+              if (!activeTournamentId) {
+                toast('Errore: torneo non trovato', { duration: 2000 });
+                return;
+              }
+
+              try {
+                // Cancella i punteggi dal database
+                const { error } = await supabase
+                  .from('bouts')
+                  .update({
+                    score_a: null,
+                    score_b: null,
+                    status: 'pending'
+                  })
+                  .eq('athlete_a', athleteA)
+                  .eq('athlete_b', athleteB)
+                  .eq('tournament_id', activeTournamentId);
+
+                if (error) throw error;
+
+                // Reset stato locale
+                setScoreA('');
+                setScoreB('');
+                
+                toast('Match riaperto per modifica', { duration: 2000 });
+              } catch (error) {
+                console.error('Errore riapertura match:', error);
+                toast('Errore durante la riapertura del match', { duration: 2000 });
+              }
             }}
           >
             <Edit2 className="h-3 w-3" />
