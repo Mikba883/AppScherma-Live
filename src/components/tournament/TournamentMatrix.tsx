@@ -639,11 +639,17 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   // ✅ Sincronizza stato locale quando cambiano le props del match
   useEffect(() => {
     if (match) {
-      setScoreA(match.scoreA?.toString() || '');
-      setScoreB(match.scoreB?.toString() || '');
+      // ✅ Se scoreA/scoreB sono null, resetta a stringa vuota
+      setScoreA(match.scoreA !== null && match.scoreA !== undefined ? match.scoreA.toString() : '');
+      setScoreB(match.scoreB !== null && match.scoreB !== undefined ? match.scoreB.toString() : '');
       setWeapon(match.weapon || 'fioretto');
+    } else {
+      // ✅ Se match è undefined, resetta tutto
+      setScoreA('');
+      setScoreB('');
+      setWeapon('fioretto');
     }
-  }, [match?.id, match?.scoreA, match?.scoreB, match?.weapon]);
+  }, [match?.id, match?.scoreA, match?.scoreB, match?.weapon, match?.status]);
 
   const isComplete = match?.status === 'approved' && 
                        match?.scoreA !== null && 
@@ -743,18 +749,30 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
                 // Reset stato locale IMMEDIATO
                 setScoreA('');
                 setScoreB('');
+                setWeapon(match?.weapon || 'fioretto');  // ✅ Mantieni weapon
                 
-                // Propaga il reset al componente padre
-                onUpdate(athleteA, athleteB, '', '', weapon);
+                // ✅ NON chiamare onUpdate con stringhe vuote
+                // Lascia che il real-time aggiorni automaticamente
                 
                 toast('Match annullato - puoi reinserire i dati', { duration: 2000 });
                 
-                // Aspetta che il real-time aggiorni i dati
-                setTimeout(() => {
-                  // Forza un re-render se necessario
-                  setScoreA('');
-                  setScoreB('');
-                }, 300);
+                // ✅ Forza ricaricamento dal DB dopo 500ms
+                setTimeout(async () => {
+                  if (!match?.id || !activeTournamentId) return;
+                  
+                  // Ricarica il match specifico dal DB
+                  const { data, error } = await supabase
+                    .from('bouts')
+                    .select('score_a, score_b, weapon, status')
+                    .eq('id', match.id)
+                    .single();
+                  
+                  if (!error && data) {
+                    setScoreA(data.score_a !== null ? data.score_a.toString() : '');
+                    setScoreB(data.score_b !== null ? data.score_b.toString() : '');
+                    setWeapon(data.weapon || 'fioretto');
+                  }
+                }, 500);
               } catch (error) {
                 console.error('Errore riapertura match:', error);
                 toast('Errore durante l\'annullamento del match', { duration: 2000 });

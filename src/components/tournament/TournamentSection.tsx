@@ -213,11 +213,14 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             return match;
           }));
           
-          // Toast solo se aggiornamento da altro utente
+          // ✅ Toast ANCHE per annullamenti
           if (updatedBout.created_by !== currentUserId) {
+            const wasReset = updatedBout.score_a === null && updatedBout.score_b === null;
             toast({
-              title: "Risultato aggiornato",
-              description: "Un altro partecipante ha completato un match",
+              title: wasReset ? "Match annullato" : "Risultato aggiornato",
+              description: wasReset 
+                ? "Un altro partecipante ha annullato un match" 
+                : "Un altro partecipante ha completato un match",
               duration: 2000,
             });
           }
