@@ -25,8 +25,8 @@ interface PendingBout {
   bout_type: string;
   athlete_a: string;
   athlete_b: string;
-  score_a: number;
-  score_b: number;
+  score_a: number | null;
+  score_b: number | null;
   created_at: string;
   notes?: string;
   creator_name?: string;
@@ -305,13 +305,19 @@ export const NotificationsPanel = () => {
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">Punteggio</p>
                       <p className="font-bold text-lg">
-                        {bout.score_a} - {bout.score_b}
+                        {bout.score_a !== null && bout.score_b !== null 
+                          ? `${bout.score_a} - ${bout.score_b}`
+                          : '--- - ---'
+                        }
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground">Risultato</p>
-                      <Badge variant={bout.score_b > bout.score_a ? "default" : "secondary"}>
-                        {bout.score_b > bout.score_a ? "Vittoria" : "Sconfitta"}
+                      <Badge variant={bout.score_b !== null && bout.score_a !== null && bout.score_b > bout.score_a ? "default" : "secondary"}>
+                        {bout.score_b !== null && bout.score_a !== null 
+                          ? (bout.score_b > bout.score_a ? "Vittoria" : "Sconfitta")
+                          : "Da definire"
+                        }
                       </Badge>
                     </div>
                   </div>
