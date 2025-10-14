@@ -193,8 +193,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           filter: `tournament_id=eq.${tournamentId}`
         },
         async (payload) => {
-          console.log('[Real-time] Bout aggiornato:', payload);
+          console.log('[Real-time] 🔄 Bout UPDATE ricevuto:', payload);
           const updatedBout = payload.new as any;
+          
+          console.log('[Real-time] Dati aggiornati:', {
+            id: updatedBout.id,
+            score_a: updatedBout.score_a,
+            score_b: updatedBout.score_b,
+            status: updatedBout.status,
+            weapon: updatedBout.weapon
+          });
           
           // ✅ AGGIORNA usando l'ID del bout
           setMatches(prev => prev.map(match => {
@@ -202,13 +210,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               // Determina ordine
               const isNormalOrder = match.athleteA === updatedBout.athlete_a;
               
-              return {
+              const updated = {
                 ...match,
                 scoreA: isNormalOrder ? updatedBout.score_a : updatedBout.score_b,
                 scoreB: isNormalOrder ? updatedBout.score_b : updatedBout.score_a,
                 weapon: updatedBout.weapon,
                 status: updatedBout.status
               };
+              
+              console.log('[Real-time] ✅ Match aggiornato nel state:', updated);
+              return updated;
             }
             return match;
           }));
