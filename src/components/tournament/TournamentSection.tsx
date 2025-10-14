@@ -135,9 +135,9 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         id: b.id,
         athleteA: b.athlete_a,
         athleteB: b.athlete_b,
-        scoreA: b.score_a,
-        scoreB: b.score_b,
-        weapon: b.weapon,
+        scoreA: b.score_a === null ? null : b.score_a,  // ✅ Esplicito
+        scoreB: b.score_b === null ? null : b.score_b,  // ✅ Esplicito
+        weapon: b.weapon || null,  // ✅ Esplicito
         status: b.status
       })).filter(m => {
         // ✅ RIMUOVI match invalidi (stesso atleta)
@@ -204,25 +204,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             weapon: updatedBout.weapon
           });
           
-          // ✅ AGGIORNA usando l'ID del bout
-          setMatches(prev => prev.map(match => {
-            if (match.id === updatedBout.id) {
-              // Determina ordine
-              const isNormalOrder = match.athleteA === updatedBout.athlete_a;
-              
-              const updated = {
-                ...match,
-                scoreA: isNormalOrder ? updatedBout.score_a : updatedBout.score_b,
-                scoreB: isNormalOrder ? updatedBout.score_b : updatedBout.score_a,
-                weapon: updatedBout.weapon,
-                status: updatedBout.status
-              };
-              
-              console.log('[Real-time] ✅ Match aggiornato nel state:', updated);
-              return updated;
-            }
-            return match;
-          }));
+          // ✅ RICARICA TUTTO invece di update parziale
+          if (activeTournamentId) {
+            await loadTournamentData(activeTournamentId);
+          }
           
           // ✅ Toast ANCHE per annullamenti
           if (updatedBout.created_by !== currentUserId) {

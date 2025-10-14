@@ -633,8 +633,14 @@ interface MatchInputsProps {
 }
 
 const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true, canCancel = false, currentUserId, activeTournamentId }: MatchInputsProps) => {
-  const [scoreA, setScoreA] = useState(match?.scoreA?.toString() || '');
-  const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
+  // ✅ Funzione helper per conversione sicura
+  const toStringOrEmpty = (val: number | null | undefined) => {
+    if (val === null || val === undefined) return '';
+    return String(val);
+  };
+  
+  const [scoreA, setScoreA] = useState(toStringOrEmpty(match?.scoreA));
+  const [scoreB, setScoreB] = useState(toStringOrEmpty(match?.scoreB));
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
 
   // ✅ Sincronizza stato locale quando cambiano le props del match
@@ -776,10 +782,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
                 
                 toast('Match annullato - puoi reinserire i dati', { duration: 2000 });
                 
-                // ✅ Forza aggiornamento chiamando onUpdate
-                setTimeout(() => {
-                  onUpdate(athleteA, athleteB, '', '', '');
-                }, 100);
+                // ✅ RIMOSSO: il real-time si occuperà del reload
               } catch (error) {
                 console.error('Errore annullamento match:', error);
                 toast('Errore durante l\'annullamento', { duration: 2000 });
