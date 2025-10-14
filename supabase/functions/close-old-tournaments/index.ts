@@ -20,18 +20,54 @@ serve(async (req) => {
 
     console.log('Running close_old_tournaments function...')
 
-    // Call the database function to close old tournaments
-    const { error } = await supabase.rpc('close_old_tournaments')
+    // 1. Get tournaments older than 24h that are still in_progress
+    const { data: oldTournaments, error: fetchError } = await supabase
+      .from('tournaments')
+      .select('id')
+      .eq('status', 'in_progress')
+      .lt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
 
-    if (error) {
-      console.error('Error closing old tournaments:', error)
-      throw error
+    if (fetchError) {
+      console.error('Error fetching old tournaments:', fetchError)
+      throw fetchError
     }
 
-    console.log('Successfully closed old tournaments')
+    console.log(`Found ${oldTournaments?.length || 0} old tournaments to close`)
+
+    if (oldTournaments && oldTournaments.length > 0) {
+      const tournamentIds = oldTournaments.map(t => t.id)
+
+      // 2. Delete all bouts from these tournaments
+      const { error: boutsError } = await supabase
+        .from('bouts')
+        .delete()
+        .in('tournament_id', tournamentIds)
+
+      if (boutsError) {
+        console.error('Error deleting bouts:', boutsError)
+        throw boutsError
+      }
+
+      // 3. Mark tournaments as cancelled
+      const { error: updateError } = await supabase
+        .from('tournaments')
+        .update({ status: 'cancelled' })
+        .in('id', tournamentIds)
+
+      if (updateError) {
+        console.error('Error updating tournaments:', updateError)
+        throw updateError
+      }
+
+      console.log(`Successfully closed ${tournamentIds.length} old tournaments`)
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Old tournaments closed successfully' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Old tournaments closed successfully',
+        closed_count: oldTournaments?.length || 0
+      }),
       { 
         headers: { 
           ...corsHeaders, 

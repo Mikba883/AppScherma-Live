@@ -131,15 +131,27 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',  // Solo UPDATE, non INSERT/DELETE
           schema: 'public',
           table: 'bouts',
           filter: `tournament_id=eq.${tournamentId}`
         },
         (payload) => {
-          console.log('Tournament update:', payload);
-          // Reload tournament data on any change
-          loadTournamentData(tournamentId);
+          console.log('Tournament bout updated:', payload);
+          // Aggiorna SOLO il match specifico cambiato
+          const updatedBout = payload.new as any;
+          setMatches(prev => prev.map(match => {
+            if (match.athleteA === updatedBout.athlete_a && 
+                match.athleteB === updatedBout.athlete_b) {
+              return {
+                ...match,
+                scoreA: updatedBout.score_a,
+                scoreB: updatedBout.score_b,
+                weapon: updatedBout.weapon
+              };
+            }
+            return match;
+          }));
         }
       )
       .subscribe();
@@ -353,124 +365,50 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
 
   const handleSaveTournament = async (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => {
+    if (!activeTournamentId) {
+      toast({
+        title: 'Errore',
+        description: 'Nessun torneo attivo da salvare',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setSaving(true);
     
     try {
-      const completedMatches = matches.filter(m => 
-        m.scoreA !== null && m.scoreB !== null && m.weapon !== null
-      );
-
-      if (completedMatches.length === 0) {
-        toast({
-          title: 'Errore',
-          description: 'Completa almeno un match prima di salvare il torneo',
-          variant: 'destructive',
-        });
-        setSaving(false);
-        return;
-      }
-
-      if (isInstructor) {
-        // CASO ISTRUTTORE: Salva direttamente ogni match come approved
-        console.log('[TournamentSection] Instructor mode - saving matches directly');
-        
-        let savedCount = 0;
-        for (const match of completedMatches) {
-          const { error } = await supabase.rpc('register_bout_instructor', {
-            _athlete_a: match.athleteA,
-            _athlete_b: match.athleteB,
-            _bout_date: tournamentDate,
-            _weapon: weapon || null,
-            _bout_type: boutType,
-            _score_a: match.scoreA!,
-            _score_b: match.scoreB!
-          });
-
-          if (error) {
-            console.error('[TournamentSection] Error saving match:', error);
-            throw error;
-          }
-          savedCount++;
-        }
-
-        // Update tournament status to completed
-        if (activeTournamentId) {
-          const { error: updateError } = await supabase
-            .from('tournaments')
-            .update({ status: 'completed' })
-            .eq('id', activeTournamentId);
-          
-          if (updateError) {
-            console.error('Failed to close tournament:', updateError);
-            throw new Error('Impossibile chiudere il torneo');
-          }
-        }
-
-        toast({
-          title: 'Torneo Salvato!',
-          description: `${savedCount} match salvati e registrati nel database`,
-        });
-        
-        // Exit and reset tournament
-        setActiveTournamentId(null);
-        setTournamentCreatorId(null);
-        exitTournament();
-      } else {
-        // CASO ALLIEVO: Usa il sistema di approvazione con notifiche
-        console.log('[TournamentSection] Student mode - creating tournament with approval flow');
-        
-        const uniqueMatches: any[] = [];
-        const seenPairs = new Set<string>();
-
-        completedMatches.forEach(match => {
-          const pairKey = [match.athleteA, match.athleteB].sort().join('-');
-          if (!seenPairs.has(pairKey)) {
-            seenPairs.add(pairKey);
-            uniqueMatches.push({
-              athlete_a: match.athleteA,
-              athlete_b: match.athleteB,
-              score_a: match.scoreA,
-              score_b: match.scoreB,
-            });
-          }
-        });
-
-        const { data, error } = await supabase.rpc('register_tournament_matches', {
-          _tournament_name: tournamentName,
-          _tournament_date: tournamentDate,
-          _weapon: weapon || '',
-          _bout_type: boutType,
-          _matches: uniqueMatches,
-        });
-
-        if (error) throw error;
-
-        // Set the tournament ID and update status to completed
-        if (data) {
-          setActiveTournamentId(data);
-          const { error: updateError } = await supabase
-            .from('tournaments')
-            .update({ status: 'completed' })
-            .eq('id', data);
-          
-          if (updateError) {
-            console.error('Failed to close tournament:', updateError);
-            throw new Error('Impossibile chiudere il torneo');
-          }
-        }
-
-        toast({
-          title: 'Torneo Salvato!',
-          description: 'Il torneo è stato creato. Gli atleti riceveranno una notifica per approvare i loro match.',
-        });
-        
-        // Exit and reset tournament
-        setActiveTournamentId(null);
-        setTournamentCreatorId(null);
-        exitTournament();
-      }
-
+      // 1. Mark ALL completed bouts as 'approved'
+      const { error: updateError } = await supabase
+        .from('bouts')
+        .update({ 
+          status: 'approved',
+          approved_by: currentUserId,
+          approved_at: new Date().toISOString()
+        })
+        .eq('tournament_id', activeTournamentId)
+        .not('score_a', 'is', null)
+        .not('score_b', 'is', null);
+      
+      if (updateError) throw updateError;
+      
+      // 2. Mark tournament as completed
+      const { error: tournamentError } = await supabase
+        .from('tournaments')
+        .update({ status: 'completed' })
+        .eq('id', activeTournamentId);
+      
+      if (tournamentError) throw tournamentError;
+      
+      toast({
+        title: 'Torneo Salvato!',
+        description: 'Il torneo è stato completato con successo',
+      });
+      
+      // 3. Reset local state
+      setActiveTournamentId(null);
+      setTournamentCreatorId(null);
       setHasUnsavedChanges(false);
+      exitTournament();
 
     } catch (error: any) {
       console.error('Error saving tournament:', error);

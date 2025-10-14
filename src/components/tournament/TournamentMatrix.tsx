@@ -207,7 +207,7 @@ export const TournamentMatrix = ({
     if (!activeTournamentId) return;
     
     try {
-      // Mark tournament as cancelled
+      // 1. Mark tournament as cancelled
       const { error: tournamentError } = await supabase
         .from('tournaments')
         .update({ status: 'cancelled' })
@@ -215,20 +215,19 @@ export const TournamentMatrix = ({
       
       if (tournamentError) throw tournamentError;
       
-      // Delete all pending bouts
+      // 2. Delete ALL bouts from this tournament
       const { error: boutsError } = await supabase
         .from('bouts')
         .delete()
-        .eq('tournament_id', activeTournamentId)
-        .eq('status', 'pending');
+        .eq('tournament_id', activeTournamentId);
       
       if (boutsError) throw boutsError;
       
-      toast.success('Torneo chiuso senza salvare i dati');
+      toast.success('Torneo chiuso senza salvare');
       
+      // 3. Exit tournament
       setShowFinishDialog(false);
       onResetTournament();
-      navigate('/');
     } catch (error) {
       console.error('Error cancelling tournament:', error);
       toast.error('Impossibile chiudere il torneo');
@@ -236,57 +235,44 @@ export const TournamentMatrix = ({
   };
 
   const handleSaveResults = async () => {
-    if (isStudentMode && onSaveResults) {
-      // For students, use the custom save handler
-      const tournamentName = `Torneo ${new Date().toLocaleDateString('it-IT')}`;
-      const tournamentDate = new Date().toISOString().split('T')[0];
-      const firstMatch = matches.find(m => m.weapon);
-      const weapon = firstMatch?.weapon || '';
-      const boutType = 'sparring'; // Default for student tournaments
-      
-      await onSaveResults(tournamentName, tournamentDate, weapon, boutType);
-      setShowFinishDialog(false);
-      return;
-    }
-    
-    const completedMatches = matches.filter(match => 
-      match.scoreA !== null && match.scoreB !== null && match.weapon !== null
-    );
-
-    if (completedMatches.length === 0) {
-      toast.error('Nessun incontro completato da salvare');
+    if (!activeTournamentId) {
+      toast.error('Nessun torneo attivo da salvare');
       return;
     }
 
     setSaving(true);
     
     try {
-      // Save each completed match
-      for (const match of completedMatches) {
-        const { error } = await supabase.rpc('register_bout_instructor', {
-          _athlete_a: match.athleteA,
-          _athlete_b: match.athleteB,
-          _bout_date: new Date().toISOString().split('T')[0],
-          _weapon: match.weapon,
-          _bout_type: 'gara',
-          _score_a: match.scoreA!,
-          _score_b: match.scoreB!
-        });
-
-        if (error) {
-          console.error('Error saving match:', error);
-          throw new Error(`Errore nel salvare l'incontro: ${error.message}`);
-        }
-      }
-
-      toast.success(`${completedMatches.length} incontri salvati con successo!`);
+      // 1. Mark ALL completed bouts as 'approved'
+      const { error: updateError } = await supabase
+        .from('bouts')
+        .update({ 
+          status: 'approved',
+          approved_by: currentUserId,
+          approved_at: new Date().toISOString()
+        })
+        .eq('tournament_id', activeTournamentId)
+        .not('score_a', 'is', null)
+        .not('score_b', 'is', null);
       
-      // Reset tournament after successful save
+      if (updateError) throw updateError;
+      
+      // 2. Mark tournament as completed
+      const { error: tournamentError } = await supabase
+        .from('tournaments')
+        .update({ status: 'completed' })
+        .eq('id', activeTournamentId);
+      
+      if (tournamentError) throw tournamentError;
+      
+      toast.success('Torneo salvato con successo!');
+      
+      // 3. Exit tournament
+      setShowFinishDialog(false);
       onResetTournament();
-      navigate('/');
     } catch (error) {
-      console.error('Error saving tournament results:', error);
-      toast.error('Errore nel salvare i risultati del torneo');
+      console.error('Error saving tournament:', error);
+      toast.error('Impossibile salvare il torneo');
     } finally {
       setSaving(false);
     }
@@ -333,11 +319,11 @@ export const TournamentMatrix = ({
       </Card>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Tournament Matrix */}
+        {/* Tournament Matrix - READ-ONLY */}
         <div className="xl:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Matrice Incontri</CardTitle>
+              <CardTitle>Matrice Incontri (Solo Visualizzazione)</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -382,31 +368,21 @@ export const TournamentMatrix = ({
                          </TableCell>
                          {athletes.map((athleteB) => {
                            const match = getMatch(athleteA.id, athleteB.id);
-                           const canEdit = canEditMatch(athleteA.id, athleteB.id);
-                           const hasNoScores = !match?.scoreA && !match?.scoreB;
                            
                            return (
                              <TableCell 
                                key={athleteB.id} 
-                               className={cn(
-                                 "p-1 w-32 min-w-32 max-w-32",
-                                 canEdit && hasNoScores && "ring-2 ring-blue-400/50 bg-blue-50/30"
-                               )}
+                               className="p-1 w-32 min-w-32 max-w-32"
                              >
                              {athleteA.id === athleteB.id ? (
                                <div className="w-20 h-16 bg-muted rounded flex items-center justify-center">
                                  <Target className="w-4 h-4 text-muted-foreground" />
                                </div>
                              ) : (
-                                <MatchInputs
+                                <ReadOnlyMatchCell 
                                   athleteA={athleteA.id}
                                   athleteB={athleteB.id}
-                                  athleteAName={athleteA.full_name}
-                                  athleteBName={athleteB.full_name}
-                                  match={match}
-                                  onUpdate={handleScoreChange}
-                                  canEdit={canEdit}
-                                  currentUserId={currentUserId}
+                                  match={match} 
                                 />
                               )}
                              </TableCell>
