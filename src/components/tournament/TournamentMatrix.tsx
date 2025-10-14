@@ -646,6 +646,27 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   const isAWinning = isComplete && scoreANum !== null && scoreBNum !== null && scoreANum > scoreBNum;
   const isBWinning = isComplete && scoreBNum !== null && scoreANum !== null && scoreBNum > scoreANum;
 
+  // ✅ AUTO-SAVE: Salva automaticamente quando TUTTI i campi sono completi
+  useEffect(() => {
+    const isAllFieldsFilled = scoreA !== '' && scoreB !== '' && weapon;
+    const hasChanged = 
+      match?.scoreA?.toString() !== scoreA ||
+      match?.scoreB?.toString() !== scoreB ||
+      match?.weapon !== weapon;
+    
+    // Se tutti i campi sono compilati E sono diversi dai valori salvati
+    if (isAllFieldsFilled && hasChanged && !isComplete) {
+      console.log('[MatchInputs] AUTO-SAVE triggered:', { scoreA, scoreB, weapon });
+      
+      // Debounce di 500ms per evitare salvataggi multipli
+      const timer = setTimeout(() => {
+        onUpdate(athleteA, athleteB, scoreA, scoreB, weapon);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [scoreA, scoreB, weapon, match, isComplete, athleteA, athleteB, onUpdate]);
+
   // ✅ PRIMA: Match completato → sempre visibile in read-only
   if (isComplete) {
     return (
@@ -738,7 +759,6 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             value={weapon} 
             onValueChange={(value) => {
               setWeapon(value);
-              onUpdate(athleteA, athleteB, scoreA, scoreB, value);
             }}
           >
             <SelectTrigger className="h-8">
@@ -764,8 +784,6 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               onChange={(e) => {
                 const newValue = e.target.value;
                 setScoreA(newValue);
-                // ✅ SALVA SEMPRE, anche se vuoto (per permettere cancellazione)
-                onUpdate(athleteA, athleteB, newValue, scoreB, weapon);
               }}
               className={cn(
                 "text-center",
@@ -785,8 +803,6 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               onChange={(e) => {
                 const newValue = e.target.value;
                 setScoreB(newValue);
-                // ✅ SALVA SEMPRE, anche se vuoto (per permettere cancellazione)
-                onUpdate(athleteA, athleteB, scoreA, newValue, weapon);
               }}
               className={cn(
                 "text-center",
