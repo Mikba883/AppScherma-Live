@@ -351,15 +351,14 @@ export const TournamentMatrix = ({
               <Badge variant="secondary">
                 {getCompletedMatches()}/{getTotalMatches()} incontri completati
               </Badge>
-              {isCreator && (
-                <Button 
-                  onClick={() => setShowFinishDialog(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Trophy className="w-4 h-4" />
-                  FINE
-                </Button>
-              )}
+              <Button 
+                onClick={() => setShowFinishDialog(true)}
+                disabled={!isCreator}
+                className="flex items-center gap-2"
+              >
+                <Trophy className="w-4 h-4" />
+                FINE {!isCreator && <span className="text-xs ml-1">(Solo Creatore)</span>}
+              </Button>
             </div>
           </CardTitle>
         </CardHeader>
