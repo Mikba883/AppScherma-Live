@@ -761,10 +761,8 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               onChange={(e) => {
                 const newValue = e.target.value;
                 setScoreA(newValue);
-                // Solo salva se entrambi i punteggi sono inseriti
-                if (newValue !== '' && scoreB !== '') {
-                  onUpdate(athleteA, athleteB, newValue, scoreB, weapon);
-                }
+                // ✅ SALVA SEMPRE, anche se vuoto (per permettere cancellazione)
+                onUpdate(athleteA, athleteB, newValue, scoreB, weapon);
               }}
               className={cn(
                 "text-center",
@@ -784,10 +782,8 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               onChange={(e) => {
                 const newValue = e.target.value;
                 setScoreB(newValue);
-                // Solo salva se entrambi i punteggi sono inseriti
-                if (scoreA !== '' && newValue !== '') {
-                  onUpdate(athleteA, athleteB, scoreA, newValue, weapon);
-                }
+                // ✅ SALVA SEMPRE, anche se vuoto (per permettere cancellazione)
+                onUpdate(athleteA, athleteB, scoreA, newValue, weapon);
               }}
               className={cn(
                 "text-center",

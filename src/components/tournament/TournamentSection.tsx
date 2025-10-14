@@ -428,18 +428,35 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
   };
 
-  const handleUpdateMatch = async (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => {
+  const handleUpdateMatch = async (athleteA: string, athleteB: string, scoreA: string | number | null, scoreB: string | number | null, weapon: string | null) => {
     console.log('[handleUpdateMatch] START:', { athleteA, athleteB, scoreA, scoreB, weapon });
     
-    // 1. Aggiorna SOLO lo stato locale
+    // Converti stringhe vuote in null
+    const normalizedScoreA = scoreA === '' || scoreA === null ? null : Number(scoreA);
+    const normalizedScoreB = scoreB === '' || scoreB === null ? null : Number(scoreB);
+    const normalizedWeapon = weapon === '' ? null : weapon;
+    
+    // 1. Aggiorna SOLO lo stato locale con valori normalizzati
     setMatches(prev => {
       const updated = prev.map(match => {
         // Gestisci entrambi gli ordini
         if ((match.athleteA === athleteA && match.athleteB === athleteB)) {
-          return { ...match, scoreA, scoreB, weapon };
+          return { 
+            ...match, 
+            scoreA: normalizedScoreA, 
+            scoreB: normalizedScoreB, 
+            weapon: normalizedWeapon,
+            status: (normalizedScoreA !== null && normalizedScoreB !== null && normalizedWeapon !== null) ? 'approved' : 'pending'
+          };
         }
         if ((match.athleteA === athleteB && match.athleteB === athleteA)) {
-          return { ...match, scoreA: scoreB, scoreB: scoreA, weapon };
+          return { 
+            ...match, 
+            scoreA: normalizedScoreB, 
+            scoreB: normalizedScoreA, 
+            weapon: normalizedWeapon,
+            status: (normalizedScoreA !== null && normalizedScoreB !== null && normalizedWeapon !== null) ? 'approved' : 'pending'
+          };
         }
         return match;
       });
@@ -480,15 +497,15 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           return;
         }
 
-        // Determina punteggi corretti
+        // Determina punteggi corretti usando valori normalizzati
         const isNormalOrder = bout.athlete_a === athleteA;
         const updates = {
-          score_a: isNormalOrder ? scoreA : scoreB,
-          score_b: isNormalOrder ? scoreB : scoreA,
-          weapon: weapon,
+          score_a: isNormalOrder ? normalizedScoreA : normalizedScoreB,
+          score_b: isNormalOrder ? normalizedScoreB : normalizedScoreA,
+          weapon: normalizedWeapon,
           // ✅ Se tutti i campi sono compilati → status: 'approved' (COMPLETATO)
           // ❌ Se manca qualcosa → status: 'pending' (MODIFICABILE)
-          status: (scoreA !== null && scoreB !== null && weapon !== null) ? 'approved' : 'pending'
+          status: (normalizedScoreA !== null && normalizedScoreB !== null && normalizedWeapon !== null) ? 'approved' : 'pending'
         };
 
         console.log('[handleUpdateMatch] UPDATE DB:', { bout_id: bout.id, ...updates });
