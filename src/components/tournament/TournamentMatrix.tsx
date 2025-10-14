@@ -716,8 +716,6 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
   // ✅ Match non completato + può modificare → form con salvataggio esplicito
   if (canEdit) {
     const handleSave = async () => {
-      if (!match?.id) return;
-      
       if (!localScoreA || !localScoreB || !localWeapon) {
         toast.error('Compila tutti i campi');
         return;
@@ -725,18 +723,60 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
       
       setIsSaving(true);
       try {
-        const { error } = await supabase
-          .from('bouts')
-          .update({
-            score_a: parseInt(localScoreA),
-            score_b: parseInt(localScoreB),
-            weapon: localWeapon,
-            status: 'pending'
-          })
-          .eq('id', match.id);
-        
-        if (error) throw error;
-        toast.success('Match salvato!');
+        if (match?.id) {
+          // ✅ Match esiste → UPDATE
+          const { error } = await supabase
+            .from('bouts')
+            .update({
+              score_a: parseInt(localScoreA),
+              score_b: parseInt(localScoreB),
+              weapon: localWeapon,
+              status: 'pending'
+            })
+            .eq('id', match.id);
+          
+          if (error) throw error;
+          toast.success('Match salvato!');
+        } else {
+          // ✅ Match non esiste → INSERT (crea nuovo match nel torneo)
+          // Recupera i dati del torneo
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('Utente non autenticato');
+          
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('gym_id')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (!profile?.gym_id) throw new Error('Palestra non trovata');
+          
+          // Trova il torneo attivo
+          const { data: tournament } = await supabase
+            .rpc('get_my_active_tournament')
+            .maybeSingle();
+          
+          if (!tournament) throw new Error('Torneo non trovato');
+          
+          const { error: insertError } = await supabase
+            .from('bouts')
+            .insert({
+              tournament_id: tournament.tournament_id,
+              bout_date: tournament.tournament_date,
+              weapon: localWeapon,
+              bout_type: tournament.bout_type,
+              athlete_a: athleteA,
+              athlete_b: athleteB,
+              score_a: parseInt(localScoreA),
+              score_b: parseInt(localScoreB),
+              status: 'pending',
+              created_by: user.id,
+              gym_id: profile.gym_id
+            });
+          
+          if (insertError) throw insertError;
+          toast.success('Match creato e salvato!');
+        }
       } catch (error) {
         console.error(error);
         toast.error('Errore nel salvataggio');
