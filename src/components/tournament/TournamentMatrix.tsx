@@ -218,6 +218,24 @@ export const TournamentMatrix = ({
     return generateRounds();
   }, [athletes, matches]);
 
+  // Debug: log rounds e matchData ogni volta che cambiano
+  useEffect(() => {
+    console.log('=== ROUNDS RIGENERATI ===');
+    console.log('Numero turni:', rounds.length);
+    rounds.forEach(({ round, matches: roundMatches }) => {
+      console.log(`Turno ${round}:`, roundMatches.length, 'match');
+      roundMatches.forEach(({ athleteA, athleteB }) => {
+        const matchData = getMatch(athleteA.id, athleteB.id);
+        console.log(`  ${athleteA.full_name} vs ${athleteB.full_name}:`, {
+          scoreA: matchData?.scoreA,
+          scoreB: matchData?.scoreB,
+          weapon: matchData?.weapon
+        });
+      });
+    });
+    console.log('========================');
+  }, [rounds, matches]);
+
   // Debug: log matches ogni volta che cambiano
   useEffect(() => {
     console.log('=== MATCHES AGGIORNATI ===');
@@ -419,14 +437,16 @@ export const TournamentMatrix = ({
                              </Tooltip>
                            </TooltipProvider>
                          </TableCell>
-                         {athletes.map((athleteB) => {
-                           const match = getMatch(athleteA.id, athleteB.id);
-                           
-                           return (
-                             <TableCell 
-                               key={athleteB.id} 
-                               className="p-1 w-32 min-w-32 max-w-32"
-                             >
+                          {athletes.map((athleteB) => {
+                            const match = getMatch(athleteA.id, athleteB.id);
+                            // ✅ KEY DINAMICA per forzare re-render della matrice
+                            const cellKey = `${athleteB.id}-${match?.scoreA ?? 'null'}-${match?.scoreB ?? 'null'}-${match?.weapon ?? 'null'}`;
+                            
+                            return (
+                              <TableCell 
+                                key={cellKey} 
+                                className="p-1 w-32 min-w-32 max-w-32"
+                              >
                              {athleteA.id === athleteB.id ? (
                                <div className="w-20 h-16 bg-muted rounded flex items-center justify-center">
                                  <Target className="w-4 h-4 text-muted-foreground" />
@@ -504,8 +524,11 @@ export const TournamentMatrix = ({
                    {matches.map((match, index) => {
                      const matchData = getMatch(match.athleteA.id, match.athleteB.id);
                      const isCompleted = matchData?.scoreA !== null && matchData?.scoreB !== null;
+                     // ✅ KEY DINAMICA che include i dati del match per forzare re-render
+                     const matchKey = `${match.athleteA.id}-${match.athleteB.id}-${matchData?.scoreA ?? 'null'}-${matchData?.scoreB ?? 'null'}-${matchData?.weapon ?? 'null'}`;
+                     
                      return (
-                       <div key={index} className={`p-4 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                       <div key={matchKey} className={`p-4 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
                          <div className="text-sm font-medium mb-3">
                            {match.athleteA.full_name} vs {match.athleteB.full_name}
                          </div>
