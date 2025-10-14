@@ -38,6 +38,30 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     onTournamentStateChange?.(hasUnsavedChanges);
   }, [hasUnsavedChanges, onTournamentStateChange]);
 
+  // Controllo periodico dello status del torneo (fallback se realtime non funziona)
+  useEffect(() => {
+    if (!activeTournamentId) return;
+
+    const interval = setInterval(async () => {
+      const { data: tournament } = await supabase
+        .from('tournaments')
+        .select('status')
+        .eq('id', activeTournamentId)
+        .single();
+
+      if (tournament && (tournament.status === 'completed' || tournament.status === 'cancelled')) {
+        console.log('[Polling] Torneo chiuso rilevato:', tournament.status);
+        toast({
+          title: "Torneo Chiuso",
+          description: "Il torneo è stato chiuso dall'organizzatore",
+        });
+        handleExitTournament();
+      }
+    }, 5000); // Controlla ogni 5 secondi
+
+    return () => clearInterval(interval);
+  }, [activeTournamentId]);
+
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -133,8 +157,22 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
   };
 
+  const handleExitTournament = () => {
+    console.log('[Exit] Uscita dal torneo');
+    setActiveTournamentId(null);
+    setTournamentCreatorId(null);
+    setSelectedAthletes([]);
+    setMatches([]);
+    setTournamentStarted(false);
+    setMode('menu');
+    setHasUnsavedChanges(false);
+    onTournamentStateChange?.(false);
+    isSubscribed.current = false;
+  };
+
   const subscribeToTournamentUpdates = (tournamentId: string) => {
     console.log('[Subscription] Sottoscritto a torneo', tournamentId);
+    console.log('[Subscription] Ascolto eventi su tabella tournaments con filter:', `id=eq.${tournamentId}`);
     
     const channel = supabase
       .channel('tournament-updates')
@@ -223,21 +261,17 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           filter: `id=eq.${tournamentId}`
         },
         async (payload) => {
+          console.log('[Real-time] Tournament aggiornato:', payload);
           const updatedTournament = payload.new as any;
+          console.log('[Real-time] Nuovo status torneo:', updatedTournament.status);
+          
           if (updatedTournament.status === 'completed' || updatedTournament.status === 'cancelled') {
+            console.log('[Real-time] Torneo chiuso, uscita...');
             toast({
               title: "Torneo Chiuso",
               description: "Il torneo è stato chiuso dall'organizzatore",
             });
-            // Reset state
-            setActiveTournamentId(null);
-            setTournamentCreatorId(null);
-            setSelectedAthletes([]);
-            setMatches([]);
-            setTournamentStarted(false);
-            setMode('menu');
-            setHasUnsavedChanges(false);
-            onTournamentStateChange?.(false);
+            handleExitTournament();
           }
         }
       )
