@@ -325,7 +325,7 @@ export const TournamentMatrix = ({
         <div className="xl:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Matrice Incontri (Solo Visualizzazione)</CardTitle>
+              <CardTitle>Matrice Incontri</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">

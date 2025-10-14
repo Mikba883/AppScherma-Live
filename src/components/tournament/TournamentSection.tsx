@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentMatrix } from './TournamentMatrix';
+import { TournamentMatchesList } from './TournamentMatchesList';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -147,6 +148,27 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             toast({
               title: "Risultato aggiornato",
               description: "Un altro partecipante ha inserito un risultato",
+              duration: 2000,
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bouts',
+          filter: `tournament_id=eq.${tournamentId}`
+        },
+        async (payload) => {
+          await loadTournamentData(tournamentId);
+          
+          const insertedBout = payload.new as any;
+          if (insertedBout.created_by !== currentUserId) {
+            toast({
+              title: "Nuovo match aggiunto",
+              description: "Un altro partecipante ha aggiunto un nuovo incontro",
               duration: 2000,
             });
           }
@@ -516,14 +538,24 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       {mode === 'matrix' && tournamentStarted && (
         <div>
-          <Button 
-            variant="ghost" 
-            onClick={handleExitTournament}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 w-4 h-4" />
-            Esci dal Torneo
-          </Button>
+          <div className="flex gap-2 mb-4">
+            <Button 
+              variant="ghost" 
+              onClick={handleExitTournament}
+            >
+              <ArrowLeft className="mr-2 w-4 h-4" />
+              Esci dal Torneo
+            </Button>
+            
+            <Button 
+              variant="outline"
+              onClick={() => activeTournamentId && loadTournamentData(activeTournamentId)}
+              disabled={!activeTournamentId}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Aggiorna Risultati
+            </Button>
+          </div>
           
           <TournamentMatrix 
             athletes={selectedAthletes}
@@ -538,6 +570,17 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             activeTournamentId={activeTournamentId}
             organizerRole={isInstructor ? 'instructor' : 'student'}
           />
+          
+          <div className="mt-6">
+            <TournamentMatchesList
+              athletes={selectedAthletes}
+              matches={matches}
+              onUpdateMatch={handleUpdateMatch}
+              currentUserId={currentUserId}
+              tournamentCreatorId={tournamentCreatorId}
+              organizerRole={isInstructor ? 'instructor' : 'student'}
+            />
+          </div>
         </div>
       )}
 
