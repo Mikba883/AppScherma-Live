@@ -383,53 +383,34 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const handleUpdateMatch = async (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => {
-    // Normalizza ordine per ricerca coerente
-    const [normalizedA, normalizedB] = [athleteA, athleteB].sort();
-    
+    // Aggiorna stato locale
     setMatches(prev => 
       prev.map(match => {
-        const [matchA, matchB] = [match.athleteA, match.athleteB].sort();
-        if (matchA === normalizedA && matchB === normalizedB) {
-          // Mantieni l'ordine originale del match, ma aggiorna i punteggi correttamente
-          if (match.athleteA === athleteA) {
-            return { ...match, scoreA, scoreB, weapon };
-          } else {
-            return { ...match, scoreA: scoreB, scoreB: scoreA, weapon };
-          }
+        if (match.athleteA === athleteA && match.athleteB === athleteB) {
+          return { ...match, scoreA, scoreB, weapon };
+        }
+        if (match.athleteA === athleteB && match.athleteB === athleteA) {
+          return { ...match, scoreA: scoreB, scoreB: scoreA, weapon };
         }
         return match;
       })
     );
     
-    // If tournament is already created (has ID), update in real-time
+    // Se torneo già creato, aggiorna database
     if (activeTournamentId) {
       try {
-        // Cerca il match nel database con ordine normalizzato
-        const { data: existingBout } = await supabase
+        const { error } = await supabase
           .from('bouts')
-          .select('athlete_a, athlete_b')
+          .update({
+            score_a: scoreA,
+            score_b: scoreB,
+            weapon: weapon
+          })
           .eq('tournament_id', activeTournamentId)
-          .or(`and(athlete_a.eq.${athleteA},athlete_b.eq.${athleteB}),and(athlete_a.eq.${athleteB},athlete_b.eq.${athleteA})`)
-          .maybeSingle();
+          .eq('athlete_a', athleteA)
+          .eq('athlete_b', athleteB);
 
-        if (existingBout) {
-          // Determina l'ordine corretto dei punteggi basandoti sull'ordine nel DB
-          const finalScoreA = existingBout.athlete_a === athleteA ? scoreA : scoreB;
-          const finalScoreB = existingBout.athlete_a === athleteA ? scoreB : scoreA;
-
-          const { error } = await supabase
-            .from('bouts')
-            .update({
-              score_a: finalScoreA,
-              score_b: finalScoreB,
-              weapon: weapon
-            })
-            .eq('tournament_id', activeTournamentId)
-            .eq('athlete_a', existingBout.athlete_a)
-            .eq('athlete_b', existingBout.athlete_b);
-
-          if (error) throw error;
-        }
+        if (error) throw error;
       } catch (error) {
         console.error('Error updating match:', error);
       }
