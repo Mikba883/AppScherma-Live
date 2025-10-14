@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentMatrix } from './TournamentMatrix';
-import { TournamentMatchesList } from './TournamentMatchesList';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -570,17 +569,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             activeTournamentId={activeTournamentId}
             organizerRole={isInstructor ? 'instructor' : 'student'}
           />
-          
-          <div className="mt-6">
-            <TournamentMatchesList
-              athletes={selectedAthletes}
-              matches={matches}
-              onUpdateMatch={handleUpdateMatch}
-              currentUserId={currentUserId}
-              tournamentCreatorId={tournamentCreatorId}
-              organizerRole={isInstructor ? 'instructor' : 'student'}
-            />
-          </div>
         </div>
       )}
 

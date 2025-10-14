@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trophy, Save, RotateCcw, Target } from 'lucide-react';
+import { Trophy, Save, RotateCcw, Target, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -325,7 +325,7 @@ export const TournamentMatrix = ({
         <div className="xl:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Matrice Incontri</CardTitle>
+              <CardTitle>Organizzazione Turni</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -586,7 +586,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   // ✅ PRIMA: Match completato → sempre visibile in read-only
   if (isComplete) {
     return (
-      <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
+      <div className="space-y-2 p-3 bg-muted/50 rounded-lg relative">
         <div className="text-xs text-muted-foreground">Arma: {weapon}</div>
         <div className="flex justify-between items-center">
           <div className="text-sm">
@@ -603,7 +603,26 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             </div>
           </div>
         </div>
-        <Badge variant="default" className="text-xs bg-green-100 text-green-800 w-full justify-center">Completato</Badge>
+        <Badge variant="default" className="text-xs bg-green-100 text-green-800 w-full justify-center">
+          Completato
+        </Badge>
+        
+        {/* Bottone per riaprire il match se canEdit */}
+        {canEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 h-7 w-7 p-0"
+            onClick={() => {
+              setScoreA('');
+              setScoreB('');
+              setWeapon(weapon || 'fioretto');
+              onUpdate(athleteA, athleteB, null, null, weapon);
+            }}
+          >
+            <Edit2 className="h-3 w-3" />
+          </Button>
+        )}
       </div>
     );
   }
