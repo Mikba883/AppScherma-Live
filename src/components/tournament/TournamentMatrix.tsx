@@ -73,6 +73,16 @@ export const TournamentMatrix = ({
     return athleteA === currentUserId || athleteB === currentUserId;
   };
 
+  // Funzione separata per annullare match completati
+  const canCancelMatch = (athleteA: string, athleteB: string, matchData?: TournamentMatch): boolean => {
+    if (!currentUserId) return false;
+    // Puoi annullare SOLO se il match è completato
+    const isComplete = matchData?.scoreA !== null && matchData?.scoreB !== null && matchData?.weapon;
+    if (!isComplete) return false;
+    // Solo creator e istruttori possono annullare
+    return isCreator || organizerRole === 'instructor';
+  };
+
   const getMatch = (athleteA: string, athleteB: string): TournamentMatch | undefined => {
     return matches.find(match => 
       (match.athleteA === athleteA && match.athleteB === athleteB) ||
@@ -328,7 +338,7 @@ export const TournamentMatrix = ({
         <div className="xl:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Organizzazione Turni</CardTitle>
+              <CardTitle>Matrice Torneo</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -461,16 +471,18 @@ export const TournamentMatrix = ({
                          <div className="text-sm font-medium mb-3">
                            {match.athleteA.full_name} vs {match.athleteB.full_name}
                          </div>
-                           <MatchInputs
-                             athleteA={match.athleteA.id}
-                             athleteB={match.athleteB.id}
-                             athleteAName={match.athleteA.full_name}
-                             athleteBName={match.athleteB.full_name}
-                             match={matchData}
-                             onUpdate={handleScoreChange}
-                             canEdit={canEditMatch(match.athleteA.id, match.athleteB.id, matchData)}
-                             activeTournamentId={activeTournamentId}
-                           />
+                            <MatchInputs
+                              athleteA={match.athleteA.id}
+                              athleteB={match.athleteB.id}
+                              athleteAName={match.athleteA.full_name}
+                              athleteBName={match.athleteB.full_name}
+                              match={matchData}
+                              onUpdate={handleScoreChange}
+                              canEdit={canEditMatch(match.athleteA.id, match.athleteB.id, matchData)}
+                              canCancel={canCancelMatch(match.athleteA.id, match.athleteB.id, matchData)}
+                              currentUserId={currentUserId}
+                              activeTournamentId={activeTournamentId}
+                            />
                        </div>
                      );
                    })}
@@ -572,11 +584,12 @@ interface MatchInputsProps {
   match?: TournamentMatch;
   onUpdate: (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => void;
   canEdit?: boolean;
+  canCancel?: boolean;
   currentUserId?: string | null;
   activeTournamentId?: string | null;
 }
 
-const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true, currentUserId, activeTournamentId }: MatchInputsProps) => {
+const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true, canCancel = false, currentUserId, activeTournamentId }: MatchInputsProps) => {
   const [scoreA, setScoreA] = useState(match?.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
@@ -609,7 +622,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
           </div>
         </div>
         {/* Badge "Completato" cliccabile per annullare */}
-        {canEdit ? (
+        {canCancel ? (
           <Button
             variant="ghost"
             size="sm"
