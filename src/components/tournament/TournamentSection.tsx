@@ -203,7 +203,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             status: updatedBout.status
           });
           
-          // Always update state (database is single source of truth)
+          // ✅ SEMPRE aggiorna lo stato locale (DB è fonte di verità)
           setMatches(prev => prev.map(match => {
             if (match.id === updatedBout.id) {
               const isNormalOrder = match.athleteA === updatedBout.athlete_a;
@@ -218,15 +218,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             return match;
           }));
           
-          // Toast only for updates from other users
+          // ✅ Toast SOLO se update da altri
           if (updatedBout.created_by !== currentUserId) {
-            const wasReset = updatedBout.score_a === null;
             toast({
-              title: wasReset ? "Match annullato" : "Risultato aggiornato",
-              description: wasReset 
-                ? "Un altro partecipante ha annullato un match" 
-                : "Un altro partecipante ha aggiornato un match",
-              duration: 2000,
+              title: "Match aggiornato",
+              duration: 1500,
             });
           }
         }

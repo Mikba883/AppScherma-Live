@@ -152,54 +152,7 @@ export const TournamentMatrix = ({
     };
   };
 
-  const handleScoreChange = async (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => {
-    const numScoreA = scoreA === '' ? null : parseInt(scoreA);
-    const numScoreB = scoreB === '' ? null : parseInt(scoreB);
-    
-    console.log('[handleScoreChange] 📝 Ricevuto:', {
-      athleteA,
-      athleteB,
-      scoreA,
-      scoreB,
-      weapon,
-      numScoreA,
-      numScoreB
-    });
-
-    // Save to database - real-time will update all clients
-    if (numScoreA !== null && numScoreB !== null && weapon) {
-      try {
-        const match = getMatch(athleteA, athleteB);
-        if (!match?.id) {
-          console.error('Match non trovato per il salvataggio');
-          return;
-        }
-
-        console.log('[handleScoreChange] 💾 Salvataggio nel DB:', {
-          matchId: match.id,
-          score_a: numScoreA,
-          score_b: numScoreB,
-          weapon
-        });
-
-        const { error } = await supabase
-          .from('bouts')
-          .update({
-            score_a: numScoreA,
-            score_b: numScoreB,
-            weapon: weapon,
-            status: 'pending'
-          })
-          .eq('id', match.id);
-
-        if (error) throw error;
-        console.log('[handleScoreChange] ✅ Salvato - real-time aggiornerà tutti');
-      } catch (error) {
-        console.error('Errore nel salvataggio del match:', error);
-        toast.error('Errore nel salvataggio del match');
-      }
-    }
-  };
+  // ❌ Rimossa: handleScoreChange - non più necessaria, MatchInputs salva direttamente nel DB
 
   // Generate rounds for tournament organization using correct round-robin algorithm
   const generateRounds = () => {
@@ -554,18 +507,16 @@ export const TournamentMatrix = ({
                          <div className="text-sm font-medium mb-3">
                            {match.athleteA.full_name} vs {match.athleteB.full_name}
                          </div>
-                            <MatchInputs
-                              key={matchData?.id || `${match.athleteA.id}-${match.athleteB.id}`}
-                              athleteA={match.athleteA.id}
-                              athleteB={match.athleteB.id}
-                              athleteAName={match.athleteA.full_name}
-                              athleteBName={match.athleteB.full_name}
-                              match={matchData}
-                              onUpdate={handleScoreChange}
-                              canEdit={canEditMatch(match.athleteA.id, match.athleteB.id, matchData)}
-                              canCancel={canCancelMatch(match.athleteA.id, match.athleteB.id, matchData)}
-                              currentUserId={currentUserId}
-                              activeTournamentId={activeTournamentId}
+                           <MatchInputs
+                             key={matchData?.id || `${match.athleteA.id}-${match.athleteB.id}`}
+                             athleteA={match.athleteA.id}
+                             athleteB={match.athleteB.id}
+                             athleteAName={match.athleteA.full_name}
+                             athleteBName={match.athleteB.full_name}
+                             match={matchData}
+                             canEdit={canEditMatch(match.athleteA.id, match.athleteB.id, matchData)}
+                             canCancel={canCancelMatch(match.athleteA.id, match.athleteB.id, matchData)}
+                             currentUserId={currentUserId}
                             />
                        </div>
                      );
@@ -666,68 +617,20 @@ interface MatchInputsProps {
   athleteAName: string;
   athleteBName: string;
   match?: TournamentMatch;
-  onUpdate: (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => void;
   canEdit?: boolean;
   canCancel?: boolean;
   currentUserId?: string | null;
-  activeTournamentId?: string | null;
 }
 
-const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, onUpdate, canEdit = true, canCancel = false, currentUserId, activeTournamentId }: MatchInputsProps) => {
-  // ✅ Funzione helper per conversione sicura
-  const toStringOrEmpty = (val: number | null | undefined) => {
-    if (val === null || val === undefined) return '';
-    return String(val);
-  };
+const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, canEdit = true, canCancel = false, currentUserId }: MatchInputsProps) => {
+  // ✅ Usa direttamente i valori dalle props (DB è fonte di verità)
+  const scoreA = match?.scoreA?.toString() || '';
+  const scoreB = match?.scoreB?.toString() || '';
+  const weapon = match?.weapon || 'fioretto';
   
-  const [inputScoreA, setInputScoreA] = useState('');
-  const [inputScoreB, setInputScoreB] = useState('');
-  const [inputWeapon, setInputWeapon] = useState<'fioretto' | 'spada' | 'sciabola'>('fioretto');
-  const [isFocused, setIsFocused] = useState(false);
-
-  // Sync input values ONLY when match.id changes (not during typing)
-  useEffect(() => {
-    if (!isFocused) {
-      console.log('[MatchInputs] 🔄 Sync con match:', {
-        matchId: match?.id,
-        propsScoreA: match?.scoreA,
-        propsScoreB: match?.scoreB,
-        propsWeapon: match?.weapon
-      });
-
-      setInputScoreA(toStringOrEmpty(match?.scoreA));
-      setInputScoreB(toStringOrEmpty(match?.scoreB));
-      setInputWeapon((match?.weapon as 'fioretto' | 'spada' | 'sciabola') || 'fioretto');
-    }
-  }, [match?.id, isFocused]);
-
   const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
-  
-  const scoreANum = inputScoreA === '' ? null : parseInt(inputScoreA);
-  const scoreBNum = inputScoreB === '' ? null : parseInt(inputScoreB);
   const isAWinning = isComplete && match.scoreA! > match.scoreB!;
   const isBWinning = isComplete && match.scoreB! > match.scoreA!;
-
-  // Auto-save with debounce (800ms)
-  useEffect(() => {
-    if (!inputScoreA || !inputScoreB || !inputWeapon) {
-      return;
-    }
-
-    console.log('[MatchInputs] ⏱️ Debounce auto-save avviato (800ms)');
-    const timer = setTimeout(() => {
-      console.log('[MatchInputs] 💾 Auto-save triggered:', {
-        athleteA,
-        athleteB,
-        inputScoreA,
-        inputScoreB,
-        inputWeapon
-      });
-      onUpdate(athleteA, athleteB, inputScoreA, inputScoreB, inputWeapon);
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [inputScoreA, inputScoreB, inputWeapon, athleteA, athleteB, onUpdate]);
 
   // ✅ Match completato → visualizzazione read-only
   if (isComplete) {
@@ -793,16 +696,22 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
     );
   }
 
-  // ✅ Match non completato + può modificare → form di input
+  // ✅ Match non completato + può modificare → form di input con salvataggio immediato
   if (canEdit) {
     return (
       <div className="space-y-3">
-        {/* Weapon Selection */}
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
           <Select 
-            value={inputWeapon} 
-            onValueChange={(value) => setInputWeapon(value as 'fioretto' | 'spada' | 'sciabola')}
+            value={weapon} 
+            onValueChange={async (newWeapon) => {
+              if (!match?.id) return;
+              const { error } = await supabase
+                .from('bouts')
+                .update({ weapon: newWeapon })
+                .eq('id', match.id);
+              if (error) console.error(error);
+            }}
           >
             <SelectTrigger className="h-8">
               <SelectValue />
@@ -815,7 +724,6 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
           </Select>
         </div>
 
-        {/* Scores */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{athleteAName}</label>
@@ -823,10 +731,16 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               type="number"
               min="0"
               max="15"
-              value={inputScoreA}
-              onChange={(e) => setInputScoreA(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+              defaultValue={scoreA}
+              onBlur={async (e) => {
+                if (!match?.id) return;
+                const newScore = e.target.value === '' ? null : parseInt(e.target.value);
+                const { error } = await supabase
+                  .from('bouts')
+                  .update({ score_a: newScore })
+                  .eq('id', match.id);
+                if (error) console.error(error);
+              }}
               className="text-center"
               placeholder="0"
             />
@@ -837,10 +751,16 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               type="number"
               min="0"
               max="15"
-              value={inputScoreB}
-              onChange={(e) => setInputScoreB(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+              defaultValue={scoreB}
+              onBlur={async (e) => {
+                if (!match?.id) return;
+                const newScore = e.target.value === '' ? null : parseInt(e.target.value);
+                const { error } = await supabase
+                  .from('bouts')
+                  .update({ score_b: newScore })
+                  .eq('id', match.id);
+                if (error) console.error(error);
+              }}
               className="text-center"
               placeholder="0"
             />
@@ -850,7 +770,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
     );
   }
 
-  // ✅ TERZA: Match non completato + NON può modificare → messaggi di attesa
+  // ✅ Match non completato + NON può modificare → messaggi di attesa
   const isInvolved = currentUserId && (athleteA === currentUserId || athleteB === currentUserId);
   
   if (isInvolved) {
