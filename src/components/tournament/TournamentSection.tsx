@@ -14,7 +14,7 @@ interface TournamentSectionProps {
 }
 
 export const TournamentSection = ({ onTournamentStateChange }: TournamentSectionProps) => {
-  const [mode, setMode] = useState<'menu' | 'matrix'>('menu');
+  const [mode, setMode] = useState<'menu' | 'setup' | 'matrix'>('menu');
   const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [tournamentStarted, setTournamentStarted] = useState(false);
@@ -485,7 +485,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           </Button>
           
           <Button 
-            onClick={() => setMode('matrix')}
+            onClick={() => setMode('setup')}
             className="w-full"
             variant="default"
           >
@@ -495,36 +495,34 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         </div>
       )}
 
-      {mode === 'matrix' && (
+      {mode === 'setup' && (
+        <TournamentSetup onStartTournament={handleStartTournament} />
+      )}
+
+      {mode === 'matrix' && tournamentStarted && (
         <div>
-          {tournamentStarted && (
-            <Button 
-              variant="ghost" 
-              onClick={handleExitTournament}
-              className="mb-4"
-            >
-              <ArrowLeft className="mr-2 w-4 h-4" />
-              Esci dal Torneo
-            </Button>
-          )}
+          <Button 
+            variant="ghost" 
+            onClick={handleExitTournament}
+            className="mb-4"
+          >
+            <ArrowLeft className="mr-2 w-4 h-4" />
+            Esci dal Torneo
+          </Button>
           
-          {!tournamentStarted ? (
-            <TournamentSetup onStartTournament={handleStartTournament} />
-          ) : (
-            <TournamentMatrix 
-              athletes={selectedAthletes}
-              matches={matches}
-              onUpdateMatch={handleUpdateMatch}
-              onResetTournament={handleResetTournament}
-              onSaveResults={handleSaveTournament}
-              saving={saving}
-              isStudentMode={true}
-              currentUserId={currentUserId}
-              tournamentCreatorId={tournamentCreatorId}
-              activeTournamentId={activeTournamentId}
-              organizerRole={isInstructor ? 'instructor' : 'student'}
-            />
-          )}
+          <TournamentMatrix 
+            athletes={selectedAthletes}
+            matches={matches}
+            onUpdateMatch={handleUpdateMatch}
+            onResetTournament={handleResetTournament}
+            onSaveResults={handleSaveTournament}
+            saving={saving}
+            isStudentMode={true}
+            currentUserId={currentUserId}
+            tournamentCreatorId={tournamentCreatorId}
+            activeTournamentId={activeTournamentId}
+            organizerRole={isInstructor ? 'instructor' : 'student'}
+          />
         </div>
       )}
 
