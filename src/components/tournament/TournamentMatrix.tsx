@@ -659,7 +659,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             type="number"
             min="0"
             max="15"
-            value={scoreA}
+            value={scoreA === null || scoreA === '' ? '' : scoreA}
             onChange={(e) => {
               const newValue = e.target.value;
               setScoreA(newValue);
@@ -673,7 +673,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               isComplete && isAWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
               isComplete && isBWinning && "bg-red-100 border-red-300 text-red-800"
             )}
-            placeholder="0"
+            placeholder="-"
           />
         </div>
         <div>
@@ -682,7 +682,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             type="number"
             min="0"
             max="15"
-            value={scoreB}
+            value={scoreB === null || scoreB === '' ? '' : scoreB}
             onChange={(e) => {
               const newValue = e.target.value;
               setScoreB(newValue);

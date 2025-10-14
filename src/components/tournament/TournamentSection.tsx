@@ -126,37 +126,53 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const subscribeToTournamentUpdates = (tournamentId: string) => {
+    let debounceTimer: NodeJS.Timeout;
+    
     const channel = supabase
       .channel('tournament-updates')
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',  // Solo UPDATE, non INSERT/DELETE
+          event: 'UPDATE',
           schema: 'public',
           table: 'bouts',
           filter: `tournament_id=eq.${tournamentId}`
         },
-        (payload) => {
-          console.log('Tournament bout updated:', payload);
-          // Aggiorna SOLO il match specifico cambiato
-          const updatedBout = payload.new as any;
-          setMatches(prev => prev.map(match => {
-            if (match.athleteA === updatedBout.athlete_a && 
-                match.athleteB === updatedBout.athlete_b) {
-              return {
-                ...match,
-                scoreA: updatedBout.score_a,
-                scoreB: updatedBout.score_b,
-                weapon: updatedBout.weapon
-              };
-            }
-            return match;
-          }));
+        () => {
+          // Debounce reload to avoid excessive updates
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(async () => {
+            await loadTournamentData(tournamentId);
+            toast({
+              title: "Dati aggiornati",
+              description: "I risultati del torneo sono stati aggiornati",
+            });
+          }, 500);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tournaments',
+          filter: `id=eq.${tournamentId}`
+        },
+        async (payload) => {
+          const updatedTournament = payload.new as any;
+          if (updatedTournament.status === 'completed' || updatedTournament.status === 'cancelled') {
+            toast({
+              title: "Torneo Chiuso",
+              description: "Il torneo è stato chiuso dall'organizzatore",
+            });
+            await exitTournament();
+          }
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   };
@@ -351,8 +367,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const exitTournament = async () => {
-    // Reset local state only - tournament remains in_progress in DB
-    // It will reappear until creator explicitly closes it or it's auto-closed after 24h
+    // Reset local state
     setMode('menu');
     setTournamentStarted(false);
     setSelectedAthletes([]);
