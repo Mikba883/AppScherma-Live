@@ -156,14 +156,31 @@ export const TournamentMatrix = ({
     const numScoreA = scoreA === '' ? null : parseInt(scoreA);
     const numScoreB = scoreB === '' ? null : parseInt(scoreB);
     
-    // ✅ 1. Aggiornamento ottimistico IMMEDIATO - notifica padre
-    onUpdateMatch(athleteA, athleteB, numScoreA, numScoreB, weapon || null);
-    
-    // ✅ 2. Salvataggio DB in background (solo se completo)
+    console.log('[handleScoreChange] 📝 Ricevuto:', {
+      athleteA,
+      athleteB,
+      scoreA,
+      scoreB,
+      weapon,
+      numScoreA,
+      numScoreB
+    });
+
+    // Save to database - real-time will update all clients
     if (numScoreA !== null && numScoreB !== null && weapon) {
       try {
         const match = getMatch(athleteA, athleteB);
-        if (!match?.id) return;
+        if (!match?.id) {
+          console.error('Match non trovato per il salvataggio');
+          return;
+        }
+
+        console.log('[handleScoreChange] 💾 Salvataggio nel DB:', {
+          matchId: match.id,
+          score_a: numScoreA,
+          score_b: numScoreB,
+          weapon
+        });
 
         const { error } = await supabase
           .from('bouts')
@@ -176,34 +193,10 @@ export const TournamentMatrix = ({
           .eq('id', match.id);
 
         if (error) throw error;
+        console.log('[handleScoreChange] ✅ Salvato - real-time aggiornerà tutti');
       } catch (error) {
-        console.error('Errore salvataggio:', error);
-        toast.error('Errore nel salvataggio - ricarico dati');
-        // ✅ 3. Rollback: ricarica dati dal DB
-        if (activeTournamentId) {
-          const { data: bouts } = await supabase
-            .from('bouts')
-            .select('*')
-            .eq('tournament_id', activeTournamentId);
-          
-          if (bouts) {
-            const reloadedMatches = bouts.map(b => ({
-              id: b.id,
-              athleteA: b.athlete_a,
-              athleteB: b.athlete_b,
-              scoreA: b.score_a,
-              scoreB: b.score_b,
-              weapon: b.weapon,
-              status: b.status
-            }));
-            // Notifica padre con dati corretti dal DB
-            reloadedMatches.forEach(m => {
-              if (m.athleteA === athleteA && m.athleteB === athleteB) {
-                onUpdateMatch(m.athleteA, m.athleteB, m.scoreA, m.scoreB, m.weapon);
-              }
-            });
-          }
-        }
+        console.error('Errore nel salvataggio del match:', error);
+        toast.error('Errore nel salvataggio del match');
       }
     }
   };
@@ -687,27 +680,26 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
     return String(val);
   };
   
-  // ✅ Stato locale SOLO per debounce input (non è fonte di verità)
-  const [inputScoreA, setInputScoreA] = useState(toStringOrEmpty(match?.scoreA));
-  const [inputScoreB, setInputScoreB] = useState(toStringOrEmpty(match?.scoreB));
-  const [inputWeapon, setInputWeapon] = useState(match?.weapon || 'fioretto');
+  const [inputScoreA, setInputScoreA] = useState('');
+  const [inputScoreB, setInputScoreB] = useState('');
+  const [inputWeapon, setInputWeapon] = useState<'fioretto' | 'spada' | 'sciabola'>('fioretto');
+  const [isFocused, setIsFocused] = useState(false);
 
-  // ✅ Sincronizza input con props quando cambiano (fonte di verità = props)
+  // Sync input values ONLY when match.id changes (not during typing)
   useEffect(() => {
-    console.log('[MatchInputs] 🔄 Sincronizzazione con props:', { 
-      matchId: match?.id,
-      propsScoreA: match?.scoreA, 
-      propsScoreB: match?.scoreB,
-      propsWeapon: match?.weapon
-    });
-    
-    // Sincronizza sempre con le props (fonte di verità)
-    setInputScoreA(toStringOrEmpty(match?.scoreA));
-    setInputScoreB(toStringOrEmpty(match?.scoreB));
-    setInputWeapon(match?.weapon || 'fioretto');
-    
-    console.log('[MatchInputs] ✅ Input sincronizzati');
-  }, [match?.id, match?.scoreA, match?.scoreB, match?.weapon]);
+    if (!isFocused) {
+      console.log('[MatchInputs] 🔄 Sync con match:', {
+        matchId: match?.id,
+        propsScoreA: match?.scoreA,
+        propsScoreB: match?.scoreB,
+        propsWeapon: match?.weapon
+      });
+
+      setInputScoreA(toStringOrEmpty(match?.scoreA));
+      setInputScoreB(toStringOrEmpty(match?.scoreB));
+      setInputWeapon((match?.weapon as 'fioretto' | 'spada' | 'sciabola') || 'fioretto');
+    }
+  }, [match?.id, isFocused]);
 
   const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
   
@@ -716,28 +708,26 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   const isAWinning = isComplete && match.scoreA! > match.scoreB!;
   const isBWinning = isComplete && match.scoreB! > match.scoreA!;
 
-  // ✅ Debounce auto-save (500ms)
+  // Auto-save with debounce (800ms)
   useEffect(() => {
-    if (!inputScoreA || !inputScoreB || !inputWeapon) return;
-    if (isComplete) return; // Non salvare se già completato
-    
-    const currentScoreA = toStringOrEmpty(match?.scoreA);
-    const currentScoreB = toStringOrEmpty(match?.scoreB);
-    const currentWeapon = match?.weapon || '';
+    if (!inputScoreA || !inputScoreB || !inputWeapon) {
+      return;
+    }
 
-    const hasChanges = inputScoreA !== currentScoreA || inputScoreB !== currentScoreB || inputWeapon !== currentWeapon;
-    
-    if (!hasChanges) return;
-
-    console.log('[Auto-save] Programmazione salvataggio tra 500ms');
-
+    console.log('[MatchInputs] ⏱️ Debounce auto-save avviato (800ms)');
     const timer = setTimeout(() => {
-      console.log('[Auto-save] ⚡ Esecuzione aggiornamento');
+      console.log('[MatchInputs] 💾 Auto-save triggered:', {
+        athleteA,
+        athleteB,
+        inputScoreA,
+        inputScoreB,
+        inputWeapon
+      });
       onUpdate(athleteA, athleteB, inputScoreA, inputScoreB, inputWeapon);
-    }, 500);
+    }, 800);
 
     return () => clearTimeout(timer);
-  }, [inputScoreA, inputScoreB, inputWeapon, athleteA, athleteB, onUpdate, match, isComplete]);
+  }, [inputScoreA, inputScoreB, inputWeapon, athleteA, athleteB, onUpdate]);
 
   // ✅ Match completato → visualizzazione read-only
   if (isComplete) {
@@ -766,8 +756,10 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             className="w-full bg-green-100 hover:bg-red-100 text-green-800 hover:text-red-800 transition-colors"
             onClick={async () => {
               if (!match?.id) return;
-
+              
               try {
+                console.log('[Annulla] 🗑️ Annullamento match:', match.id);
+                
                 const { error } = await supabase
                   .from('bouts')
                   .update({
@@ -780,10 +772,11 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
 
                 if (error) throw error;
                 
-                toast('Match annullato - il real-time aggiornerà i dati', { duration: 2000 });
+                console.log('[Annulla] ✅ Match annullato - real-time aggiornerà tutti');
+                toast('Match annullato', { duration: 2000 });
               } catch (error) {
-                console.error('Errore annullamento:', error);
-                toast.error('Errore durante l\'annullamento');
+                console.error('Errore nell\'annullamento del match:', error);
+                toast.error('Errore nell\'annullamento del match');
               }
             }}
           >
@@ -809,7 +802,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
           <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
           <Select 
             value={inputWeapon} 
-            onValueChange={setInputWeapon}
+            onValueChange={(value) => setInputWeapon(value as 'fioretto' | 'spada' | 'sciabola')}
           >
             <SelectTrigger className="h-8">
               <SelectValue />
@@ -832,6 +825,8 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               max="15"
               value={inputScoreA}
               onChange={(e) => setInputScoreA(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
               className="text-center"
               placeholder="0"
             />
@@ -844,6 +839,8 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               max="15"
               value={inputScoreB}
               onChange={(e) => setInputScoreB(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
               className="text-center"
               placeholder="0"
             />

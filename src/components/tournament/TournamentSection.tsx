@@ -193,45 +193,39 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           filter: `tournament_id=eq.${tournamentId}`
         },
         async (payload) => {
-          console.log('[Real-time] 🔄 Bout UPDATE ricevuto:', payload);
           const updatedBout = payload.new as any;
           
-          console.log('[Real-time] Dati aggiornati:', {
+          console.log('[Real-time] 🔄 UPDATE ricevuto:', {
             id: updatedBout.id,
             score_a: updatedBout.score_a,
             score_b: updatedBout.score_b,
-            status: updatedBout.status,
-            weapon: updatedBout.weapon
+            weapon: updatedBout.weapon,
+            status: updatedBout.status
           });
           
-          // ✅ UPDATE SPECIFICO invece di reload completo (evita sovrascrittura durante editing)
+          // Always update state (database is single source of truth)
           setMatches(prev => prev.map(match => {
             if (match.id === updatedBout.id) {
-              // Determina ordine corretto
               const isNormalOrder = match.athleteA === updatedBout.athlete_a;
-              
-              const updated = {
+              return {
                 ...match,
                 scoreA: isNormalOrder ? updatedBout.score_a : updatedBout.score_b,
                 scoreB: isNormalOrder ? updatedBout.score_b : updatedBout.score_a,
                 weapon: updatedBout.weapon,
                 status: updatedBout.status
               };
-              
-              console.log('[Real-time] ✅ Match aggiornato:', updated);
-              return updated;
             }
             return match;
           }));
           
-          // ✅ Toast per notifiche da altri utenti
+          // Toast only for updates from other users
           if (updatedBout.created_by !== currentUserId) {
-            const wasReset = updatedBout.score_a === null && updatedBout.score_b === null;
+            const wasReset = updatedBout.score_a === null;
             toast({
               title: wasReset ? "Match annullato" : "Risultato aggiornato",
               description: wasReset 
                 ? "Un altro partecipante ha annullato un match" 
-                : "Un altro partecipante ha completato un match",
+                : "Un altro partecipante ha aggiornato un match",
               duration: 2000,
             });
           }
