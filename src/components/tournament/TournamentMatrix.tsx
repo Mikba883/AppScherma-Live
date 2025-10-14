@@ -62,8 +62,11 @@ export const TournamentMatrix = ({
   const isSaving = externalSaving || saving;
   const isCreator = currentUserId && tournamentCreatorId && currentUserId === tournamentCreatorId;
   
-  const canEditMatch = (athleteA: string, athleteB: string): boolean => {
+  const canEditMatch = (athleteA: string, athleteB: string, matchData?: TournamentMatch): boolean => {
     if (!currentUserId) return false;
+    // Se il match è completato, nessuno può modificarlo (serve annullare prima)
+    const isComplete = matchData?.scoreA !== null && matchData?.scoreB !== null && matchData?.weapon;
+    if (isComplete) return false;
     // Gli organizzatori (creator o istruttori) possono modificare tutto
     if (isCreator || organizerRole === 'instructor') return true;
     // I partecipanti possono modificare solo i propri match
@@ -458,14 +461,14 @@ export const TournamentMatrix = ({
                          <div className="text-sm font-medium mb-3">
                            {match.athleteA.full_name} vs {match.athleteB.full_name}
                          </div>
-                            <MatchInputs
+                           <MatchInputs
                              athleteA={match.athleteA.id}
                              athleteB={match.athleteB.id}
                              athleteAName={match.athleteA.full_name}
                              athleteBName={match.athleteB.full_name}
                              match={matchData}
                              onUpdate={handleScoreChange}
-                             canEdit={canEditMatch(match.athleteA.id, match.athleteB.id)}
+                             canEdit={canEditMatch(match.athleteA.id, match.athleteB.id, matchData)}
                              activeTournamentId={activeTournamentId}
                            />
                        </div>
@@ -632,11 +635,21 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
 
                 if (error) throw error;
 
-                // Reset stato locale
+                // Reset stato locale IMMEDIATO
                 setScoreA('');
                 setScoreB('');
                 
+                // Propaga il reset al componente padre
+                onUpdate(athleteA, athleteB, '', '', weapon);
+                
                 toast('Match annullato - puoi reinserire i dati', { duration: 2000 });
+                
+                // Aspetta che il real-time aggiorni i dati
+                setTimeout(() => {
+                  // Forza un re-render se necessario
+                  setScoreA('');
+                  setScoreB('');
+                }, 300);
               } catch (error) {
                 console.error('Errore riapertura match:', error);
                 toast('Errore durante l\'annullamento del match', { duration: 2000 });
@@ -730,12 +743,6 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             />
           </div>
         </div>
-
-        {isComplete && (
-          <div className="flex items-center justify-center">
-            <Badge variant="default" className="text-xs bg-green-100 text-green-800">Completato</Badge>
-          </div>
-        )}
       </div>
     );
   }
