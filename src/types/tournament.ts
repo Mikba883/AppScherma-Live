@@ -4,6 +4,7 @@ export interface TournamentAthlete {
 }
 
 export interface TournamentMatch {
+  id?: string;
   athleteA: string;
   athleteB: string;
   scoreA: number | null;

@@ -106,7 +106,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       // Get all bouts for this tournament
       const { data: bouts, error: boutsError } = await supabase
         .from('bouts')
-        .select('athlete_a, athlete_b, score_a, score_b, weapon, status')
+        .select('id, athlete_a, athlete_b, score_a, score_b, weapon, status')
         .eq('tournament_id', tournamentId);
 
       if (boutsError) throw boutsError;
@@ -132,6 +132,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       })) || [];
 
       const matches: TournamentMatch[] = bouts?.map(b => ({
+        id: b.id,
         athleteA: b.athlete_a,
         athleteB: b.athlete_b,
         scoreA: b.score_a,
@@ -188,25 +189,21 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           console.log('[Real-time] Bout aggiornato:', payload);
           const updatedBout = payload.new as any;
           
-          // ✅ AGGIORNA SOLO il match specifico nello stato locale
+          // ✅ AGGIORNA usando l'ID del bout
           setMatches(prev => prev.map(match => {
-            // Trova il match corrispondente
-            const isMatch = 
-              (match.athleteA === updatedBout.athlete_a && match.athleteB === updatedBout.athlete_b) ||
-              (match.athleteA === updatedBout.athlete_b && match.athleteB === updatedBout.athlete_a);
-            
-            if (!isMatch) return match;
-            
-            // Determina ordine
-            const isNormalOrder = match.athleteA === updatedBout.athlete_a;
-            
-            return {
-              ...match,
-              scoreA: isNormalOrder ? updatedBout.score_a : updatedBout.score_b,
-              scoreB: isNormalOrder ? updatedBout.score_b : updatedBout.score_a,
-              weapon: updatedBout.weapon,
-              status: updatedBout.status
-            };
+            if (match.id === updatedBout.id) {
+              // Determina ordine
+              const isNormalOrder = match.athleteA === updatedBout.athlete_a;
+              
+              return {
+                ...match,
+                scoreA: isNormalOrder ? updatedBout.score_a : updatedBout.score_b,
+                scoreB: isNormalOrder ? updatedBout.score_b : updatedBout.score_a,
+                weapon: updatedBout.weapon,
+                status: updatedBout.status
+              };
+            }
+            return match;
           }));
           
           // Toast solo se aggiornamento da altro utente
@@ -256,17 +253,13 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             a => a.id === updatedRanking.athlete_id
           );
           
-          if (isInTournament) {
-            await loadTournamentData(tournamentId);
-            console.log('[Real-time] Classifica ricaricata');
-            
-            if (updatedRanking.athlete_id !== currentUserId) {
-              toast({
-                title: "Classifica aggiornata",
-                description: "La classifica del torneo è stata aggiornata",
-                duration: 1500,
-              });
-            }
+          if (isInTournament && updatedRanking.athlete_id !== currentUserId) {
+            // ✅ SOLO NOTIFICA, NON ricaricare i dati!
+            toast({
+              title: "Classifica aggiornata",
+              description: "La classifica del torneo è stata aggiornata",
+              duration: 1500,
+            });
           }
         }
       )
@@ -455,7 +448,23 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   ) => {
     console.log('[handleUpdateMatch] START:', { athleteA, athleteB, scoreA, scoreB, weapon });
     
-    // ✅ VALIDAZIONE: Accetta solo match COMPLETI
+    // ✅ Trova il match nello stato locale per ottenere l'ID
+    const localMatch = matches.find(m => 
+      (m.athleteA === athleteA && m.athleteB === athleteB) ||
+      (m.athleteA === athleteB && m.athleteB === athleteA)
+    );
+    
+    if (!localMatch?.id) {
+      console.error('[handleUpdateMatch] Match ID non trovato nello stato locale');
+      toast({
+        title: "Errore",
+        description: "Impossibile identificare il match",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validazione
     const numScoreA = Number(scoreA);
     const numScoreB = Number(scoreB);
     
@@ -464,77 +473,43 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       return;
     }
     
-    // ✅ CONTROLLO: Se torneo non attivo, esci
     if (!activeTournamentId) {
       console.log('[handleUpdateMatch] ❌ Nessun torneo attivo');
       return;
     }
     
     try {
-      // ✅ STEP 1: Cerca il bout nel DB
-      const { data: bouts, error: searchError } = await supabase
-        .from('bouts')
-        .select('id, athlete_a, athlete_b, score_a, score_b, weapon, status')
-        .eq('tournament_id', activeTournamentId)
-        .or(`and(athlete_a.eq.${athleteA},athlete_b.eq.${athleteB}),and(athlete_a.eq.${athleteB},athlete_b.eq.${athleteA})`);
+      // ✅ USA direttamente l'ID dal match locale
+      const boutId = localMatch.id;
       
-      if (searchError) throw searchError;
-      if (!bouts || bouts.length === 0) {
-        throw new Error('Bout non trovato nel database');
-      }
+      // Determina ordine atleti
+      const isNormalOrder = localMatch.athleteA === athleteA;
       
-      const bout = bouts[0];
-      
-      // ✅ STEP 2: BLOCCA se già completato (solo istruttori possono modificare)
-      if (bout.status === 'approved' && !isInstructor) {
-        console.log('[handleUpdateMatch] ❌ Match già approvato, solo istruttori possono modificare');
-        toast({
-          title: "Match completato",
-          description: "Questo match è stato completato. Solo un istruttore può modificarlo.",
-          variant: "destructive",
-        });
-        // Ricarica dati corretti
-        await loadTournamentData(activeTournamentId);
-        return;
-      }
-      
-      // ✅ STEP 3: Determina ordine atleti
-      const isNormalOrder = bout.athlete_a === athleteA;
-      
-      // ✅ STEP 4: Prepara UPDATE con status 'approved' (COMPLETATO E BLOCCATO)
+      // Prepara UPDATE
       const updates = {
         score_a: isNormalOrder ? numScoreA : numScoreB,
         score_b: isNormalOrder ? numScoreB : numScoreA,
         weapon: weapon,
-        status: 'approved'  // ← SEMPRE approved quando salviamo
+        status: 'approved'
       };
       
-      console.log('[handleUpdateMatch] 💾 SAVING TO DB:', { bout_id: bout.id, updates });
+      console.log('[handleUpdateMatch] 💾 SAVING TO DB:', { bout_id: boutId, updates });
       
-      // ✅ STEP 5: Esegui UPDATE ATOMICO
+      // ✅ UPDATE diretto usando l'ID
       const { error: updateError } = await supabase
         .from('bouts')
         .update(updates)
-        .eq('id', bout.id);
+        .eq('id', boutId);
       
       if (updateError) throw updateError;
       
-      // ✅ STEP 6: Aggiorna stato locale DOPO il salvataggio
+      // ✅ Aggiorna stato locale usando l'ID
       setMatches(prev => prev.map(match => {
-        if (match.athleteA === athleteA && match.athleteB === athleteB) {
-          return { 
-            ...match, 
-            scoreA: numScoreA, 
-            scoreB: numScoreB, 
-            weapon: weapon,
-            status: 'approved'
-          };
-        }
-        if (match.athleteA === athleteB && match.athleteB === athleteA) {
-          return { 
-            ...match, 
-            scoreA: numScoreB, 
-            scoreB: numScoreA, 
+        if (match.id === boutId) {
+          return {
+            ...match,
+            scoreA: isNormalOrder ? numScoreA : numScoreB,
+            scoreB: isNormalOrder ? numScoreB : numScoreA,
             weapon: weapon,
             status: 'approved'
           };
@@ -542,7 +517,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         return match;
       }));
       
-      console.log('[handleUpdateMatch] ✅ Match salvato e bloccato con successo');
+      console.log('[handleUpdateMatch] ✅ Match salvato con successo');
       
       toast({
         title: "Match salvato",
@@ -556,11 +531,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         description: error.message || "Impossibile salvare il match",
         variant: "destructive",
       });
-      
-      // Ricarica dati in caso di errore
-      if (activeTournamentId) {
-        await loadTournamentData(activeTournamentId);
-      }
     }
   };
 
