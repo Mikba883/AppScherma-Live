@@ -17,6 +17,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [mode, setMode] = useState<'menu' | 'setup' | 'matrix'>('menu');
   const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
+  const [matchVersion, setMatchVersion] = useState(0);
   const [tournamentStarted, setTournamentStarted] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,8 +114,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         weapon: b.weapon
       })) || [];
 
-      setSelectedAthletes(athletes);
-      setMatches([...matches]); // Forza re-render
+      console.log('[loadTournamentData] Matches caricati:', matches.length);
+
+      // Forza completamente un nuovo array
+      setSelectedAthletes([...athletes]);
+      setMatches([...matches]);
       setTournamentStarted(true);
       
       // Subscribe to real-time updates
@@ -137,8 +141,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         },
         async (payload) => {
           console.log('[Real-time] Bout aggiornato:', payload);
-          // Reload immediato senza debounce
           await loadTournamentData(tournamentId);
+          setMatchVersion(v => v + 1);  // ← Forza re-render
           console.log('[Real-time] Dati ricaricati');
           
           // Toast solo se l'aggiornamento non è stato fatto da me
@@ -383,78 +387,67 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const handleUpdateMatch = async (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => {
-    console.log('[handleUpdateMatch] Ricevuto:', { athleteA, athleteB, scoreA, scoreB, weapon });
+    console.log('[handleUpdateMatch] START:', { athleteA, athleteB, scoreA, scoreB, weapon });
     
-    // 1. Aggiorna stato locale (mantieni ordine ricevuto dall'interfaccia)
-    setMatches(prev => 
-      prev.map(match => {
-        if (match.athleteA === athleteA && match.athleteB === athleteB) {
+    // 1. Aggiorna SOLO lo stato locale
+    setMatches(prev => {
+      const updated = prev.map(match => {
+        // Gestisci entrambi gli ordini
+        if ((match.athleteA === athleteA && match.athleteB === athleteB)) {
           return { ...match, scoreA, scoreB, weapon };
         }
-        if (match.athleteA === athleteB && match.athleteB === athleteA) {
+        if ((match.athleteA === athleteB && match.athleteB === athleteA)) {
           return { ...match, scoreA: scoreB, scoreB: scoreA, weapon };
         }
         return match;
-      })
-    );
+      });
+      console.log('[handleUpdateMatch] Stato locale aggiornato:', updated);
+      return updated;
+    });
     
-    // 2. Se torneo già creato, aggiorna database
+    // 2. Se torneo attivo, aggiorna DB
     if (activeTournamentId) {
       try {
-        // 2a. Trova il match nel database (può essere in entrambi gli ordini)
-        const { data: existingBouts, error: searchError } = await supabase
+        // Cerca il bout (entrambi gli ordini)
+        const { data: bouts } = await supabase
           .from('bouts')
           .select('id, athlete_a, athlete_b')
           .eq('tournament_id', activeTournamentId)
           .or(`and(athlete_a.eq.${athleteA},athlete_b.eq.${athleteB}),and(athlete_a.eq.${athleteB},athlete_b.eq.${athleteA})`);
 
-        if (searchError) {
-          console.error('[handleUpdateMatch] Errore ricerca bout:', searchError);
-          throw searchError;
+        if (!bouts || bouts.length === 0) {
+          throw new Error('Bout non trovato');
         }
 
-        if (!existingBouts || existingBouts.length === 0) {
-          console.error('[handleUpdateMatch] Nessun bout trovato per:', { athleteA, athleteB });
-          throw new Error('Match non trovato nel database');
-        }
+        const bout = bouts[0];
+        
+        // Determina punteggi corretti
+        const isNormalOrder = bout.athlete_a === athleteA;
+        const updates = {
+          score_a: isNormalOrder ? scoreA : scoreB,
+          score_b: isNormalOrder ? scoreB : scoreA,
+          weapon: weapon
+        };
 
-        const bout = existingBouts[0];
-        console.log('[handleUpdateMatch] Bout trovato nel DB:', bout);
+        console.log('[handleUpdateMatch] UPDATE DB:', { bout_id: bout.id, ...updates });
 
-        // 2b. Determina l'ordine corretto dei punteggi basandoti sull'ordine del DB
-        const finalScoreA = bout.athlete_a === athleteA ? scoreA : scoreB;
-        const finalScoreB = bout.athlete_a === athleteA ? scoreB : scoreA;
-
-        console.log('[handleUpdateMatch] Aggiorno con:', { 
-          bout_id: bout.id, 
-          db_athlete_a: bout.athlete_a,
-          db_athlete_b: bout.athlete_b,
-          finalScoreA, 
-          finalScoreB,
-          weapon 
-        });
-
-        // 2c. UPDATE usando l'ID del bout
-        const { error: updateError } = await supabase
+        // Update per ID
+        const { error } = await supabase
           .from('bouts')
-          .update({
-            score_a: finalScoreA,
-            score_b: finalScoreB,
-            weapon: weapon
-          })
+          .update(updates)
           .eq('id', bout.id);
 
-        if (updateError) {
-          console.error('[handleUpdateMatch] Errore update:', updateError);
-          throw updateError;
-        }
+        if (error) throw error;
 
-        console.log('[handleUpdateMatch] ✅ Update riuscito');
+        console.log('[handleUpdateMatch] ✅ DB aggiornato con successo');
+        
+        // NON ricaricare manualmente - lascia che la subscription lo faccia
+        
       } catch (error) {
-        console.error('[handleUpdateMatch] ❌ Errore completo:', error);
+        console.error('[handleUpdateMatch] ❌ Errore:', error);
         toast({
           title: "Errore",
-          description: "Impossibile aggiornare il match",
+          description: "Impossibile salvare il punteggio",
           variant: "destructive",
         });
       }
@@ -584,7 +577,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             </Button>
           </div>
           
-          <TournamentMatrix 
+          <TournamentMatrix
+            version={matchVersion}
             athletes={selectedAthletes}
             matches={matches}
             onUpdateMatch={handleUpdateMatch}

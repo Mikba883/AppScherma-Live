@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface TournamentMatrixProps {
   athletes: TournamentAthlete[];
   matches: TournamentMatch[];
+  version?: number;  // ← Version counter per forzare re-render
   onUpdateMatch: (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => void;
   onResetTournament: () => void;
   onSaveResults?: (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => Promise<void>;
@@ -30,7 +31,8 @@ interface TournamentMatrixProps {
 
 export const TournamentMatrix = ({ 
   athletes, 
-  matches, 
+  matches,
+  version,  // ← Aggiungi version
   onUpdateMatch, 
   onResetTournament,
   onSaveResults,
@@ -83,7 +85,7 @@ export const TournamentMatrix = ({
     return isCreator || organizerRole === 'instructor';
   };
 
-  const getMatch = (athleteA: string, athleteB: string): TournamentMatch | undefined => {
+  const getMatch = useCallback((athleteA: string, athleteB: string): TournamentMatch | undefined => {
     // Normalizza ordine atleti per ricerca coerente
     const [normalizedA, normalizedB] = [athleteA, athleteB].sort();
     
@@ -105,7 +107,7 @@ export const TournamentMatrix = ({
     }
     
     return match;
-  };
+  }, [matches, version]);
 
   const getAthleteStats = (athleteId: string) => {
     let wins = 0;
@@ -218,23 +220,6 @@ export const TournamentMatrix = ({
     return generateRounds();
   }, [athletes, matches]);
 
-  // Debug: log rounds e matchData ogni volta che cambiano
-  useEffect(() => {
-    console.log('=== ROUNDS RIGENERATI ===');
-    console.log('Numero turni:', rounds.length);
-    rounds.forEach(({ round, matches: roundMatches }) => {
-      console.log(`Turno ${round}:`, roundMatches.length, 'match');
-      roundMatches.forEach(({ athleteA, athleteB }) => {
-        const matchData = getMatch(athleteA.id, athleteB.id);
-        console.log(`  ${athleteA.full_name} vs ${athleteB.full_name}:`, {
-          scoreA: matchData?.scoreA,
-          scoreB: matchData?.scoreB,
-          weapon: matchData?.weapon
-        });
-      });
-    });
-    console.log('========================');
-  }, [rounds, matches]);
 
   // Debug: log matches ogni volta che cambiano
   useEffect(() => {
@@ -439,12 +424,10 @@ export const TournamentMatrix = ({
                          </TableCell>
                           {athletes.map((athleteB) => {
                             const match = getMatch(athleteA.id, athleteB.id);
-                            // ✅ KEY DINAMICA per forzare re-render della matrice
-                            const cellKey = `${athleteB.id}-${match?.scoreA ?? 'null'}-${match?.scoreB ?? 'null'}-${match?.weapon ?? 'null'}`;
                             
                             return (
                               <TableCell 
-                                key={cellKey} 
+                                key={athleteB.id}
                                 className="p-1 w-32 min-w-32 max-w-32"
                               >
                              {athleteA.id === athleteB.id ? (
@@ -524,11 +507,9 @@ export const TournamentMatrix = ({
                    {matches.map((match, index) => {
                      const matchData = getMatch(match.athleteA.id, match.athleteB.id);
                      const isCompleted = matchData?.scoreA !== null && matchData?.scoreB !== null;
-                     // ✅ KEY DINAMICA che include i dati del match per forzare re-render
-                     const matchKey = `${match.athleteA.id}-${match.athleteB.id}-${matchData?.scoreA ?? 'null'}-${matchData?.scoreB ?? 'null'}-${matchData?.weapon ?? 'null'}`;
                      
                      return (
-                       <div key={matchKey} className={`p-4 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                       <div key={`${match.athleteA.id}-${match.athleteB.id}`} className={`p-4 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
                          <div className="text-sm font-medium mb-3">
                            {match.athleteA.full_name} vs {match.athleteB.full_name}
                          </div>
