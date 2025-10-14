@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -193,7 +193,9 @@ export const TournamentMatrix = ({
     return rounds;
   };
 
-  const rounds = generateRounds();
+  const rounds = useMemo(() => {
+    return generateRounds();
+  }, [athletes, matches]);
 
   const getCompletedMatches = () => {
     const countedMatches = new Set<string>();

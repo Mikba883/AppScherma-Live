@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Plus, Trophy, RefreshCw } from 'lucide-react';
+import { Plus, Trophy, RefreshCw } from 'lucide-react';
 import { useUserRoleOptimized } from '@/hooks/useUserRoleOptimized';
 
 interface TournamentSectionProps {
@@ -19,8 +19,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [tournamentStarted, setTournamentStarted] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showExitDialog, setShowExitDialog] = useState(false);
-  const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [checkingTournaments, setCheckingTournaments] = useState(false);
   const [activeTournamentId, setActiveTournamentId] = useState<string | null>(null);
@@ -220,7 +218,15 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               title: "Torneo Chiuso",
               description: "Il torneo è stato chiuso dall'organizzatore",
             });
-            await exitTournament();
+            // Reset state
+            setActiveTournamentId(null);
+            setTournamentCreatorId(null);
+            setSelectedAthletes([]);
+            setMatches([]);
+            setTournamentStarted(false);
+            setMode('menu');
+            setHasUnsavedChanges(false);
+            onTournamentStateChange?.(false);
           }
         }
       )
@@ -412,53 +418,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
   };
 
-  const handleExitTournament = async () => {
-    // Mostra sempre il dialog di conferma per scegliere tipo di uscita
-    setShowExitConfirmDialog(true);
-  };
-
-  const exitTournament = async () => {
-    // Reset local state
-    setMode('menu');
-    setTournamentStarted(false);
-    setSelectedAthletes([]);
-    setMatches([]);
-    setHasUnsavedChanges(false);
-    setShowExitDialog(false);
-    setShowExitConfirmDialog(false);
-    setActiveTournamentId(null);
-    setTournamentCreatorId(null);
-  };
-
-  const exitPermanently = async () => {
-    if (!activeTournamentId || !currentUserId) return;
-    
-    try {
-      // Marca come 'cancelled' tutti i bouts dell'utente in questo torneo
-      const { error } = await supabase
-        .from('bouts')
-        .update({ status: 'cancelled' })
-        .eq('tournament_id', activeTournamentId)
-        .or(`athlete_a.eq.${currentUserId},athlete_b.eq.${currentUserId}`);
-
-      if (error) throw error;
-      
-      // Reset local state
-      await exitTournament();
-      
-      toast({
-        title: "Uscita dal torneo",
-        description: "Sei uscito definitivamente dal torneo",
-      });
-    } catch (error) {
-      console.error('Error exiting tournament:', error);
-      toast({
-        title: "Errore",
-        description: "Impossibile uscire dal torneo",
-        variant: "destructive",
-      });
-    }
-  };
 
 
   const handleSaveTournament = async (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => {
@@ -505,7 +464,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       setActiveTournamentId(null);
       setTournamentCreatorId(null);
       setHasUnsavedChanges(false);
-      exitTournament();
+      setMode('menu');
+      setTournamentStarted(false);
+      setSelectedAthletes([]);
+      setMatches([]);
+      onTournamentStateChange?.(false);
 
     } catch (error: any) {
       console.error('Error saving tournament:', error);
@@ -520,13 +483,9 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const handleResetTournament = () => {
-    if (hasUnsavedChanges) {
-      setShowExitDialog(true);
-    } else {
-      setTournamentStarted(false);
-      setSelectedAthletes([]);
-      setMatches([]);
-    }
+    setTournamentStarted(false);
+    setSelectedAthletes([]);
+    setMatches([]);
   };
 
   return (
@@ -571,14 +530,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         <div>
           <div className="flex gap-2 mb-4">
             <Button 
-              variant="ghost" 
-              onClick={handleExitTournament}
-            >
-              <ArrowLeft className="mr-2 w-4 h-4" />
-              Esci dal Torneo
-            </Button>
-            
-            <Button 
               variant="outline"
               onClick={() => activeTournamentId && loadTournamentData(activeTournamentId)}
               disabled={!activeTournamentId}
@@ -604,63 +555,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         </div>
       )}
 
-      {/* Exit confirmation dialog - unsaved changes */}
-      <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Attenzione: Modifiche non salvate</AlertDialogTitle>
-            <AlertDialogDescription>
-              Hai inserito dei dati che non sono stati salvati. Se esci ora, questi dati andranno persi.
-              Vuoi uscire senza salvare?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2">
-            <AlertDialogAction 
-              onClick={() => setShowExitDialog(false)}
-              className="w-full sm:w-auto"
-            >
-              Rimani qui
-            </AlertDialogAction>
-            <AlertDialogCancel 
-              onClick={exitTournament}
-              className="w-full sm:w-auto"
-            >
-              Esci senza Salvare
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Exit confirmation dialog - exit type */}
-      <AlertDialog open={showExitConfirmDialog} onOpenChange={setShowExitConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Come vuoi uscire dal torneo?</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <p className="font-medium">Scegli un'opzione:</p>
-              <div className="space-y-2">
-                <p><strong>Esci Temporaneamente:</strong> Potrai rientrare nel torneo in seguito</p>
-                <p><strong>Esci Definitivamente:</strong> Ti rimuovi dal torneo e non lo vedrai più</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={exitTournament}
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            >
-              Esci Temporaneamente
-            </AlertDialogAction>
-            <AlertDialogAction 
-              onClick={exitPermanently}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Esci Definitivamente
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
