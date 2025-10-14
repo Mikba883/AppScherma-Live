@@ -400,10 +400,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       console.log('[TournamentSection] Inserting bouts:', boutsToInsert.length);
 
-      // 3. Inserisci tutti i bouts nel database
-      const { error: boutsError } = await supabase
+      // 3. Inserisci tutti i bouts nel database e ottieni gli ID generati
+      const { data: insertedBouts, error: boutsError } = await supabase
         .from('bouts')
-        .insert(boutsToInsert);
+        .insert(boutsToInsert)
+        .select('id, athlete_a, athlete_b, score_a, score_b, weapon, status');
 
       if (boutsError) {
         console.error('[TournamentSection] Bouts insertion error:', boutsError);
@@ -415,15 +416,25 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         throw boutsError;
       }
 
-      console.log('[TournamentSection] Bouts inserted successfully');
+      console.log('[TournamentSection] Bouts inserted successfully:', insertedBouts?.length);
 
-      // Fix 4: Aspetta 500ms per sincronizzazione database
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // ✅ Mappa i bouts inseriti con gli ID dal DB
+      const matchesWithIds: TournamentMatch[] = (insertedBouts || []).map(b => ({
+        id: b.id,  // ✅ ID generato dal DB
+        athleteA: b.athlete_a,
+        athleteB: b.athlete_b,
+        scoreA: b.score_a,
+        scoreB: b.score_b,
+        weapon: b.weapon,
+        status: b.status
+      }));
+
+      console.log('[TournamentSection] Matches with IDs:', matchesWithIds.length);
 
       // 4. Imposta lo stato locale
       setActiveTournamentId(tournament.id);
       setTournamentCreatorId(user.id);
-      setMatches(allMatches);
+      setMatches(matchesWithIds);  // ✅ Usa i match CON gli ID dal DB
       setTournamentStarted(true);
       setHasUnsavedChanges(false);
       setMode('matrix');
@@ -480,6 +491,14 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         athleteB: m.athleteB,
         status: m.status
       }))
+    });
+    
+    console.log('[handleUpdateMatch] 🔎 localMatch trovato:', {
+      esiste: !!localMatch,
+      hasId: !!localMatch?.id,
+      id: localMatch?.id,
+      athleteA: localMatch?.athleteA,
+      athleteB: localMatch?.athleteB
     });
     
     if (!localMatch?.id) {
