@@ -20,6 +20,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [tournamentStarted, setTournamentStarted] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [checkingTournaments, setCheckingTournaments] = useState(false);
   const [activeTournamentId, setActiveTournamentId] = useState<string | null>(null);
@@ -359,11 +360,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const handleExitTournament = async () => {
-    if (hasUnsavedChanges) {
-      setShowExitDialog(true);
-    } else {
-      await exitTournament();
-    }
+    // Mostra sempre il dialog di conferma per scegliere tipo di uscita
+    setShowExitConfirmDialog(true);
   };
 
   const exitTournament = async () => {
@@ -374,8 +372,39 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setMatches([]);
     setHasUnsavedChanges(false);
     setShowExitDialog(false);
+    setShowExitConfirmDialog(false);
     setActiveTournamentId(null);
     setTournamentCreatorId(null);
+  };
+
+  const exitPermanently = async () => {
+    if (!activeTournamentId || !currentUserId) return;
+    
+    try {
+      // Marca come 'cancelled' tutti i bouts dell'utente in questo torneo
+      const { error } = await supabase
+        .from('bouts')
+        .update({ status: 'cancelled' })
+        .eq('tournament_id', activeTournamentId)
+        .or(`athlete_a.eq.${currentUserId},athlete_b.eq.${currentUserId}`);
+
+      if (error) throw error;
+      
+      // Reset local state
+      await exitTournament();
+      
+      toast({
+        title: "Uscita dal torneo",
+        description: "Sei uscito definitivamente dal torneo",
+      });
+    } catch (error) {
+      console.error('Error exiting tournament:', error);
+      toast({
+        title: "Errore",
+        description: "Impossibile uscire dal torneo",
+        variant: "destructive",
+      });
+    }
   };
 
 
@@ -512,7 +541,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         </div>
       )}
 
-      {/* Exit confirmation dialog */}
+      {/* Exit confirmation dialog - unsaved changes */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -535,6 +564,37 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             >
               Esci senza Salvare
             </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Exit confirmation dialog - exit type */}
+      <AlertDialog open={showExitConfirmDialog} onOpenChange={setShowExitConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Come vuoi uscire dal torneo?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p className="font-medium">Scegli un'opzione:</p>
+              <div className="space-y-2">
+                <p><strong>Esci Temporaneamente:</strong> Potrai rientrare nel torneo in seguito</p>
+                <p><strong>Esci Definitivamente:</strong> Ti rimuovi dal torneo e non lo vedrai più</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={exitTournament}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            >
+              Esci Temporaneamente
+            </AlertDialogAction>
+            <AlertDialogAction 
+              onClick={exitPermanently}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Esci Definitivamente
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
