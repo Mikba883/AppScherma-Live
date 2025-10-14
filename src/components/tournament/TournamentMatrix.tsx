@@ -636,7 +636,16 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   const [scoreB, setScoreB] = useState(match?.scoreB?.toString() || '');
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
 
-    const isComplete = match?.status === 'approved' && 
+  // ✅ Sincronizza stato locale quando cambiano le props del match
+  useEffect(() => {
+    if (match) {
+      setScoreA(match.scoreA?.toString() || '');
+      setScoreB(match.scoreB?.toString() || '');
+      setWeapon(match.weapon || 'fioretto');
+    }
+  }, [match?.id, match?.scoreA, match?.scoreB, match?.weapon]);
+
+  const isComplete = match?.status === 'approved' && 
                        match?.scoreA !== null && 
                        match?.scoreB !== null && 
                        match?.weapon;
@@ -648,14 +657,25 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
 
   // ✅ AUTO-SAVE: Salva automaticamente quando TUTTI i campi sono completi
   useEffect(() => {
-    const isAllFieldsFilled = scoreA !== '' && scoreB !== '' && weapon;
-    const hasChanged = 
-      match?.scoreA?.toString() !== scoreA ||
-      match?.scoreB?.toString() !== scoreB ||
-      match?.weapon !== weapon;
+    // Solo se il match NON è già completato
+    if (isComplete) return;
     
-    // Se tutti i campi sono compilati E sono diversi dai valori salvati
-    if (isAllFieldsFilled && hasChanged && !isComplete) {
+    const isAllFieldsFilled = scoreA !== '' && scoreB !== '' && weapon;
+    
+    // Converti per confronto corretto
+    const currentScoreA = parseInt(scoreA);
+    const currentScoreB = parseInt(scoreB);
+    const savedScoreA = match?.scoreA;
+    const savedScoreB = match?.scoreB;
+    const savedWeapon = match?.weapon;
+    
+    const hasChanged = 
+      currentScoreA !== savedScoreA ||
+      currentScoreB !== savedScoreB ||
+      weapon !== savedWeapon;
+    
+    // Salva solo se completo E diverso E non già salvato
+    if (isAllFieldsFilled && hasChanged) {
       console.log('[MatchInputs] AUTO-SAVE triggered:', { scoreA, scoreB, weapon });
       
       // Debounce di 500ms per evitare salvataggi multipli
@@ -665,7 +685,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
       
       return () => clearTimeout(timer);
     }
-  }, [scoreA, scoreB, weapon, match, isComplete, athleteA, athleteB, onUpdate]);
+  }, [scoreA, scoreB, weapon, match?.scoreA, match?.scoreB, match?.weapon, match?.status, isComplete, athleteA, athleteB, onUpdate]);
 
   // ✅ PRIMA: Match completato → sempre visibile in read-only
   if (isComplete) {

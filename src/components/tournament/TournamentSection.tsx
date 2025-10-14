@@ -482,6 +482,15 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       // ✅ USA direttamente l'ID dal match locale
       const boutId = localMatch.id;
       
+      // ✅ CONTROLLO: Se il match è già approvato con questi valori, non fare nulla
+      if (localMatch.status === 'approved' &&
+          localMatch.scoreA === numScoreA &&
+          localMatch.scoreB === numScoreB &&
+          localMatch.weapon === weapon) {
+        console.log('[handleUpdateMatch] ⏭️ Match già salvato con questi valori, skip');
+        return;
+      }
+      
       // Determina ordine atleti
       const isNormalOrder = localMatch.athleteA === athleteA;
       
