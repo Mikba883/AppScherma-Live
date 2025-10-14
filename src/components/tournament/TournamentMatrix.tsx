@@ -427,7 +427,7 @@ export const TournamentMatrix = ({
                             
                             return (
                               <TableCell 
-                                key={athleteB.id}
+                                key={`${athleteB.id}-${version}`}
                                 className="p-1 w-32 min-w-32 max-w-32"
                               >
                              {athleteA.id === athleteB.id ? (
@@ -509,7 +509,7 @@ export const TournamentMatrix = ({
                      const isCompleted = matchData?.scoreA !== null && matchData?.scoreB !== null;
                      
                      return (
-                       <div key={`${match.athleteA.id}-${match.athleteB.id}`} className={`p-4 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
+                       <div key={`${match.athleteA.id}-${match.athleteB.id}-${version}`} className={`p-4 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
                          <div className="text-sm font-medium mb-3">
                            {match.athleteA.full_name} vs {match.athleteB.full_name}
                          </div>
