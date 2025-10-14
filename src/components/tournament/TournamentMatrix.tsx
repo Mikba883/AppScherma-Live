@@ -152,12 +152,60 @@ export const TournamentMatrix = ({
     };
   };
 
-  const handleScoreChange = (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => {
+  const handleScoreChange = async (athleteA: string, athleteB: string, scoreA: string, scoreB: string, weapon: string) => {
     const numScoreA = scoreA === '' ? null : parseInt(scoreA);
     const numScoreB = scoreB === '' ? null : parseInt(scoreB);
     
-    // Always update both directions of the match automatically
+    // ✅ 1. Aggiornamento ottimistico IMMEDIATO - notifica padre
     onUpdateMatch(athleteA, athleteB, numScoreA, numScoreB, weapon || null);
+    
+    // ✅ 2. Salvataggio DB in background (solo se completo)
+    if (numScoreA !== null && numScoreB !== null && weapon) {
+      try {
+        const match = getMatch(athleteA, athleteB);
+        if (!match?.id) return;
+
+        const { error } = await supabase
+          .from('bouts')
+          .update({
+            score_a: numScoreA,
+            score_b: numScoreB,
+            weapon: weapon,
+            status: 'pending'
+          })
+          .eq('id', match.id);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Errore salvataggio:', error);
+        toast.error('Errore nel salvataggio - ricarico dati');
+        // ✅ 3. Rollback: ricarica dati dal DB
+        if (activeTournamentId) {
+          const { data: bouts } = await supabase
+            .from('bouts')
+            .select('*')
+            .eq('tournament_id', activeTournamentId);
+          
+          if (bouts) {
+            const reloadedMatches = bouts.map(b => ({
+              id: b.id,
+              athleteA: b.athlete_a,
+              athleteB: b.athlete_b,
+              scoreA: b.score_a,
+              scoreB: b.score_b,
+              weapon: b.weapon,
+              status: b.status
+            }));
+            // Notifica padre con dati corretti dal DB
+            reloadedMatches.forEach(m => {
+              if (m.athleteA === athleteA && m.athleteB === athleteB) {
+                onUpdateMatch(m.athleteA, m.athleteB, m.scoreA, m.scoreB, m.weapon);
+              }
+            });
+          }
+        }
+      }
+    }
   };
 
   // Generate rounds for tournament organization using correct round-robin algorithm
@@ -639,130 +687,87 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
     return String(val);
   };
   
-  const [scoreA, setScoreA] = useState(toStringOrEmpty(match?.scoreA));
-  const [scoreB, setScoreB] = useState(toStringOrEmpty(match?.scoreB));
-  const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
+  // ✅ Stato locale SOLO per debounce input (non è fonte di verità)
+  const [inputScoreA, setInputScoreA] = useState(toStringOrEmpty(match?.scoreA));
+  const [inputScoreB, setInputScoreB] = useState(toStringOrEmpty(match?.scoreB));
+  const [inputWeapon, setInputWeapon] = useState(match?.weapon || 'fioretto');
 
-  // ✅ Sincronizza stato locale quando cambiano le props del match
+  // ✅ Sincronizza input con props quando cambiano (fonte di verità = props)
   useEffect(() => {
-    console.log('[MatchInputs] 🔄 SYNC:', { 
+    console.log('[MatchInputs] 🔄 Sincronizzazione con props:', { 
       matchId: match?.id,
-      scoreA: match?.scoreA, 
-      scoreB: match?.scoreB,
-      status: match?.status 
+      propsScoreA: match?.scoreA, 
+      propsScoreB: match?.scoreB,
+      propsWeapon: match?.weapon
     });
     
-    if (match) {
-      // ✅ Converti esplicitamente
-      const newScoreA = match.scoreA !== null && match.scoreA !== undefined 
-        ? String(match.scoreA) 
-        : '';
-      const newScoreB = match.scoreB !== null && match.scoreB !== undefined 
-        ? String(match.scoreB) 
-        : '';
-      const newWeapon = match.weapon || 'fioretto';
-      
-      // ✅ Imposta SEMPRE, anche se uguale (forza re-render)
-      setScoreA(newScoreA);
-      setScoreB(newScoreB);
-      setWeapon(newWeapon);
-      
-      console.log('[MatchInputs] ✅ State set to:', { newScoreA, newScoreB, newWeapon });
-    } else {
-      // Match undefined - reset tutto
-      setScoreA('');
-      setScoreB('');
-      setWeapon('fioretto');
-    }
-  }, [match?.id, match?.scoreA, match?.scoreB, match?.weapon, match?.status]);
+    // Sincronizza sempre con le props (fonte di verità)
+    setInputScoreA(toStringOrEmpty(match?.scoreA));
+    setInputScoreB(toStringOrEmpty(match?.scoreB));
+    setInputWeapon(match?.weapon || 'fioretto');
+    
+    console.log('[MatchInputs] ✅ Input sincronizzati');
+  }, [match?.id, match?.scoreA, match?.scoreB, match?.weapon]);
 
-  const isComplete = match?.status === 'approved' && 
-                       match?.scoreA !== null && 
-                       match?.scoreB !== null && 
-                       match?.weapon;
-  // FIX: Non convertire stringhe vuote in 0
-  const scoreANum = scoreA === '' ? null : parseInt(scoreA);
-  const scoreBNum = scoreB === '' ? null : parseInt(scoreB);
-  const isAWinning = isComplete && scoreANum !== null && scoreBNum !== null && scoreANum > scoreBNum;
-  const isBWinning = isComplete && scoreBNum !== null && scoreANum !== null && scoreBNum > scoreANum;
+  const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
+  
+  const scoreANum = inputScoreA === '' ? null : parseInt(inputScoreA);
+  const scoreBNum = inputScoreB === '' ? null : parseInt(inputScoreB);
+  const isAWinning = isComplete && match.scoreA! > match.scoreB!;
+  const isBWinning = isComplete && match.scoreB! > match.scoreA!;
 
-  // ✅ AUTO-SAVE: Salva automaticamente quando TUTTI i campi sono completi
+  // ✅ Debounce auto-save (500ms)
   useEffect(() => {
-    // ✅ Validazione: Non salvare se atleti sono uguali (match invalido)
-    if (athleteA === athleteB) {
-      console.error('[MatchInputs] ❌ Match invalido: stesso atleta A e B');
-      return;
-    }
+    if (!inputScoreA || !inputScoreB || !inputWeapon) return;
+    if (isComplete) return; // Non salvare se già completato
     
-    // Solo se il match NON è già completato
-    if (isComplete) return;
-    
-    const isAllFieldsFilled = scoreA !== '' && scoreB !== '' && weapon;
-    
-    // Converti per confronto corretto
-    const currentScoreA = parseInt(scoreA);
-    const currentScoreB = parseInt(scoreB);
-    const savedScoreA = match?.scoreA;
-    const savedScoreB = match?.scoreB;
-    const savedWeapon = match?.weapon;
-    
-    const hasChanged = 
-      currentScoreA !== savedScoreA ||
-      currentScoreB !== savedScoreB ||
-      weapon !== savedWeapon;
-    
-    // Salva solo se completo E diverso E non già salvato
-    if (isAllFieldsFilled && hasChanged) {
-      console.log('[MatchInputs] AUTO-SAVE triggered:', { scoreA, scoreB, weapon });
-      
-      // Debounce di 500ms per evitare salvataggi multipli
-      const timer = setTimeout(() => {
-        onUpdate(athleteA, athleteB, scoreA, scoreB, weapon);
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [scoreA, scoreB, weapon, match?.scoreA, match?.scoreB, match?.weapon, match?.status, isComplete, athleteA, athleteB, onUpdate]);
+    const currentScoreA = toStringOrEmpty(match?.scoreA);
+    const currentScoreB = toStringOrEmpty(match?.scoreB);
+    const currentWeapon = match?.weapon || '';
 
-  // ✅ PRIMA: Match completato → sempre visibile in read-only
+    const hasChanges = inputScoreA !== currentScoreA || inputScoreB !== currentScoreB || inputWeapon !== currentWeapon;
+    
+    if (!hasChanges) return;
+
+    console.log('[Auto-save] Programmazione salvataggio tra 500ms');
+
+    const timer = setTimeout(() => {
+      console.log('[Auto-save] ⚡ Esecuzione aggiornamento');
+      onUpdate(athleteA, athleteB, inputScoreA, inputScoreB, inputWeapon);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [inputScoreA, inputScoreB, inputWeapon, athleteA, athleteB, onUpdate, match, isComplete]);
+
+  // ✅ Match completato → visualizzazione read-only
   if (isComplete) {
     return (
       <div className="space-y-2 p-3 bg-muted/50 rounded-lg relative">
-        <div className="text-xs text-muted-foreground">Arma: {weapon}</div>
+        <div className="text-xs text-muted-foreground">Arma: {match.weapon}</div>
         <div className="flex justify-between items-center">
           <div className="text-sm">
             <div className="font-medium">{athleteAName}</div>
             <div className={`text-2xl ${isAWinning ? 'text-green-600 font-bold' : 'text-red-600'}`}>
-              {scoreA}
+              {match.scoreA}
             </div>
           </div>
           <div className="text-muted-foreground">-</div>
           <div className="text-sm text-right">
             <div className="font-medium">{athleteBName}</div>
             <div className={`text-2xl ${isBWinning ? 'text-green-600 font-bold' : 'text-red-600'}`}>
-              {scoreB}
+              {match.scoreB}
             </div>
           </div>
         </div>
-        {/* Badge "Completato" cliccabile per annullare */}
         {canCancel ? (
           <Button
             variant="ghost"
             size="sm"
             className="w-full bg-green-100 hover:bg-red-100 text-green-800 hover:text-red-800 transition-colors"
             onClick={async () => {
-              if (!activeTournamentId) {
-                toast('Errore: torneo non trovato', { duration: 2000 });
-                return;
-              }
+              if (!match?.id) return;
 
               try {
-                if (!match?.id || !activeTournamentId) {
-                  toast('Impossibile annullare: dati mancanti', { duration: 2000 });
-                  return;
-                }
-
-                // ✅ USA L'ID per trovare il match, NON l'ordine degli atleti!
                 const { error } = await supabase
                   .from('bouts')
                   .update({
@@ -771,21 +776,14 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
                     weapon: null,
                     status: 'pending'
                   })
-                  .eq('id', match.id);  // ✅ FONDAMENTALE: usa l'ID univoco!
+                  .eq('id', match.id);
 
                 if (error) throw error;
-
-                // Reset stato locale
-                setScoreA('');
-                setScoreB('');
-                setWeapon('fioretto');
                 
-                toast('Match annullato - puoi reinserire i dati', { duration: 2000 });
-                
-                // ✅ RIMOSSO: il real-time si occuperà del reload
+                toast('Match annullato - il real-time aggiornerà i dati', { duration: 2000 });
               } catch (error) {
-                console.error('Errore annullamento match:', error);
-                toast('Errore durante l\'annullamento', { duration: 2000 });
+                console.error('Errore annullamento:', error);
+                toast.error('Errore durante l\'annullamento');
               }
             }}
           >
@@ -802,7 +800,7 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
     );
   }
 
-  // ✅ SECONDA: Match non completato + può modificare → form di input
+  // ✅ Match non completato + può modificare → form di input
   if (canEdit) {
     return (
       <div className="space-y-3">
@@ -810,10 +808,8 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
           <Select 
-            value={weapon} 
-            onValueChange={(value) => {
-              setWeapon(value);
-            }}
+            value={inputWeapon} 
+            onValueChange={setInputWeapon}
           >
             <SelectTrigger className="h-8">
               <SelectValue />
@@ -834,16 +830,9 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               type="number"
               min="0"
               max="15"
-              value={scoreA === null || scoreA === '' ? '' : scoreA}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                setScoreA(newValue);
-              }}
-              className={cn(
-                "text-center",
-                isComplete && isAWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
-                isComplete && isBWinning && "bg-red-100 border-red-300 text-red-800"
-              )}
+              value={inputScoreA}
+              onChange={(e) => setInputScoreA(e.target.value)}
+              className="text-center"
               placeholder="0"
             />
           </div>
@@ -853,16 +842,9 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
               type="number"
               min="0"
               max="15"
-              value={scoreB === null || scoreB === '' ? '' : scoreB}
-              onChange={(e) => {
-                const newValue = e.target.value;
-                setScoreB(newValue);
-              }}
-              className={cn(
-                "text-center",
-                isComplete && isBWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
-                isComplete && isAWinning && "bg-red-100 border-red-300 text-red-800"
-              )}
+              value={inputScoreB}
+              onChange={(e) => setInputScoreB(e.target.value)}
+              className="text-center"
               placeholder="0"
             />
           </div>

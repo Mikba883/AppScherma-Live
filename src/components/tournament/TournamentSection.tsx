@@ -204,12 +204,27 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             weapon: updatedBout.weapon
           });
           
-          // ✅ RICARICA TUTTO invece di update parziale
-          if (activeTournamentId) {
-            await loadTournamentData(activeTournamentId);
-          }
+          // ✅ UPDATE SPECIFICO invece di reload completo (evita sovrascrittura durante editing)
+          setMatches(prev => prev.map(match => {
+            if (match.id === updatedBout.id) {
+              // Determina ordine corretto
+              const isNormalOrder = match.athleteA === updatedBout.athlete_a;
+              
+              const updated = {
+                ...match,
+                scoreA: isNormalOrder ? updatedBout.score_a : updatedBout.score_b,
+                scoreB: isNormalOrder ? updatedBout.score_b : updatedBout.score_a,
+                weapon: updatedBout.weapon,
+                status: updatedBout.status
+              };
+              
+              console.log('[Real-time] ✅ Match aggiornato:', updated);
+              return updated;
+            }
+            return match;
+          }));
           
-          // ✅ Toast ANCHE per annullamenti
+          // ✅ Toast per notifiche da altri utenti
           if (updatedBout.created_by !== currentUserId) {
             const wasReset = updatedBout.score_a === null && updatedBout.score_b === null;
             toast({
