@@ -327,16 +327,16 @@ export const TournamentMatrix = ({
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="table-fixed">
                   <TableHeader>
                      <TableRow>
-                       <TableHead className="w-40">Atleta</TableHead>
+                       <TableHead className="w-48 min-w-48 max-w-48">Atleta</TableHead>
                        {athletes.map((athlete) => (
-                         <TableHead key={athlete.id} className="text-center w-32 text-xs px-1">
+                         <TableHead key={athlete.id} className="text-center w-32 min-w-32 max-w-32 text-xs px-1">
                            <TooltipProvider>
                              <Tooltip>
                                <TooltipTrigger asChild>
-                                 <div className="truncate cursor-help">
+                                 <div className="truncate cursor-help whitespace-nowrap">
                                    {athlete.full_name}
                                  </div>
                                </TooltipTrigger>
@@ -352,11 +352,11 @@ export const TournamentMatrix = ({
                   <TableBody>
                      {athletes.map((athleteA) => (
                        <TableRow key={athleteA.id}>
-                         <TableCell className="font-medium text-sm w-40 px-2 sticky left-0 bg-background">
+                         <TableCell className="font-medium text-sm w-48 min-w-48 max-w-48 px-2 sticky left-0 bg-background">
                            <TooltipProvider>
                              <Tooltip>
                                <TooltipTrigger asChild>
-                                 <div className="truncate cursor-help">
+                                 <div className="truncate cursor-help whitespace-nowrap">
                                    {athleteA.full_name}
                                  </div>
                                </TooltipTrigger>
@@ -375,7 +375,7 @@ export const TournamentMatrix = ({
                              <TableCell 
                                key={athleteB.id} 
                                className={cn(
-                                 "p-1 w-32",
+                                 "p-1 w-32 min-w-32 max-w-32",
                                  canEdit && hasNoScores && "ring-2 ring-blue-400/50 bg-blue-50/30"
                                )}
                              >
@@ -585,10 +585,11 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
 
   const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
-  const scoreANum = parseInt(scoreA) || 0;
-  const scoreBNum = parseInt(scoreB) || 0;
-  const isAWinning = isComplete && scoreANum > scoreBNum;
-  const isBWinning = isComplete && scoreBNum > scoreANum;
+  // FIX: Non convertire stringhe vuote in 0
+  const scoreANum = scoreA === '' ? null : parseInt(scoreA);
+  const scoreBNum = scoreB === '' ? null : parseInt(scoreB);
+  const isAWinning = isComplete && scoreANum !== null && scoreBNum !== null && scoreANum > scoreBNum;
+  const isBWinning = isComplete && scoreBNum !== null && scoreANum !== null && scoreBNum > scoreANum;
 
   if (!canEdit && isComplete) {
     return (
@@ -670,13 +671,18 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             max="15"
             value={scoreA}
             onChange={(e) => {
-              setScoreA(e.target.value);
-              onUpdate(athleteA, athleteB, e.target.value, scoreB, weapon);
+              const newValue = e.target.value;
+              setScoreA(newValue);
+              // Solo salva se entrambi i punteggi sono inseriti
+              if (newValue !== '' && scoreB !== '') {
+                onUpdate(athleteA, athleteB, newValue, scoreB, weapon);
+              }
             }}
-            className={`text-center ${
-              isAWinning ? 'bg-green-100 border-green-300 text-green-800' : 
-              isBWinning ? 'bg-red-100 border-red-300 text-red-800' : ''
-            }`}
+            className={cn(
+              "text-center",
+              isComplete && isAWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
+              isComplete && isBWinning && "bg-red-100 border-red-300 text-red-800"
+            )}
             placeholder="0"
           />
         </div>
@@ -688,13 +694,18 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, on
             max="15"
             value={scoreB}
             onChange={(e) => {
-              setScoreB(e.target.value);
-              onUpdate(athleteA, athleteB, scoreA, e.target.value, weapon);
+              const newValue = e.target.value;
+              setScoreB(newValue);
+              // Solo salva se entrambi i punteggi sono inseriti
+              if (scoreA !== '' && newValue !== '') {
+                onUpdate(athleteA, athleteB, scoreA, newValue, weapon);
+              }
             }}
-            className={`text-center ${
-              isBWinning ? 'bg-green-100 border-green-300 text-green-800' : 
-              isAWinning ? 'bg-red-100 border-red-300 text-red-800' : ''
-            }`}
+            className={cn(
+              "text-center",
+              isComplete && isBWinning && "bg-green-100 border-green-300 text-green-800 font-bold",
+              isComplete && isAWinning && "bg-red-100 border-red-300 text-red-800"
+            )}
             placeholder="0"
           />
         </div>

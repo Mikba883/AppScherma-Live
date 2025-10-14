@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Plus, Trophy } from 'lucide-react';
+import { ArrowLeft, Plus, Trophy, RefreshCw } from 'lucide-react';
 import { useUserRoleOptimized } from '@/hooks/useUserRoleOptimized';
 
 interface TournamentSectionProps {
@@ -21,6 +21,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [checkingTournaments, setCheckingTournaments] = useState(false);
   const [activeTournamentId, setActiveTournamentId] = useState<string | null>(null);
   const [tournamentCreatorId, setTournamentCreatorId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -43,7 +44,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
   };
 
-  const checkActiveTournament = async () => {
+  const checkActiveTournament = async (showToast = false) => {
+    setCheckingTournaments(true);
     try {
       // Usa la funzione database per ottenere il torneo attivo dove sono coinvolto
       const { data: activeTournament } = await supabase
@@ -55,9 +57,22 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         setTournamentCreatorId(activeTournament.created_by);
         await loadTournamentData(activeTournament.tournament_id);
         setMode('matrix');
+        if (showToast) {
+          toast({
+            title: 'Torneo Trovato',
+            description: `Sei stato aggiunto al torneo "${activeTournament.tournament_name}"`,
+          });
+        }
+      } else if (showToast) {
+        toast({
+          title: 'Nessun Torneo Attivo',
+          description: 'Non sei coinvolto in nessun torneo in corso',
+        });
       }
     } catch (error) {
       console.error('Error checking tournament:', error);
+    } finally {
+      setCheckingTournaments(false);
     }
   };
 
@@ -450,6 +465,25 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     <div className="space-y-6">
       {mode === 'menu' && !activeTournamentId && (
         <div className="space-y-4">
+          <Button 
+            onClick={() => checkActiveTournament(true)}
+            variant="outline"
+            disabled={checkingTournaments}
+            className="w-full"
+          >
+            {checkingTournaments ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Ricerca in corso...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Controlla Tornei Attivi
+              </>
+            )}
+          </Button>
+          
           <Button 
             onClick={() => setMode('matrix')}
             className="w-full"
