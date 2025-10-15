@@ -81,24 +81,41 @@ export const TournamentMatrix = ({
 
   // Generate round-robin rounds
   const generateRounds = () => {
-    // Se esistono già match nel database, preserva il loro ordine
-    if (matches.length > 0) {
-      // Crea una mappa dei match esistenti
-      const existingMatches = new Map<string, TournamentMatch>();
+    // CASO 1: Se i match hanno round_number, usalo (FISSO!)
+    if (matches.length > 0 && matches.some(m => m.round_number !== null && m.round_number !== undefined)) {
+      const roundsMap = new Map<number, any[]>();
+      
       matches.forEach(match => {
-        const key = [match.athleteA, match.athleteB].sort().join('-');
-        existingMatches.set(key, match);
+        const roundNum = match.round_number || 1;
+        if (!roundsMap.has(roundNum)) {
+          roundsMap.set(roundNum, []);
+        }
+        
+        const athleteAData = athletes.find(a => a.id === match.athleteA);
+        const athleteBData = athletes.find(a => a.id === match.athleteB);
+        
+        if (athleteAData && athleteBData) {
+          roundsMap.get(roundNum)!.push({
+            athleteA: athleteAData,
+            athleteB: athleteBData
+          });
+        }
       });
-
-      // Ricostruisci i turni basandoti sui match esistenti
+      
+      // Converti in array ordinato per numero turno
+      return Array.from(roundsMap.entries())
+        .sort(([a], [b]) => a - b)
+        .map(([round, matches]) => ({ round, matches }));
+    }
+    
+    // CASO 2: Match esistenti senza round_number (torneo vecchio) - assegna ordine attuale
+    if (matches.length > 0) {
       const matchesPerRound = Math.ceil(athletes.length / 2);
       const rounds = [];
-      
-      // Raggruppa i match in turni
       let currentRoundMatches: any[] = [];
       let roundNumber = 1;
       
-      matches.forEach((match, index) => {
+      matches.forEach((match) => {
         const athleteAData = athletes.find(a => a.id === match.athleteA);
         const athleteBData = athletes.find(a => a.id === match.athleteB);
         
@@ -108,7 +125,6 @@ export const TournamentMatrix = ({
             athleteB: athleteBData
           });
           
-          // Quando raggiungiamo il numero di match per turno, crea un nuovo turno
           if (currentRoundMatches.length === matchesPerRound) {
             rounds.push({
               round: roundNumber++,
@@ -119,7 +135,6 @@ export const TournamentMatrix = ({
         }
       });
       
-      // Aggiungi l'ultimo turno se ci sono match rimanenti
       if (currentRoundMatches.length > 0) {
         rounds.push({
           round: roundNumber,
@@ -127,10 +142,13 @@ export const TournamentMatrix = ({
         });
       }
       
+      // Assegna round_number ai match nel database
+      assignRoundNumbersToMatches(rounds);
+      
       return rounds;
     }
     
-    // Se non ci sono match, usa l'algoritmo round-robin
+    // CASO 3: Nuovi tornei - usa algoritmo round-robin
     let athletesList = [...athletes];
     
     // Add BYE if odd number of athletes
@@ -171,6 +189,25 @@ export const TournamentMatrix = ({
     }
 
     return rounds;
+  };
+
+  // Helper function to assign round_number to existing matches
+  const assignRoundNumbersToMatches = async (rounds: any[]) => {
+    try {
+      for (const round of rounds) {
+        for (const matchData of round.matches) {
+          const match = getMatch(matchData.athleteA.id, matchData.athleteB.id);
+          if (match?.id) {
+            await supabase
+              .from('bouts')
+              .update({ round_number: round.round })
+              .eq('id', match.id);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error assigning round numbers:', error);
+    }
   };
 
   // Filter rounds based on user role

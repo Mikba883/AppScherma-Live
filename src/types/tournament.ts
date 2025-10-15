@@ -11,4 +11,5 @@ export interface TournamentMatch {
   scoreB: number | null;
   weapon: string | null;
   status: string;
+  round_number?: number | null;
 }

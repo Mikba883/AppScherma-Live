@@ -92,11 +92,13 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setIsLoading(true);
     
     try {
-      // Load all bouts for this tournament
+      // Load all bouts for this tournament, ordered by round_number
       const { data: bouts, error: boutsError } = await supabase
         .from('bouts')
         .select('*')
-        .eq('tournament_id', tournamentId);
+        .eq('tournament_id', tournamentId)
+        .order('round_number', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: true });
 
       if (boutsError) throw boutsError;
 
@@ -130,7 +132,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         scoreA: bout.score_a,
         scoreB: bout.score_b,
         weapon: bout.weapon,
-        status: bout.status
+        status: bout.status,
+        round_number: bout.round_number
       }));
 
       // Map profiles to athletes
@@ -193,24 +196,47 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       console.log('[TournamentSection] Tournament created:', tournament);
 
-      // 2. Generate all matches (round-robin, no duplicates)
+      // 2. Generate all matches with round-robin scheduling
       const boutsToInsert = [];
-      for (let i = 0; i < selectedAthletes.length; i++) {
-        for (let j = i + 1; j < selectedAthletes.length; j++) {
-          boutsToInsert.push({
-            tournament_id: tournament.id,
-            athlete_a: selectedAthletes[i].id,
-            athlete_b: selectedAthletes[j].id,
-            bout_date: date,
-            bout_type: boutType,
-            weapon: weapon || null,
-            status: 'pending',
-            created_by: currentUserId,
-            gym_id: userGymId,
-            score_a: null,
-            score_b: null
-          });
+      let athletesList = [...selectedAthletes];
+      
+      // Add BYE if odd number of athletes
+      if (athletesList.length % 2 === 1) {
+        athletesList.push({ id: 'bye', full_name: 'BYE' });
+      }
+
+      const numAthletes = athletesList.length;
+      const totalRounds = numAthletes - 1;
+
+      for (let round = 0; round < totalRounds; round++) {
+        for (let i = 0; i < numAthletes / 2; i++) {
+          const athlete1 = athletesList[i];
+          const athlete2 = athletesList[numAthletes - 1 - i];
+          
+          if (athlete1.id !== 'bye' && athlete2.id !== 'bye') {
+            boutsToInsert.push({
+              tournament_id: tournament.id,
+              athlete_a: athlete1.id,
+              athlete_b: athlete2.id,
+              bout_date: date,
+              bout_type: boutType,
+              weapon: weapon || null,
+              status: 'pending',
+              created_by: currentUserId,
+              gym_id: userGymId,
+              score_a: null,
+              score_b: null,
+              round_number: round + 1
+            });
+          }
         }
+
+        // Rotate athletes (keep first fixed)
+        const temp = athletesList[1];
+        for (let i = 1; i < numAthletes - 1; i++) {
+          athletesList[i] = athletesList[i + 1];
+        }
+        athletesList[numAthletes - 1] = temp;
       }
 
       console.log('[TournamentSection] Inserting bouts:', boutsToInsert.length);
@@ -242,7 +268,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         scoreA: bout.score_a,
         scoreB: bout.score_b,
         weapon: bout.weapon,
-        status: bout.status
+        status: bout.status,
+        round_number: bout.round_number
       }));
       
       setMatches(mappedMatches);
