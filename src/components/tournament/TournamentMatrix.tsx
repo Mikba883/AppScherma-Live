@@ -636,88 +636,30 @@ interface MatchInputsProps {
   canEdit?: boolean;
   canCancel?: boolean;
   currentUserId?: string | null;
+  onMatchSaved?: () => void;
 }
 
-const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, canEdit = true, canCancel = false, currentUserId }: MatchInputsProps) => {
+const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, canEdit = true, canCancel = false, currentUserId, onMatchSaved }: MatchInputsProps) => {
   // ✅ Uncontrolled inputs con useRef
   const scoreARef = useRef<HTMLInputElement>(null);
   const scoreBRef = useRef<HTMLInputElement>(null);
   const [weaponValue, setWeaponValue] = useState(match?.weapon || 'fioretto');
   const [isSaving, setIsSaving] = useState(false);
-  
-  const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
-  const isAWinning = isComplete && match.scoreA! > match.scoreB!;
-  const isBWinning = isComplete && match.scoreB! > match.scoreA!;
 
-  // ✅ Match completato → visualizzazione read-only
-  if (isComplete) {
-    return (
-      <div className="space-y-2 p-3 bg-muted/50 rounded-lg relative">
-        <div className="text-xs text-muted-foreground">Arma: {match.weapon}</div>
-        <div className="flex justify-between items-center">
-          <div className="text-sm">
-            <div className="font-medium">{athleteAName}</div>
-            <div className={`text-2xl ${isAWinning ? 'text-green-600 font-bold' : 'text-red-600'}`}>
-              {match.scoreA}
-            </div>
-          </div>
-          <div className="text-muted-foreground">-</div>
-          <div className="text-sm text-right">
-            <div className="font-medium">{athleteBName}</div>
-            <div className={`text-2xl ${isBWinning ? 'text-green-600 font-bold' : 'text-red-600'}`}>
-              {match.scoreB}
-            </div>
-          </div>
-        </div>
-        {canCancel ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full bg-green-100 hover:bg-red-100 text-green-800 hover:text-red-800 transition-colors"
-            onClick={async () => {
-              if (!match?.id) return;
-              
-              try {
-                console.log('[Annulla] 🗑️ Annullamento match:', match.id);
-                
-                const { error } = await supabase
-                  .from('bouts')
-                  .update({
-                    score_a: null,
-                    score_b: null,
-                    weapon: null,
-                    status: 'pending'
-                  })
-                  .eq('id', match.id);
-
-                if (error) throw error;
-                
-                console.log('[Annulla] ✅ Match annullato - real-time aggiornerà tutti');
-                toast('Match annullato', { duration: 2000 });
-              } catch (error) {
-                console.error('Errore nell\'annullamento del match:', error);
-                toast.error('Errore nell\'annullamento del match');
-              }
-            }}
-          >
-            <Check className="h-3 w-3 mr-1" />
-            Completato
-            <RotateCcw className="h-3 w-3 ml-1 opacity-50" />
-          </Button>
-        ) : (
-          <Badge variant="default" className="text-xs bg-green-100 text-green-800 w-full justify-center">
-            Completato
-          </Badge>
-        )}
-      </div>
-    );
-  }
-
-  // ✅ Match non completato + può modificare → form con salvataggio esplicito
+  // ✅ SEMPRE MODIFICABILE - rimuoviamo completamente lo stato "Completato"
   if (canEdit) {
     const handleSave = async () => {
       const scoreA = scoreARef.current?.value;
       const scoreB = scoreBRef.current?.value;
+      
+      console.log('[MatchInputs] 💾 Salvando match:', {
+        matchId: match?.id,
+        athleteA: athleteAName,
+        athleteB: athleteBName,
+        scoreA,
+        scoreB,
+        weapon: weaponValue
+      });
       
       if (!scoreA || !scoreB || !weaponValue) {
         toast.error('Compila tutti i campi');
@@ -731,20 +673,28 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
       
       setIsSaving(true);
       try {
+        // ✅ Salva come APPROVED per attivare trigger ranking + SOVRASCRIVE sempre
         const { error } = await supabase
           .from('bouts')
           .update({
             score_a: parseInt(scoreA),
             score_b: parseInt(scoreB),
             weapon: weaponValue,
-            status: 'pending'
+            status: 'approved',
+            approved_by: currentUserId,
+            approved_at: new Date().toISOString()
           })
           .eq('id', match.id);
         
         if (error) throw error;
-        toast.success('Match salvato!');
+        
+        console.log('[MatchInputs] ✅ Match salvato con successo');
+        toast.success('Match aggiornato! Clicca "Aggiorna Risultati" per vedere le modifiche.');
+        
+        // Chiama callback se presente per aggiornare UI locale
+        onMatchSaved?.();
       } catch (error) {
-        console.error(error);
+        console.error('[MatchInputs] ❌ Errore:', error);
         toast.error('Errore nel salvataggio: ' + (error as Error).message);
       } finally {
         setIsSaving(false);

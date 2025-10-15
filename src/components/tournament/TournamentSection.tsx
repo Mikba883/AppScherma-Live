@@ -102,6 +102,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const loadTournamentData = async (tournamentId: string) => {
+    console.log('[loadTournamentData] 🔄 Caricamento torneo:', tournamentId);
     try {
       // Get all bouts for this tournament
       const { data: bouts, error: boutsError } = await supabase
@@ -110,6 +111,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         .eq('tournament_id', tournamentId);
 
       if (boutsError) throw boutsError;
+
+      console.log('[loadTournamentData] 📊 Bouts dal DB:', bouts?.length || 0);
 
       // Get unique athletes
       const athleteIds = new Set<string>();
@@ -148,7 +151,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         return true;
       }) || [];
 
-      console.log('[loadTournamentData] Matches caricati:', matches.length);
+      console.log('[loadTournamentData] ✅ Matches caricati dal DB:', {
+        totale: matches.length,
+        completati: matches.filter(m => m.scoreA !== null && m.scoreB !== null).length,
+        pendenti: matches.filter(m => m.scoreA === null || m.scoreB === null).length
+      });
 
       // Forza completamente un nuovo array
       setSelectedAthletes([...athletes]);
@@ -161,7 +168,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       //   isSubscribed.current = true;
       // }
     } catch (error) {
-      console.error('Error loading tournament:', error);
+      console.error('[loadTournamentData] ❌ Errore:', error);
     }
   };
 
