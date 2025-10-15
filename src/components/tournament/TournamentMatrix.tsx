@@ -160,8 +160,15 @@ export const TournamentMatrix = ({
     setShowFinishDialog(true);
   };
 
-  const completedMatches = matches.filter(m => m.scoreA !== null && m.scoreB !== null).length;
-  const totalMatches = matches.length;
+  const { completedMatches, totalMatches } = useMemo(() => {
+    const completed = matches.filter(m => m.scoreA !== null && m.scoreB !== null).length;
+    const total = matches.length;
+    
+    return {
+      completedMatches: completed,
+      totalMatches: total
+    };
+  }, [matches]);
 
   return (
     <div className="space-y-6">
