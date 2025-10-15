@@ -284,6 +284,59 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
   };
 
+  // Helper function to calculate final rankings
+  const calculateFinalRankings = (
+    athletesList: TournamentAthlete[],
+    matchesList: TournamentMatch[]
+  ): { athleteId: string; position: number; wins: number; totalMatches: number; pointsDiff: number }[] => {
+    // Calculate stats for each athlete
+    const stats = athletesList.map(athlete => {
+      let wins = 0;
+      let totalMatches = 0;
+      let pointsFor = 0;
+      let pointsAgainst = 0;
+
+      matchesList.forEach(match => {
+        if (match.scoreA === null || match.scoreB === null) return;
+
+        if (match.athleteA === athlete.id) {
+          totalMatches++;
+          pointsFor += match.scoreA;
+          pointsAgainst += match.scoreB;
+          if (match.scoreA > match.scoreB) wins++;
+        } else if (match.athleteB === athlete.id) {
+          totalMatches++;
+          pointsFor += match.scoreB;
+          pointsAgainst += match.scoreA;
+          if (match.scoreB > match.scoreA) wins++;
+        }
+      });
+
+      return {
+        athleteId: athlete.id,
+        wins,
+        totalMatches,
+        pointsFor,
+        pointsAgainst,
+        pointsDiff: pointsFor - pointsAgainst
+      };
+    });
+
+    // Sort like in TournamentMatrix
+    stats.sort((a, b) => {
+      if (a.wins !== b.wins) {
+        return b.wins - a.wins;
+      }
+      return b.pointsDiff - a.pointsDiff;
+    });
+
+    // Assign positions
+    return stats.map((stat, index) => ({
+      ...stat,
+      position: index + 1
+    }));
+  };
+
   const handleFinishTournament = async () => {
     if (!activeTournamentId || !currentUserId) return;
 
@@ -321,9 +374,43 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       if (tournamentError) throw tournamentError;
 
+      // 4. Calculate final rankings
+      const rankings = calculateFinalRankings(athletes, matches);
+
+      // 5. Send notifications to all participants
+      const notificationsToInsert = rankings.map(ranking => {
+        // Emoji for top 3 positions
+        const positionEmoji = 
+          ranking.position === 1 ? '🥇' :
+          ranking.position === 2 ? '🥈' :
+          ranking.position === 3 ? '🥉' : '';
+
+        return {
+          athlete_id: ranking.athleteId,
+          title: 'Torneo Concluso',
+          message: `${positionEmoji} Il torneo "${tournamentName}" si è concluso!\n\n` +
+                   `Posizione finale: ${ranking.position}°\n` +
+                   `Vittorie: ${ranking.wins}/${ranking.totalMatches}\n` +
+                   `Differenza stoccate: ${ranking.pointsDiff > 0 ? '+' : ''}${ranking.pointsDiff}`,
+          type: ranking.position <= 3 ? 'success' : 'info',
+          created_by: currentUserId,
+          gym_id: userGymId
+        };
+      });
+
+      // Insert notifications
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert(notificationsToInsert);
+
+      if (notifError) {
+        console.error('[TournamentSection] Error creating notifications:', notifError);
+        // Don't block tournament closure for notification errors
+      }
+
       toast.success('Torneo concluso con successo!');
       
-      // 3. Reset state
+      // 6. Reset state
       setActiveTournamentId(null);
       setTournamentName('');
       setTournamentDate('');
