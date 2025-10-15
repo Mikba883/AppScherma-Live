@@ -395,6 +395,7 @@ export type Database = {
           gym_id: string | null
           last_activity_date: string | null
           last_updated: string | null
+          last_win_date: string | null
           matches_played: number
           peak_rating: number
           total_weeks_active: number
@@ -410,6 +411,7 @@ export type Database = {
           gym_id?: string | null
           last_activity_date?: string | null
           last_updated?: string | null
+          last_win_date?: string | null
           matches_played?: number
           peak_rating?: number
           total_weeks_active?: number
@@ -425,6 +427,7 @@ export type Database = {
           gym_id?: string | null
           last_activity_date?: string | null
           last_updated?: string | null
+          last_win_date?: string | null
           matches_played?: number
           peak_rating?: number
           total_weeks_active?: number
@@ -537,13 +540,22 @@ export type Database = {
         Returns: undefined
       }
       calculate_elo_change: {
-        Args: {
-          _frequency_multiplier?: number
-          _matches_played: number
-          _opponent_elo: number
-          _player_elo: number
-          _player_won: boolean
-        }
+        Args:
+          | {
+              _frequency_multiplier?: number
+              _is_first_win_of_week?: boolean
+              _matches_played: number
+              _opponent_elo: number
+              _player_elo: number
+              _player_won: boolean
+            }
+          | {
+              _frequency_multiplier?: number
+              _matches_played: number
+              _opponent_elo: number
+              _player_elo: number
+              _player_won: boolean
+            }
         Returns: number
       }
       close_old_tournaments: {
