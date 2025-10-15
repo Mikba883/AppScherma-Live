@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 import { toast } from 'sonner';
 import { Trophy, Save, X, RefreshCw } from 'lucide-react';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
@@ -35,7 +35,6 @@ export const TournamentMatrix = ({
   isLoading
 }: TournamentMatrixProps) => {
   const { role } = useUserRoleOptimized();
-  const [showFinishDialog, setShowFinishDialog] = useState(false);
   
   const isInstructor = role === 'istruttore' || role === 'capo_palestra';
 
@@ -155,10 +154,6 @@ export const TournamentMatrix = ({
       return statsB.pointsDiff - statsA.pointsDiff;
     });
   }, [athletes, matches]);
-
-  const handleFinishClick = () => {
-    setShowFinishDialog(true);
-  };
 
   const { completedMatches, totalMatches } = useMemo(() => {
     const completed = matches.filter(m => m.scoreA !== null && m.scoreB !== null).length;
@@ -334,43 +329,26 @@ export const TournamentMatrix = ({
           <RefreshCw className="w-4 h-4 mr-2" />
           Aggiorna
         </Button>
+        
         <Button
-          onClick={handleFinishClick}
+          onClick={onExit}
+          disabled={isLoading}
+          variant="destructive"
+          size="lg"
+        >
+          <X className="w-4 h-4 mr-2" />
+          Cancella Torneo
+        </Button>
+        
+        <Button
+          onClick={onFinish}
           disabled={isLoading}
           size="lg"
         >
           <Save className="w-4 h-4 mr-2" />
-          Concludi Torneo
+          Salva e Chiudi
         </Button>
       </div>
-
-      {/* Finish Dialog */}
-      <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Come vuoi concludere il torneo?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Puoi salvare i match giocati e chiudere il torneo, oppure cancellare tutto senza salvare i risultati.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-3">
-            <AlertDialogCancel 
-              onClick={onExit}
-              className="w-full sm:w-auto sm:flex-1"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Cancella (senza salvare)
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={onFinish}
-              className="w-full sm:w-auto sm:flex-1"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Salva e Chiudi
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
