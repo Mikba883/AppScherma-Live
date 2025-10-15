@@ -399,58 +399,62 @@ export const TournamentMatrix = ({
           Aggiorna
         </Button>
         
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              disabled={isLoading}
-              variant="destructive"
-              size="lg"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Cancella Torneo
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Conferma Cancellazione</AlertDialogTitle>
-              <AlertDialogDescription>
-                Sei sicuro di voler cancellare questo torneo? Tutti i match verranno cancellati e questa azione non può essere annullata.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annulla</AlertDialogCancel>
-              <AlertDialogAction onClick={onExit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+        {isCreator && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                disabled={isLoading}
+                variant="destructive"
+                size="lg"
+              >
+                <X className="w-4 h-4 mr-2" />
                 Cancella Torneo
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Conferma Cancellazione</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Sei sicuro di voler cancellare questo torneo? Tutti i match verranno cancellati e questa azione non può essere annullata.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction onClick={onExit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Cancella Torneo
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
         
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              disabled={isLoading}
-              size="lg"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Salva e Chiudi
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Conferma Salvataggio</AlertDialogTitle>
-              <AlertDialogDescription>
-                Sei sicuro di voler salvare e chiudere il torneo? I match completati saranno registrati e il torneo verrà chiuso.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annulla</AlertDialogCancel>
-              <AlertDialogAction onClick={onFinish}>
+        {isCreator && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                disabled={isLoading}
+                size="lg"
+              >
+                <Save className="w-4 h-4 mr-2" />
                 Salva e Chiudi
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Conferma Salvataggio</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Sei sicuro di voler salvare e chiudere il torneo? I match completati saranno registrati e il torneo verrà chiuso.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                <AlertDialogAction onClick={onFinish}>
+                  Salva e Chiudi
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
     </div>
   );
