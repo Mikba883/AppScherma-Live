@@ -37,11 +37,12 @@ serve(async (req) => {
     if (oldTournaments && oldTournaments.length > 0) {
       const tournamentIds = oldTournaments.map(t => t.id)
 
-      // 2. Delete all bouts from these tournaments
+      // 2. Cancel all non-approved bouts from these tournaments
       const { error: boutsError } = await supabase
         .from('bouts')
-        .delete()
+        .update({ status: 'cancelled' })
         .in('tournament_id', tournamentIds)
+        .neq('status', 'approved')
 
       if (boutsError) {
         console.error('Error deleting bouts:', boutsError)
