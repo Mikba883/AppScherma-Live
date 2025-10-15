@@ -31,12 +31,12 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     loadCurrentUser();
   }, []);
 
-  // Check for active tournament on mount
+  // Check for active tournament only when in menu mode
   useEffect(() => {
-    if (currentUserId && userGymId) {
+    if (currentUserId && userGymId && mode === 'menu') {
       checkActiveTournament();
     }
-  }, [currentUserId, userGymId]);
+  }, [currentUserId, userGymId, mode]);
 
   const loadCurrentUser = async () => {
     try {
@@ -348,7 +348,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       
       toast.success('Torneo cancellato');
       
-      // 3. Reset stato locale
+      // 3. IMPORTANTE: Reset stato locale PRIMA di tornare al menu
       setActiveTournamentId(null);
       setTournamentName('');
       setTournamentDate('');
@@ -357,8 +357,14 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       setTournamentCreatorId(null);
       setAthletes([]);
       setMatches([]);
-      setMode('menu');
       onTournamentStateChange?.(false);
+      
+      // 4. Aspetta che Supabase aggiorni la cache
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // 5. Ora torna al menu
+      setMode('menu');
+      
     } catch (error: any) {
       console.error('[TournamentSection] Error canceling tournament:', error);
       toast.error('Errore: ' + error.message);
