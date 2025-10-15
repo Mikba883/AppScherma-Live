@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Trophy, Save, X } from 'lucide-react';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 import { useUserRoleOptimized } from '@/hooks/useUserRoleOptimized';
+import { cn } from '@/lib/utils';
 
 interface TournamentMatrixProps {
   athletes: TournamentAthlete[];
@@ -374,21 +375,34 @@ const MatchInputs = ({
   canEdit,
   onSaved
 }: MatchInputsProps) => {
-  const scoreARef = useRef<HTMLInputElement>(null);
-  const scoreBRef = useRef<HTMLInputElement>(null);
+  // Helper to get score for specific athlete
+  const getScoreForAthlete = (targetAthleteId: string): number | null => {
+    if (!match) return null;
+    return match.athleteA === targetAthleteId ? match.scoreA : match.scoreB;
+  };
+
+  // Controlled state for inputs
+  const [scoreA, setScoreA] = useState(getScoreForAthlete(athleteAId)?.toString() || '');
+  const [scoreB, setScoreB] = useState(getScoreForAthlete(athleteBId)?.toString() || '');
   const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
-  const [isSaving, setIsSaving] = useState(false);
+
+  // Sync state when match data changes (after refresh)
+  useEffect(() => {
+    setScoreA(getScoreForAthlete(athleteAId)?.toString() || '');
+    setScoreB(getScoreForAthlete(athleteBId)?.toString() || '');
+    setWeapon(match?.weapon || 'fioretto');
+  }, [match?.scoreA, match?.scoreB, match?.weapon]);
+
+  // Check if match is complete
+  const isComplete = scoreA !== '' && scoreB !== '';
 
   const handleSave = async () => {
-    const scoreAValue = scoreARef.current?.value;
-    const scoreBValue = scoreBRef.current?.value;
+    if (!scoreA || !scoreB) return;
 
-    if (!scoreAValue || !scoreBValue) return;
+    const scoreANum = parseInt(scoreA);
+    const scoreBNum = parseInt(scoreB);
 
-    const scoreA = parseInt(scoreAValue);
-    const scoreB = parseInt(scoreBValue);
-
-    if (isNaN(scoreA) || isNaN(scoreB)) {
+    if (isNaN(scoreANum) || isNaN(scoreBNum)) {
       toast.error('Inserisci punteggi validi');
       return;
     }
@@ -398,21 +412,12 @@ const MatchInputs = ({
       return;
     }
 
-    setIsSaving(true);
-    
     try {
-      console.log('[MatchInputs] Saving match:', {
-        matchId: match.id,
-        scoreA,
-        scoreB,
-        weapon
-      });
-
       const { error } = await supabase
         .from('bouts')
         .update({
-          score_a: match.athleteA === athleteAId ? scoreA : scoreB,
-          score_b: match.athleteA === athleteAId ? scoreB : scoreA,
+          score_a: match.athleteA === athleteAId ? scoreANum : scoreBNum,
+          score_b: match.athleteA === athleteAId ? scoreBNum : scoreANum,
           weapon: weapon,
           status: 'pending'
         })
@@ -420,29 +425,22 @@ const MatchInputs = ({
 
       if (error) throw error;
 
-      console.log('[MatchInputs] Match saved successfully');
       toast.success('Match salvato');
       onSaved();
     } catch (error: any) {
-      console.error('[MatchInputs] Error saving match:', error);
-      toast.error('Errore nel salvataggio: ' + error.message);
-    } finally {
-      setIsSaving(false);
+      toast.error('Errore: ' + error.message);
     }
   };
 
-  // Determine scores based on athlete order
-  const getScoreForAthlete = (targetAthleteId: string): number | null => {
-    if (!match) return null;
-    return match.athleteA === targetAthleteId ? match.scoreA : match.scoreB;
-  };
-
   return (
-    <div className="space-y-3">
+    <div className={cn(
+      "space-y-3 p-3 rounded-lg border-2 transition-colors",
+      isComplete ? "border-green-500 bg-green-50/50 dark:bg-green-950/20" : "border-border"
+    )}>
       <Select
         value={weapon}
         onValueChange={setWeapon}
-        disabled={isSaving || !canEdit}
+        disabled={!canEdit}
       >
         <SelectTrigger>
           <SelectValue placeholder="Seleziona arma" />
@@ -456,23 +454,23 @@ const MatchInputs = ({
 
       <div className="grid grid-cols-2 gap-2">
         <Input
-          ref={scoreARef}
           type="number"
           placeholder={athleteAName.split(' ')[0]}
-          defaultValue={getScoreForAthlete(athleteAId) || ''}
+          value={scoreA}
+          onChange={(e) => setScoreA(e.target.value)}
           onBlur={handleSave}
-          disabled={isSaving || !canEdit}
+          disabled={!canEdit}
           min="0"
           max="45"
         />
         
         <Input
-          ref={scoreBRef}
           type="number"
           placeholder={athleteBName.split(' ')[0]}
-          defaultValue={getScoreForAthlete(athleteBId) || ''}
+          value={scoreB}
+          onChange={(e) => setScoreB(e.target.value)}
           onBlur={handleSave}
-          disabled={isSaving || !canEdit}
+          disabled={!canEdit}
           min="0"
           max="45"
         />

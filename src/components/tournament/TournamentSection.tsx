@@ -100,7 +100,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       if (boutsError) throw boutsError;
 
-      console.log('[TournamentSection] Loaded bouts:', bouts);
+      console.log('[TournamentSection] Loaded bouts:', bouts?.length, 'matches');
 
       if (!bouts || bouts.length === 0) {
         console.log('[TournamentSection] No bouts found');
@@ -307,11 +307,12 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
   };
 
-  const handleRefreshData = () => {
-    if (activeTournamentId) {
-      loadTournamentData(activeTournamentId);
-      toast.success('Dati aggiornati');
-    }
+  const handleRefreshData = async () => {
+    if (!activeTournamentId) return;
+    
+    console.log('[TournamentSection] Refreshing data...');
+    await loadTournamentData(activeTournamentId);
+    toast.success('Dati aggiornati');
   };
 
   const handleExitTournament = () => {
