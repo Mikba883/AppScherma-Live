@@ -155,11 +155,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       setMatches([...matches]);
       setTournamentStarted(true);
       
-      // Subscribe to real-time updates ONLY if not already subscribed
-      if (!isSubscribed.current) {
-        subscribeToTournamentUpdates(tournamentId);
-        isSubscribed.current = true;
-      }
+      // ❌ Real-time disabilitato - utenti usano "Aggiorna Dati" manuale
+      // if (!isSubscribed.current) {
+      //   subscribeToTournamentUpdates(tournamentId);
+      //   isSubscribed.current = true;
+      // }
     } catch (error) {
       console.error('Error loading tournament:', error);
     }
@@ -179,88 +179,9 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   const subscribeToTournamentUpdates = (tournamentId: string) => {
-    console.log('[Subscription] Sottoscritto a torneo', tournamentId);
-    console.log('[Subscription] Ascolto eventi su tabella tournaments con filter:', `id=eq.${tournamentId}`);
-    
-    const channel = supabase
-      .channel('tournament-updates')
-      // ❌ Real-time UPDATE disabilitato per "Organizzazione Turni"
-      // Gli utenti salvano manualmente, la Matrice/Classifica si aggiorna via polling o refresh
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'bouts',
-          filter: `tournament_id=eq.${tournamentId}`
-        },
-        async (payload) => {
-          await loadTournamentData(tournamentId);
-          
-          const insertedBout = payload.new as any;
-          if (insertedBout.created_by !== currentUserId) {
-            toast({
-              title: "Nuovo match aggiunto",
-              description: "Un altro partecipante ha aggiunto un nuovo incontro",
-              duration: 2000,
-            });
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rankings',
-        },
-        async (payload) => {
-          console.log('[Real-time] Ranking aggiornato:', payload);
-          const updatedRanking = payload.new as any;
-          
-          // Verifica se l'atleta aggiornato è nel torneo attivo
-          const isInTournament = selectedAthletes.some(
-            a => a.id === updatedRanking.athlete_id
-          );
-          
-          if (isInTournament && updatedRanking.athlete_id !== currentUserId) {
-            // ✅ SOLO NOTIFICA, NON ricaricare i dati!
-            toast({
-              title: "Classifica aggiornata",
-              description: "La classifica del torneo è stata aggiornata",
-              duration: 1500,
-            });
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'tournaments',
-          filter: `id=eq.${tournamentId}`
-        },
-        async (payload) => {
-          console.log('[Real-time] Tournament aggiornato:', payload);
-          const updatedTournament = payload.new as any;
-          console.log('[Real-time] Nuovo status torneo:', updatedTournament.status);
-          
-          if (updatedTournament.status === 'completed' || updatedTournament.status === 'cancelled') {
-            console.log('[Real-time] Torneo chiuso, uscita...');
-            toast({
-              title: "Torneo Chiuso",
-              description: "Il torneo è stato chiuso dall'organizzatore",
-            });
-            handleExitTournament();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // ❌ DISABILITATO COMPLETAMENTE - gli utenti salvano manualmente e ricaricano manualmente
+    console.log('[Real-time] DISABILITATO - usa il pulsante Aggiorna per sincronizzare');
+    return () => {}; // Nessun cleanup
   };
 
   const handleStartTournament = async (athletes: TournamentAthlete[]) => {
@@ -404,8 +325,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       
       console.log('[TournamentSection] State updated, switching to matrix mode');
       
-      // 5. Sottoscrivi agli updates real-time
-      subscribeToTournamentUpdates(tournament.id);
+      // ❌ Real-time disabilitato - utenti usano "Aggiorna Dati" manuale
+      // subscribeToTournamentUpdates(tournament.id);
       
       onTournamentStateChange?.(false);
       

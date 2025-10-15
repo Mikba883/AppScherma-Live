@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -639,10 +639,10 @@ interface MatchInputsProps {
 }
 
 const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, canEdit = true, canCancel = false, currentUserId }: MatchInputsProps) => {
-  // ✅ Stato locale per form controllato
-  const [localScoreA, setLocalScoreA] = useState(match?.scoreA?.toString() || '');
-  const [localScoreB, setLocalScoreB] = useState(match?.scoreB?.toString() || '');
-  const [localWeapon, setLocalWeapon] = useState(match?.weapon || 'fioretto');
+  // ✅ Uncontrolled inputs con useRef
+  const scoreARef = useRef<HTMLInputElement>(null);
+  const scoreBRef = useRef<HTMLInputElement>(null);
+  const [weaponValue, setWeaponValue] = useState(match?.weapon || 'fioretto');
   const [isSaving, setIsSaving] = useState(false);
   
   const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
@@ -716,70 +716,36 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
   // ✅ Match non completato + può modificare → form con salvataggio esplicito
   if (canEdit) {
     const handleSave = async () => {
-      if (!localScoreA || !localScoreB || !localWeapon) {
+      const scoreA = scoreARef.current?.value;
+      const scoreB = scoreBRef.current?.value;
+      
+      if (!scoreA || !scoreB || !weaponValue) {
         toast.error('Compila tutti i campi');
+        return;
+      }
+      
+      if (!match?.id) {
+        toast.error('Match non trovato nel database. Ricrea il torneo.');
         return;
       }
       
       setIsSaving(true);
       try {
-        if (match?.id) {
-          // ✅ Match esiste → UPDATE
-          const { error } = await supabase
-            .from('bouts')
-            .update({
-              score_a: parseInt(localScoreA),
-              score_b: parseInt(localScoreB),
-              weapon: localWeapon,
-              status: 'pending'
-            })
-            .eq('id', match.id);
-          
-          if (error) throw error;
-          toast.success('Match salvato!');
-        } else {
-          // ✅ Match non esiste → INSERT (crea nuovo match nel torneo)
-          // Recupera i dati del torneo
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error('Utente non autenticato');
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('gym_id')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (!profile?.gym_id) throw new Error('Palestra non trovata');
-          
-          // Trova il torneo attivo
-          const { data: tournament } = await supabase
-            .rpc('get_my_active_tournament')
-            .maybeSingle();
-          
-          if (!tournament) throw new Error('Torneo non trovato');
-          
-          const { error: insertError } = await supabase
-            .from('bouts')
-            .insert({
-              tournament_id: tournament.tournament_id,
-              bout_date: tournament.tournament_date,
-              weapon: localWeapon,
-              bout_type: tournament.bout_type,
-              athlete_a: athleteA,
-              athlete_b: athleteB,
-              score_a: parseInt(localScoreA),
-              score_b: parseInt(localScoreB),
-              status: 'pending',
-              created_by: user.id,
-              gym_id: profile.gym_id
-            });
-          
-          if (insertError) throw insertError;
-          toast.success('Match creato e salvato!');
-        }
+        const { error } = await supabase
+          .from('bouts')
+          .update({
+            score_a: parseInt(scoreA),
+            score_b: parseInt(scoreB),
+            weapon: weaponValue,
+            status: 'pending'
+          })
+          .eq('id', match.id);
+        
+        if (error) throw error;
+        toast.success('Match salvato!');
       } catch (error) {
         console.error(error);
-        toast.error('Errore nel salvataggio');
+        toast.error('Errore nel salvataggio: ' + (error as Error).message);
       } finally {
         setIsSaving(false);
       }
@@ -790,8 +756,8 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
           <Select 
-            value={localWeapon} 
-            onValueChange={setLocalWeapon}
+            value={weaponValue} 
+            onValueChange={setWeaponValue}
             disabled={isSaving}
           >
             <SelectTrigger className="h-8">
@@ -809,11 +775,11 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{athleteAName}</label>
             <Input
+              ref={scoreARef}
               type="number"
               min="0"
               max="15"
-              value={localScoreA}
-              onChange={(e) => setLocalScoreA(e.target.value)}
+              defaultValue={match?.scoreA || ''}
               disabled={isSaving}
               className="text-center"
               placeholder="0"
@@ -822,11 +788,11 @@ const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, ca
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{athleteBName}</label>
             <Input
+              ref={scoreBRef}
               type="number"
               min="0"
               max="15"
-              value={localScoreB}
-              onChange={(e) => setLocalScoreB(e.target.value)}
+              defaultValue={match?.scoreB || ''}
               disabled={isSaving}
               className="text-center"
               placeholder="0"
