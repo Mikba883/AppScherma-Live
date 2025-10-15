@@ -334,16 +334,14 @@ export const TournamentMatrix = ({
           <RefreshCw className="w-4 h-4 mr-2" />
           Aggiorna
         </Button>
-        {(isCreator || isInstructor) && (
-          <Button
-            onClick={handleFinishClick}
-            disabled={isLoading}
-            size="lg"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Concludi Torneo
-          </Button>
-        )}
+        <Button
+          onClick={handleFinishClick}
+          disabled={isLoading}
+          size="lg"
+        >
+          <Save className="w-4 h-4 mr-2" />
+          Concludi Torneo
+        </Button>
       </div>
 
       {/* Finish Dialog */}
@@ -355,19 +353,20 @@ export const TournamentMatrix = ({
               Puoi salvare i match giocati e chiudere il torneo, oppure cancellare tutto senza salvare i risultati.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-3">
             <AlertDialogCancel 
               onClick={onExit}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto sm:flex-1"
             >
-              Cancella Torneo (senza salvare)
+              <X className="w-4 h-4 mr-2" />
+              Cancella (senza salvare)
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={onFinish}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto sm:flex-1"
             >
               <Save className="w-4 h-4 mr-2" />
-              Salva Match e Chiudi Torneo
+              Salva e Chiudi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
