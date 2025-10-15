@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Trophy, Save, X } from 'lucide-react';
+import { Trophy, Save, X, RefreshCw } from 'lucide-react';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
 import { useUserRoleOptimized } from '@/hooks/useUserRoleOptimized';
 import { cn } from '@/lib/utils';
@@ -157,14 +157,6 @@ export const TournamentMatrix = ({
   }, [athletes, matches]);
 
   const handleFinishClick = () => {
-    const completedMatches = matches.filter(m => m.scoreA !== null && m.scoreB !== null).length;
-    const totalMatches = matches.length;
-    
-    if (completedMatches < totalMatches) {
-      toast.error(`Completa tutti i match prima di concludere il torneo (${completedMatches}/${totalMatches})`);
-      return;
-    }
-    
     setShowFinishDialog(true);
   };
 
@@ -324,8 +316,17 @@ export const TournamentMatrix = ({
         </CardContent>
       </Card>
 
-      {/* Action Button */}
+      {/* Action Buttons */}
       <div className="flex gap-3 justify-end">
+        <Button
+          onClick={onRefresh}
+          disabled={isLoading}
+          variant="outline"
+          size="lg"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Aggiorna
+        </Button>
         {(isCreator || isInstructor) && (
           <Button
             onClick={handleFinishClick}
