@@ -9,14 +9,15 @@ import { toast } from 'sonner';
 import type { TournamentAthlete } from '@/types/tournament';
 
 interface TournamentSetupProps {
-  onStartTournament: (athletes: TournamentAthlete[]) => void;
+  onStart: (athletes: TournamentAthlete[], name: string, date: string, weapon: string | null, boutType: string) => void;
+  onCancel: () => void;
 }
 
 interface AthleteWithShift extends TournamentAthlete {
   shift?: string;
 }
 
-export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => {
+export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => {
   const [athletes, setAthletes] = useState<AthleteWithShift[]>([]);
   const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>('');
@@ -107,7 +108,10 @@ export const TournamentSetup = ({ onStartTournament }: TournamentSetupProps) => 
       return;
     }
 
-    onStartTournament(selectedAthletes);
+    const name = `Torneo ${new Date().toLocaleDateString('it-IT')}`;
+    const date = new Date().toISOString().split('T')[0];
+    
+    onStart(selectedAthletes, name, date, null, 'sparring');
   };
 
   const clearAll = () => {

@@ -1,13 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { TournamentSetup } from './TournamentSetup';
 import { TournamentMatrix } from './TournamentMatrix';
+import { toast } from 'sonner';
+import { Trophy, RefreshCw, Plus } from 'lucide-react';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Plus, Trophy, RefreshCw } from 'lucide-react';
-import { useUserRoleOptimized } from '@/hooks/useUserRoleOptimized';
 
 interface TournamentSectionProps {
   onTournamentStateChange?: (hasUnsavedMatches: boolean) => void;
@@ -15,491 +14,259 @@ interface TournamentSectionProps {
 
 export const TournamentSection = ({ onTournamentStateChange }: TournamentSectionProps) => {
   const [mode, setMode] = useState<'menu' | 'setup' | 'matrix'>('menu');
-  const [selectedAthletes, setSelectedAthletes] = useState<TournamentAthlete[]>([]);
+  const [athletes, setAthletes] = useState<TournamentAthlete[]>([]);
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
-  const [matchVersion, setMatchVersion] = useState(0);
-  const [tournamentStarted, setTournamentStarted] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [checkingTournaments, setCheckingTournaments] = useState(false);
   const [activeTournamentId, setActiveTournamentId] = useState<string | null>(null);
+  const [tournamentName, setTournamentName] = useState<string>('');
+  const [tournamentDate, setTournamentDate] = useState<string>('');
+  const [tournamentWeapon, setTournamentWeapon] = useState<string | null>(null);
+  const [tournamentBoutType, setTournamentBoutType] = useState<string>('sparring');
   const [tournamentCreatorId, setTournamentCreatorId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const { toast } = useToast();
-  const { isInstructor } = useUserRoleOptimized();
-  const isSubscribed = useRef(false);
+  const [userGymId, setUserGymId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Load current user on mount
   useEffect(() => {
     loadCurrentUser();
-    checkActiveTournament();
   }, []);
 
+  // Check for active tournament on mount
   useEffect(() => {
-    onTournamentStateChange?.(hasUnsavedChanges);
-  }, [hasUnsavedChanges, onTournamentStateChange]);
-
-  // Controllo periodico dello status del torneo (fallback se realtime non funziona)
-  useEffect(() => {
-    if (!activeTournamentId) return;
-
-    const interval = setInterval(async () => {
-      const { data: tournament } = await supabase
-        .from('tournaments')
-        .select('status')
-        .eq('id', activeTournamentId)
-        .single();
-
-      if (tournament && (tournament.status === 'completed' || tournament.status === 'cancelled')) {
-        console.log('[Polling] Torneo chiuso rilevato:', tournament.status);
-        toast({
-          title: "Torneo Chiuso",
-          description: "Il torneo è stato chiuso dall'organizzatore",
-        });
-        handleExitTournament();
-      }
-    }, 5000); // Controlla ogni 5 secondi
-
-    return () => clearInterval(interval);
-  }, [activeTournamentId]);
+    if (currentUserId && userGymId) {
+      checkActiveTournament();
+    }
+  }, [currentUserId, userGymId]);
 
   const loadCurrentUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       setCurrentUserId(user.id);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('gym_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile) {
+        setUserGymId(profile.gym_id);
+      }
+    } catch (error) {
+      console.error('[TournamentSection] Error loading user:', error);
     }
   };
 
-  const checkActiveTournament = async (showToast = false) => {
-    setCheckingTournaments(true);
+  const checkActiveTournament = async () => {
     try {
-      // Usa la funzione database per ottenere il torneo attivo dove sono coinvolto
-      const { data: activeTournament } = await supabase
-        .rpc('get_my_active_tournament')
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('get_my_active_tournament');
+      
+      if (error) {
+        console.error('[TournamentSection] Error checking active tournament:', error);
+        return;
+      }
 
-      if (activeTournament) {
-        setActiveTournamentId(activeTournament.tournament_id);
-        setTournamentCreatorId(activeTournament.created_by);
-        await loadTournamentData(activeTournament.tournament_id);
+      if (data && data.length > 0) {
+        const tournament = data[0];
+        console.log('[TournamentSection] Found active tournament:', tournament);
+        
+        setActiveTournamentId(tournament.tournament_id);
+        setTournamentName(tournament.tournament_name);
+        setTournamentDate(tournament.tournament_date);
+        setTournamentWeapon(tournament.weapon);
+        setTournamentBoutType(tournament.bout_type);
+        setTournamentCreatorId(tournament.created_by);
+        
+        await loadTournamentData(tournament.tournament_id);
         setMode('matrix');
-        if (showToast) {
-          toast({
-            title: 'Torneo Trovato',
-            description: `Sei stato aggiunto al torneo "${activeTournament.tournament_name}"`,
-          });
-        }
-      } else if (showToast) {
-        toast({
-          title: 'Nessun Torneo Attivo',
-          description: 'Non sei coinvolto in nessun torneo in corso',
-        });
       }
     } catch (error) {
-      console.error('Error checking tournament:', error);
-    } finally {
-      setCheckingTournaments(false);
+      console.error('[TournamentSection] Error in checkActiveTournament:', error);
     }
   };
 
   const loadTournamentData = async (tournamentId: string) => {
-    console.log('[loadTournamentData] 🔄 Caricamento torneo:', tournamentId);
+    console.log('[TournamentSection] Loading tournament data:', tournamentId);
+    setIsLoading(true);
+    
     try {
-      // Get all bouts for this tournament
+      // Load all bouts for this tournament
       const { data: bouts, error: boutsError } = await supabase
         .from('bouts')
-        .select('id, athlete_a, athlete_b, score_a, score_b, weapon, status')
+        .select('*')
         .eq('tournament_id', tournamentId);
 
       if (boutsError) throw boutsError;
 
-      console.log('[loadTournamentData] 📊 Bouts dal DB:', bouts?.length || 0);
+      console.log('[TournamentSection] Loaded bouts:', bouts);
 
-      // Get unique athletes
-      const athleteIds = new Set<string>();
-      bouts?.forEach(bout => {
-        athleteIds.add(bout.athlete_a);
-        athleteIds.add(bout.athlete_b);
-      });
+      if (!bouts || bouts.length === 0) {
+        console.log('[TournamentSection] No bouts found');
+        setMatches([]);
+        setAthletes([]);
+        return;
+      }
 
-      // Get athlete profiles
+      // Get unique athlete IDs
+      const athleteIds = [...new Set(bouts.flatMap(b => [b.athlete_a, b.athlete_b]))];
+      
+      // Load athlete profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, full_name')
-        .in('user_id', Array.from(athleteIds));
+        .in('user_id', athleteIds);
 
       if (profilesError) throw profilesError;
 
-      const athletes: TournamentAthlete[] = profiles?.map(p => ({
+      console.log('[TournamentSection] Loaded profiles:', profiles);
+
+      // Map bouts to matches
+      const mappedMatches: TournamentMatch[] = bouts.map(bout => ({
+        id: bout.id,
+        athleteA: bout.athlete_a,
+        athleteB: bout.athlete_b,
+        scoreA: bout.score_a,
+        scoreB: bout.score_b,
+        weapon: bout.weapon,
+        status: bout.status
+      }));
+
+      // Map profiles to athletes
+      const mappedAthletes: TournamentAthlete[] = profiles.map(p => ({
         id: p.user_id,
         full_name: p.full_name
-      })) || [];
+      }));
 
-      const matches: TournamentMatch[] = bouts?.map(b => ({
-        id: b.id,
-        athleteA: b.athlete_a,
-        athleteB: b.athlete_b,
-        scoreA: b.score_a === null ? null : b.score_a,  // ✅ Esplicito
-        scoreB: b.score_b === null ? null : b.score_b,  // ✅ Esplicito
-        weapon: b.weapon || null,  // ✅ Esplicito
-        status: b.status
-      })).filter(m => {
-        // ✅ RIMUOVI match invalidi (stesso atleta)
-        if (m.athleteA === m.athleteB) {
-          console.warn('[loadTournamentData] ⚠️ Match invalido rimosso:', m);
-          return false;
-        }
-        return true;
-      }) || [];
-
-      console.log('[loadTournamentData] ✅ Matches caricati dal DB:', {
-        totale: matches.length,
-        completati: matches.filter(m => m.scoreA !== null && m.scoreB !== null).length,
-        pendenti: matches.filter(m => m.scoreA === null || m.scoreB === null).length
-      });
-
-      // Forza completamente un nuovo array
-      setSelectedAthletes([...athletes]);
-      setMatches([...matches]);
-      setTournamentStarted(true);
+      setMatches(mappedMatches);
+      setAthletes(mappedAthletes);
       
-      // ❌ Real-time disabilitato - utenti usano "Aggiorna Dati" manuale
-      // if (!isSubscribed.current) {
-      //   subscribeToTournamentUpdates(tournamentId);
-      //   isSubscribed.current = true;
-      // }
+      console.log('[TournamentSection] Data loaded - Matches:', mappedMatches.length, 'Athletes:', mappedAthletes.length);
     } catch (error) {
-      console.error('[loadTournamentData] ❌ Errore:', error);
+      console.error('[TournamentSection] Error loading tournament data:', error);
+      toast.error('Errore nel caricamento dei dati del torneo');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleExitTournament = () => {
-    console.log('[Exit] Uscita dal torneo');
-    setActiveTournamentId(null);
-    setTournamentCreatorId(null);
-    setSelectedAthletes([]);
-    setMatches([]);
-    setTournamentStarted(false);
-    setMode('menu');
-    setHasUnsavedChanges(false);
-    onTournamentStateChange?.(false);
-    isSubscribed.current = false;
-  };
-
-  const subscribeToTournamentUpdates = (tournamentId: string) => {
-    // ❌ DISABILITATO COMPLETAMENTE - gli utenti salvano manualmente e ricaricano manualmente
-    console.log('[Real-time] DISABILITATO - usa il pulsante Aggiorna per sincronizzare');
-    return () => {}; // Nessun cleanup
-  };
-
-  const handleStartTournament = async (athletes: TournamentAthlete[]) => {
-    console.log('[TournamentSection] Starting tournament with athletes:', athletes);
-    setSelectedAthletes(athletes);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error('[TournamentSection] User not authenticated');
-      toast({
-        title: "Errore",
-        description: "Utente non autenticato",
-        variant: "destructive",
-      });
+  const handleStartTournament = async (
+    selectedAthletes: TournamentAthlete[],
+    name: string,
+    date: string,
+    weapon: string | null,
+    boutType: string
+  ) => {
+    if (!currentUserId || !userGymId) {
+      toast.error('Utente non autenticato');
       return;
     }
 
-    // Ottieni gym_id dal profilo
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('gym_id')
-      .eq('user_id', user.id)
-      .single();
+    console.log('[TournamentSection] Creating tournament:', {
+      name,
+      date,
+      weapon,
+      boutType,
+      athletesCount: selectedAthletes.length
+    });
 
-    console.log('[TournamentSection] Profile data:', profile, 'Error:', profileError);
-
-    if (!profile?.gym_id) {
-      console.error('[TournamentSection] Profile not found or gym_id missing');
-      toast({
-        title: "Errore",
-        description: "Profilo non trovato o gym_id mancante",
-        variant: "destructive",
-      });
-      return;
-    }
+    setIsLoading(true);
 
     try {
-      console.log('[TournamentSection] Creating tournament with gym_id:', profile.gym_id);
-      
-      // 1. Crea il torneo nel database
+      // 1. Create tournament record
       const { data: tournament, error: tournamentError } = await supabase
         .from('tournaments')
         .insert({
-          name: `Torneo ${new Date().toLocaleDateString('it-IT')}`,
-          tournament_date: new Date().toISOString().split('T')[0],
-          created_by: user.id,
+          name,
+          tournament_date: date,
+          created_by: currentUserId,
           status: 'in_progress',
-          bout_type: 'sparring',
-          gym_id: profile.gym_id
+          bout_type: boutType,
+          weapon: weapon || null,
+          gym_id: userGymId
         })
         .select()
         .single();
 
-      console.log('[TournamentSection] Tournament created:', tournament, 'Error:', tournamentError);
+      if (tournamentError) throw tournamentError;
 
-      if (tournamentError) {
-        console.error('[TournamentSection] Tournament creation error:', tournamentError);
-        toast({
-          title: "Errore Creazione Torneo",
-          description: tournamentError.message || "Impossibile creare il torneo",
-          variant: "destructive",
-        });
-        throw tournamentError;
-      }
+      console.log('[TournamentSection] Tournament created:', tournament);
 
-      // 2. Genera tutti i match
-      const allMatches: TournamentMatch[] = [];
+      // 2. Generate all matches (round-robin, no duplicates)
       const boutsToInsert = [];
-      
-      for (let i = 0; i < athletes.length; i++) {
-        for (let j = 0; j < athletes.length; j++) {
-          // ✅ VALIDAZIONE RIGOROSA: Salta se stesso atleta
-          if (i === j) continue;
-          
-          allMatches.push({
-            athleteA: athletes[i].id,
-            athleteB: athletes[j].id,
-            scoreA: null,
-            scoreB: null,
-            weapon: null,
-            status: 'pending'
-          });
-          
+      for (let i = 0; i < selectedAthletes.length; i++) {
+        for (let j = i + 1; j < selectedAthletes.length; j++) {
           boutsToInsert.push({
             tournament_id: tournament.id,
-            athlete_a: athletes[i].id,
-            athlete_b: athletes[j].id,
-            bout_date: new Date().toISOString().split('T')[0],
-            bout_type: 'sparring',
+            athlete_a: selectedAthletes[i].id,
+            athlete_b: selectedAthletes[j].id,
+            bout_date: date,
+            bout_type: boutType,
+            weapon: weapon || null,
             status: 'pending',
-            created_by: user.id,
-            gym_id: profile.gym_id,
+            created_by: currentUserId,
+            gym_id: userGymId,
             score_a: null,
             score_b: null
           });
         }
       }
-      
-      console.log('[TournamentSection] Match generati:', allMatches.length, 'per', athletes.length, 'atleti');
 
       console.log('[TournamentSection] Inserting bouts:', boutsToInsert.length);
 
-      // 3. Inserisci tutti i bouts nel database e ottieni gli ID generati
+      // 3. Insert all bouts
       const { data: insertedBouts, error: boutsError } = await supabase
         .from('bouts')
         .insert(boutsToInsert)
-        .select('id, athlete_a, athlete_b, score_a, score_b, weapon, status');
+        .select();
 
-      if (boutsError) {
-        console.error('[TournamentSection] Bouts insertion error:', boutsError);
-        toast({
-          title: "Errore Inserimento Match",
-          description: boutsError.message || "Impossibile creare i match del torneo",
-          variant: "destructive",
-        });
-        throw boutsError;
-      }
+      if (boutsError) throw boutsError;
 
-      console.log('[TournamentSection] Bouts inserted successfully:', insertedBouts?.length);
+      console.log('[TournamentSection] Bouts inserted:', insertedBouts);
 
-      // ✅ Mappa i bouts inseriti con gli ID dal DB
-      const matchesWithIds: TournamentMatch[] = (insertedBouts || []).map(b => ({
-        id: b.id,  // ✅ ID generato dal DB
-        athleteA: b.athlete_a,
-        athleteB: b.athlete_b,
-        scoreA: b.score_a,
-        scoreB: b.score_b,
-        weapon: b.weapon,
-        status: b.status
-      }));
-
-      console.log('[TournamentSection] Matches with IDs:', matchesWithIds.length);
-
-      // 4. Imposta lo stato locale
+      // 4. Set state
       setActiveTournamentId(tournament.id);
-      setTournamentCreatorId(user.id);
-      setMatches(matchesWithIds);  // ✅ Usa i match CON gli ID dal DB
-      setTournamentStarted(true);
-      setHasUnsavedChanges(false);
-      setMode('matrix');
+      setTournamentName(name);
+      setTournamentDate(date);
+      setTournamentWeapon(weapon);
+      setTournamentBoutType(boutType);
+      setTournamentCreatorId(currentUserId);
+      setAthletes(selectedAthletes);
       
-      console.log('[TournamentSection] State updated, switching to matrix mode');
-      
-      // ❌ Real-time disabilitato - utenti usano "Aggiorna Dati" manuale
-      // subscribeToTournamentUpdates(tournament.id);
-      
-      onTournamentStateChange?.(false);
-      
-      toast({
-        title: "Torneo Creato",
-        description: "Gli altri atleti possono ora vedere e inserire i risultati.",
-      });
-    } catch (error: any) {
-      console.error('[TournamentSection] Error creating tournament:', error);
-      toast({
-        title: "Errore",
-        description: error.message || "Impossibile creare il torneo",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleUpdateMatch = async (
-    athleteA: string, 
-    athleteB: string, 
-    scoreA: string | number, 
-    scoreB: string | number, 
-    weapon: string
-  ) => {
-    console.log('[handleUpdateMatch] START:', { athleteA, athleteB, scoreA, scoreB, weapon });
-    
-    // ✅ Trova il match nello stato locale per ottenere l'ID
-    const localMatch = matches.find(m => {
-      // ✅ VALIDAZIONE: Escludi match con stesso atleta
-      if (m.athleteA === m.athleteB) {
-        console.warn('[handleUpdateMatch] ⚠️ Match invalido ignorato:', m);
-        return false;
-      }
-      
-      return (m.athleteA === athleteA && m.athleteB === athleteB) ||
-             (m.athleteA === athleteB && m.athleteB === athleteA);
-    });
-    
-    console.log('[handleUpdateMatch] 🔍 Ricerca match:', {
-      cercato: `${athleteA} vs ${athleteB}`,
-      totaleMatches: matches.length,
-      matchTrovato: localMatch ? 'SÌ' : 'NO',
-      matchDisponibili: matches.slice(0, 5).map(m => ({
-        id: m.id,
-        athleteA: m.athleteA,
-        athleteB: m.athleteB,
-        status: m.status
-      }))
-    });
-    
-    console.log('[handleUpdateMatch] 🔎 localMatch trovato:', {
-      esiste: !!localMatch,
-      hasId: !!localMatch?.id,
-      id: localMatch?.id,
-      athleteA: localMatch?.athleteA,
-      athleteB: localMatch?.athleteB
-    });
-    
-    if (!localMatch?.id) {
-      console.error('[handleUpdateMatch] Match ID non trovato nello stato locale');
-      toast({
-        title: "Errore",
-        description: "Impossibile identificare il match",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validazione
-    const numScoreA = Number(scoreA);
-    const numScoreB = Number(scoreB);
-    
-    if (isNaN(numScoreA) || isNaN(numScoreB) || !weapon) {
-      console.log('[handleUpdateMatch] ❌ Match incompleto, ignoro salvataggio');
-      return;
-    }
-    
-    if (!activeTournamentId) {
-      console.log('[handleUpdateMatch] ❌ Nessun torneo attivo');
-      return;
-    }
-    
-    try {
-      // ✅ USA direttamente l'ID dal match locale
-      const boutId = localMatch.id;
-      
-      // ✅ CONTROLLO: Se il match è già approvato con questi valori, non fare nulla
-      if (localMatch.status === 'approved' &&
-          localMatch.scoreA === numScoreA &&
-          localMatch.scoreB === numScoreB &&
-          localMatch.weapon === weapon) {
-        console.log('[handleUpdateMatch] ⏭️ Match già salvato con questi valori, skip');
-        return;
-      }
-      
-      // Determina ordine atleti
-      const isNormalOrder = localMatch.athleteA === athleteA;
-      
-      // Prepara UPDATE
-      const updates = {
-        score_a: isNormalOrder ? numScoreA : numScoreB,
-        score_b: isNormalOrder ? numScoreB : numScoreA,
-        weapon: weapon,
-        status: 'approved'
-      };
-      
-      console.log('[handleUpdateMatch] 💾 SAVING TO DB:', { bout_id: boutId, updates });
-      
-      // ✅ UPDATE diretto usando l'ID
-      const { error: updateError } = await supabase
-        .from('bouts')
-        .update(updates)
-        .eq('id', boutId);
-      
-      if (updateError) throw updateError;
-      
-      // ✅ Aggiorna stato locale usando l'ID
-      setMatches(prev => prev.map(match => {
-        if (match.id === boutId) {
-          return {
-            ...match,
-            scoreA: isNormalOrder ? numScoreA : numScoreB,
-            scoreB: isNormalOrder ? numScoreB : numScoreA,
-            weapon: weapon,
-            status: 'approved'
-          };
-        }
-        return match;
+      // Map inserted bouts to matches
+      const mappedMatches: TournamentMatch[] = insertedBouts.map(bout => ({
+        id: bout.id,
+        athleteA: bout.athlete_a,
+        athleteB: bout.athlete_b,
+        scoreA: bout.score_a,
+        scoreB: bout.score_b,
+        weapon: bout.weapon,
+        status: bout.status
       }));
       
-      console.log('[handleUpdateMatch] ✅ Match salvato con successo');
-      
-      toast({
-        title: "Match salvato",
-        description: "Il risultato è stato registrato con successo",
-      });
-      
-    } catch (error: any) {
-      console.error('[handleUpdateMatch] ❌ Errore:', error);
-      toast({
-        title: "Errore salvataggio",
-        description: error.message || "Impossibile salvare il match",
-        variant: "destructive",
-      });
+      setMatches(mappedMatches);
+      setMode('matrix');
+
+      toast.success('Torneo creato con successo!');
+    } catch (error) {
+      console.error('[TournamentSection] Error creating tournament:', error);
+      toast.error('Errore nella creazione del torneo');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleFinishTournament = async () => {
+    if (!activeTournamentId || !currentUserId) return;
 
+    setIsLoading(true);
 
-  const handleSaveTournament = async (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => {
-    if (!activeTournamentId) {
-      toast({
-        title: 'Errore',
-        description: 'Nessun torneo attivo da salvare',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSaving(true);
-    
     try {
-      // 1. Mark ALL completed bouts as 'approved'
+      // 1. Approve all completed matches
       const { error: updateError } = await supabase
         .from('bouts')
-        .update({ 
+        .update({
           status: 'approved',
           approved_by: currentUserId,
           approved_at: new Date().toISOString()
@@ -507,120 +274,131 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         .eq('tournament_id', activeTournamentId)
         .not('score_a', 'is', null)
         .not('score_b', 'is', null);
-      
+
       if (updateError) throw updateError;
-      
-      // 2. Mark tournament as completed
+
+      // 2. Close tournament
       const { error: tournamentError } = await supabase
         .from('tournaments')
         .update({ status: 'completed' })
         .eq('id', activeTournamentId);
-      
-      if (tournamentError) throw tournamentError;
-      
-      toast({
-        title: 'Torneo Salvato!',
-        description: 'Il torneo è stato completato con successo',
-      });
-      
-      // 3. Reset local state
-      setActiveTournamentId(null);
-      setTournamentCreatorId(null);
-      setHasUnsavedChanges(false);
-      setMode('menu');
-      setTournamentStarted(false);
-      setSelectedAthletes([]);
-      setMatches([]);
-      onTournamentStateChange?.(false);
 
-    } catch (error: any) {
-      console.error('Error saving tournament:', error);
-      toast({
-        title: 'Errore',
-        description: error.message || 'Impossibile salvare il torneo',
-        variant: 'destructive',
-      });
+      if (tournamentError) throw tournamentError;
+
+      toast.success('Torneo concluso con successo!');
+      
+      // 3. Reset state
+      setActiveTournamentId(null);
+      setTournamentName('');
+      setTournamentDate('');
+      setTournamentWeapon(null);
+      setTournamentBoutType('sparring');
+      setTournamentCreatorId(null);
+      setAthletes([]);
+      setMatches([]);
+      setMode('menu');
+      
+      onTournamentStateChange?.(false);
+    } catch (error) {
+      console.error('[TournamentSection] Error finishing tournament:', error);
+      toast.error('Errore nella conclusione del torneo');
     } finally {
-      setSaving(false);
+      setIsLoading(false);
     }
   };
 
-  const handleResetTournament = () => {
-    setTournamentStarted(false);
-    setSelectedAthletes([]);
-    setMatches([]);
-    isSubscribed.current = false;
+  const handleRefreshData = () => {
+    if (activeTournamentId) {
+      loadTournamentData(activeTournamentId);
+      toast.success('Dati aggiornati');
+    }
   };
 
-  return (
-    <div className="space-y-6">
-      {mode === 'menu' && !activeTournamentId && (
-        <div className="space-y-4">
-          <Button 
-            onClick={() => checkActiveTournament(true)}
-            variant="outline"
-            disabled={checkingTournaments}
-            className="w-full"
-          >
-            {checkingTournaments ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Ricerca in corso...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Controlla Tornei Attivi
-              </>
-            )}
-          </Button>
-          
-          <Button 
+  const handleExitTournament = () => {
+    setActiveTournamentId(null);
+    setTournamentName('');
+    setTournamentDate('');
+    setTournamentWeapon(null);
+    setTournamentBoutType('sparring');
+    setTournamentCreatorId(null);
+    setAthletes([]);
+    setMatches([]);
+    setMode('menu');
+    onTournamentStateChange?.(false);
+  };
+
+  // Menu view
+  if (mode === 'menu') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5" />
+            Modalità Torneo
+          </CardTitle>
+          <CardDescription>
+            Gestisci tornei con round robin automatico
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
             onClick={() => setMode('setup')}
             className="w-full"
-            variant="default"
+            size="lg"
           >
-            <Plus className="mr-2 w-4 h-4" />
-            Crea Nuovo Torneo
+            <Plus className="w-4 h-4 mr-2" />
+            Nuovo Torneo
           </Button>
-        </div>
-      )}
+        </CardContent>
+      </Card>
+    );
+  }
 
-      {mode === 'setup' && (
-        <TournamentSetup onStartTournament={handleStartTournament} />
-      )}
+  // Setup view
+  if (mode === 'setup') {
+    return (
+      <TournamentSetup
+        onStart={handleStartTournament}
+        onCancel={() => setMode('menu')}
+      />
+    );
+  }
 
-      {mode === 'matrix' && tournamentStarted && (
-        <div>
-          <div className="flex gap-2 mb-4">
-            <Button 
+  // Matrix view
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{tournamentName}</CardTitle>
+              <CardDescription>
+                {new Date(tournamentDate).toLocaleDateString('it-IT')}
+                {tournamentWeapon && ` • ${tournamentWeapon}`}
+              </CardDescription>
+            </div>
+            <Button
+              onClick={handleRefreshData}
               variant="outline"
-              onClick={() => activeTournamentId && loadTournamentData(activeTournamentId)}
-              disabled={!activeTournamentId}
+              size="sm"
+              disabled={isLoading}
             >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Aggiorna Risultati
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
-          
-          <TournamentMatrix
-            version={matchVersion}
-            athletes={selectedAthletes}
-            matches={matches}
-            onUpdateMatch={handleUpdateMatch}
-            onResetTournament={handleResetTournament}
-            onSaveResults={handleSaveTournament}
-            saving={saving}
-            isStudentMode={true}
-            currentUserId={currentUserId}
-            tournamentCreatorId={tournamentCreatorId}
-            activeTournamentId={activeTournamentId}
-            organizerRole={isInstructor ? 'instructor' : 'student'}
-            isInstructor={isInstructor}
-          />
-        </div>
-      )}
+        </CardHeader>
+      </Card>
 
+      <TournamentMatrix
+        athletes={athletes}
+        matches={matches}
+        onRefresh={handleRefreshData}
+        onFinish={handleFinishTournament}
+        onExit={handleExitTournament}
+        currentUserId={currentUserId}
+        isCreator={tournamentCreatorId === currentUserId}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

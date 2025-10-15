@@ -1,147 +1,71 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trophy, Save, RotateCcw, Target, Check } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { Trophy, Save, X } from 'lucide-react';
 import type { TournamentAthlete, TournamentMatch } from '@/types/tournament';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useUserRoleOptimized } from '@/hooks/useUserRoleOptimized';
 
 interface TournamentMatrixProps {
   athletes: TournamentAthlete[];
   matches: TournamentMatch[];
-  version?: number;
-  onUpdateMatch: (athleteA: string, athleteB: string, scoreA: number | null, scoreB: number | null, weapon: string | null) => void;
-  onResetTournament: () => void;
-  onSaveResults?: (tournamentName: string, tournamentDate: string, weapon: string, boutType: string) => Promise<void>;
-  saving?: boolean;
-  isStudentMode?: boolean;
-  currentUserId?: string | null;
-  tournamentCreatorId?: string | null;
-  activeTournamentId?: string | null;
-  organizerRole?: 'instructor' | 'student';
-  isInstructor?: boolean;
+  onRefresh: () => void;
+  onFinish: () => void;
+  onExit: () => void;
+  currentUserId: string | null;
+  isCreator: boolean;
+  isLoading: boolean;
 }
 
-export const TournamentMatrix = ({ 
-  athletes, 
+export const TournamentMatrix = ({
+  athletes,
   matches,
-  version,
-  onUpdateMatch, 
-  onResetTournament,
-  onSaveResults,
-  saving: externalSaving,
-  isStudentMode = false,
-  currentUserId = null,
-  tournamentCreatorId = null,
-  activeTournamentId = null,
-  organizerRole = 'student',
-  isInstructor = false
+  onRefresh,
+  onFinish,
+  onExit,
+  currentUserId,
+  isCreator,
+  isLoading
 }: TournamentMatrixProps) => {
-  const [saving, setSaving] = useState(false);
+  const { role } = useUserRoleOptimized();
   const [showFinishDialog, setShowFinishDialog] = useState(false);
-  const navigate = useNavigate();
   
-  // Fix 3: Check atleti vuoti
-  if (!athletes || athletes.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-12">
-          <div className="text-center">
-            <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nessun atleta nel torneo</p>
-          </div>
-        </CardContent>
-      </Card>
+  const isInstructor = role === 'istruttore' || role === 'capo_palestra';
+
+  // Get match between two athletes
+  const getMatch = (athleteAId: string, athleteBId: string): TournamentMatch | undefined => {
+    return matches.find(m =>
+      (m.athleteA === athleteAId && m.athleteB === athleteBId) ||
+      (m.athleteA === athleteBId && m.athleteB === athleteAId)
     );
-  }
-  
-  const isSaving = externalSaving || saving;
-  const isCreator = currentUserId && tournamentCreatorId && currentUserId === tournamentCreatorId;
-  
-  const canEditMatch = (athleteA: string, athleteB: string, matchData?: TournamentMatch): boolean => {
-    if (!currentUserId) return false;
-    // Se il match è completato, nessuno può modificarlo (serve annullare prima)
-    const isComplete = matchData?.scoreA !== null && matchData?.scoreB !== null && matchData?.weapon;
-    if (isComplete) return false;
-    // Gli organizzatori (creator o istruttori) possono modificare tutto
-    if (isCreator || organizerRole === 'instructor') return true;
-    // I partecipanti possono modificare solo i propri match
-    return athleteA === currentUserId || athleteB === currentUserId;
   };
 
-  // Funzione separata per annullare match completati
-  const canCancelMatch = (athleteA: string, athleteB: string, matchData?: TournamentMatch): boolean => {
-    if (!currentUserId) return false;
-    // Puoi annullare SOLO se il match è completato
-    const isComplete = matchData?.scoreA !== null && matchData?.scoreB !== null && matchData?.weapon;
-    if (!isComplete) return false;
-    // Solo creator e istruttori possono annullare
-    return isCreator || organizerRole === 'instructor';
-  };
-
-  const getMatch = useCallback((athleteA: string, athleteB: string): TournamentMatch | undefined => {
-    // Normalizza ordine atleti per ricerca coerente
-    const [normalizedA, normalizedB] = [athleteA, athleteB].sort();
-    
-    const match = matches.find(match => {
-      const [matchA, matchB] = [match.athleteA, match.athleteB].sort();
-      return matchA === normalizedA && matchB === normalizedB;
-    });
-    
-    // Debug logging
-    if (!match) {
-      console.log('⚠️ Match NON trovato:', {
-        cercato: `${athleteA} vs ${athleteB}`,
-        normalizzato: `${normalizedA} vs ${normalizedB}`,
-        disponibili: matches.map(m => {
-          const [a, b] = [m.athleteA, m.athleteB].sort();
-          return `${a} vs ${b}`;
-        })
-      });
-    }
-    
-    return match;
-  }, [matches, version]);
-
+  // Calculate athlete stats
   const getAthleteStats = (athleteId: string) => {
     let wins = 0;
     let totalMatches = 0;
     let pointsFor = 0;
     let pointsAgainst = 0;
 
-    // Count each match only once by checking unique pairs
-    const countedMatches = new Set<string>();
-
     matches.forEach(match => {
-      if ((match.athleteA === athleteId || match.athleteB === athleteId) && 
-          match.scoreA !== null && match.scoreB !== null) {
-        
-        // Create a unique key for this match (ordered by athlete IDs to avoid duplicates)
-        const matchKey = [match.athleteA, match.athleteB].sort().join('-');
-        
-        // Only count if we haven't already counted this match
-        if (!countedMatches.has(matchKey)) {
-          countedMatches.add(matchKey);
-          totalMatches++;
-          
-          if (match.athleteA === athleteId) {
-            pointsFor += match.scoreA;
-            pointsAgainst += match.scoreB;
-            if (match.scoreA > match.scoreB) wins++;
-          } else {
-            pointsFor += match.scoreB;
-            pointsAgainst += match.scoreA;
-            if (match.scoreB > match.scoreA) wins++;
-          }
-        }
+      if (match.scoreA === null || match.scoreB === null) return;
+
+      if (match.athleteA === athleteId) {
+        totalMatches++;
+        pointsFor += match.scoreA;
+        pointsAgainst += match.scoreB;
+        if (match.scoreA > match.scoreB) wins++;
+      } else if (match.athleteB === athleteId) {
+        totalMatches++;
+        pointsFor += match.scoreB;
+        pointsAgainst += match.scoreA;
+        if (match.scoreB > match.scoreA) wins++;
       }
     });
 
@@ -154,40 +78,27 @@ export const TournamentMatrix = ({
     };
   };
 
-  // ❌ Rimossa: handleScoreChange - non più necessaria, MatchInputs salva direttamente nel DB
-
-  // Generate rounds for tournament organization using correct round-robin algorithm
+  // Generate round-robin rounds
   const generateRounds = () => {
-    const totalAthletes = athletes.length;
-    if (totalAthletes < 2) return [];
-    
-    const rounds: { round: number; matches: Array<{athleteA: TournamentAthlete; athleteB: TournamentAthlete}> }[] = [];
-    const totalRounds = totalAthletes % 2 === 0 ? totalAthletes - 1 : totalAthletes;
-    
-    // Create a copy of athletes array for rotation
     let athletesList = [...athletes];
     
-    // If odd number of athletes, add a "bye" placeholder
-    if (totalAthletes % 2 === 1) {
-      athletesList.push({ id: 'bye', full_name: 'BYE' } as TournamentAthlete);
+    // Add BYE if odd number of athletes
+    if (athletes.length % 2 === 1) {
+      athletesList.push({ id: 'bye', full_name: 'BYE' });
     }
-    
+
     const numAthletes = athletesList.length;
-    const half = numAthletes / 2;
-    
+    const totalRounds = numAthletes - 1;
+    const rounds = [];
+
     for (let round = 0; round < totalRounds; round++) {
-      const roundMatches: Array<{athleteA: TournamentAthlete; athleteB: TournamentAthlete}> = [];
+      const roundMatches = [];
       
-      for (let i = 0; i < half; i++) {
+      for (let i = 0; i < numAthletes / 2; i++) {
         const athlete1 = athletesList[i];
         const athlete2 = athletesList[numAthletes - 1 - i];
         
-        // Skip if either athlete is the "bye" placeholder
         if (athlete1.id !== 'bye' && athlete2.id !== 'bye') {
-          console.log(`Turno ${round + 1}, Match ${i + 1}:`, {
-            athleteA: athlete1.full_name,
-            athleteB: athlete2.full_name
-          });
           roundMatches.push({
             athleteA: athlete1,
             athleteB: athlete2
@@ -195,386 +106,247 @@ export const TournamentMatrix = ({
         }
       }
       
-      if (roundMatches.length > 0) {
-        rounds.push({ round: round + 1, matches: roundMatches });
+      rounds.push({
+        round: round + 1,
+        matches: roundMatches
+      });
+
+      // Rotate athletes (keep first fixed)
+      const temp = athletesList[1];
+      for (let i = 1; i < numAthletes - 1; i++) {
+        athletesList[i] = athletesList[i + 1];
       }
-      
-      // Rotate athletes (keep first fixed, rotate others)
-      if (numAthletes > 2) {
-        const temp = athletesList[1];
-        for (let i = 1; i < numAthletes - 1; i++) {
-          athletesList[i] = athletesList[i + 1];
-        }
-        athletesList[numAthletes - 1] = temp;
-      }
+      athletesList[numAthletes - 1] = temp;
     }
-    
+
     return rounds;
   };
 
-  const rounds = useMemo(() => {
+  // Filter rounds based on user role
+  const visibleRounds = useMemo(() => {
     const allRounds = generateRounds();
-    
-    // ✅ Se sei organizzatore (istruttore) → vedi tutto
+
     if (isInstructor) {
-      return allRounds;
+      return allRounds; // Organizer sees all
     }
-    
-    // ✅ Se sei atleta → vedi SOLO i tuoi match
-    return allRounds.map(round => ({
-      ...round,
-      matches: round.matches.filter(match => 
-        match.athleteA.id === currentUserId || match.athleteB.id === currentUserId
-      )
-    })).filter(round => round.matches.length > 0); // Rimuovi round vuoti
-    
-  }, [athletes, matches, isInstructor, currentUserId]);
 
+    // Athlete sees only their matches
+    return allRounds
+      .map(round => ({
+        ...round,
+        matches: round.matches.filter(m =>
+          m.athleteA.id === currentUserId || m.athleteB.id === currentUserId
+        )
+      }))
+      .filter(round => round.matches.length > 0);
+  }, [athletes, isInstructor, currentUserId]);
 
-  // Debug: log matches ogni volta che cambiano
-  useEffect(() => {
-    console.log('=== MATCHES AGGIORNATI ===');
-    console.log('Numero totale matches:', matches.length);
-    matches.forEach((m, idx) => {
-      console.log(`Match ${idx + 1}:`, {
-        athleteA: athletes.find(a => a.id === m.athleteA)?.full_name || m.athleteA,
-        athleteB: athletes.find(a => a.id === m.athleteB)?.full_name || m.athleteB,
-        scoreA: m.scoreA,
-        scoreB: m.scoreB,
-        weapon: m.weapon
-      });
-    });
-    console.log('===================');
-  }, [matches, athletes]);
-
-  const getCompletedMatches = () => {
-    const countedMatches = new Set<string>();
-    return matches.filter(match => {
-      if (match.scoreA !== null && match.scoreB !== null && match.weapon !== null) {
-        const matchKey = [match.athleteA, match.athleteB].sort().join('-');
-        if (!countedMatches.has(matchKey)) {
-          countedMatches.add(matchKey);
-          return true;
-        }
+  // Sort athletes by ranking
+  const sortedAthletes = useMemo(() => {
+    return [...athletes].sort((a, b) => {
+      const statsA = getAthleteStats(a.id);
+      const statsB = getAthleteStats(b.id);
+      
+      if (statsA.wins !== statsB.wins) {
+        return statsB.wins - statsA.wins;
       }
-      return false;
-    }).length;
-  };
-
-  const getTotalMatches = () => {
-    const countedMatches = new Set<string>();
-    matches.forEach(match => {
-      const matchKey = [match.athleteA, match.athleteB].sort().join('-');
-      countedMatches.add(matchKey);
+      
+      return statsB.pointsDiff - statsA.pointsDiff;
     });
-    return countedMatches.size;
-  };
+  }, [athletes, matches]);
 
-  const handleCancelTournament = async () => {
-    if (!activeTournamentId) return;
+  const handleFinishClick = () => {
+    const completedMatches = matches.filter(m => m.scoreA !== null && m.scoreB !== null).length;
+    const totalMatches = matches.length;
     
-    try {
-      // 1. Mark tournament as cancelled
-      const { error: tournamentError } = await supabase
-        .from('tournaments')
-        .update({ status: 'cancelled' })
-        .eq('id', activeTournamentId);
-      
-      if (tournamentError) throw tournamentError;
-      
-      // 2. Delete ALL bouts from this tournament
-      const { error: boutsError } = await supabase
-        .from('bouts')
-        .delete()
-        .eq('tournament_id', activeTournamentId);
-      
-      if (boutsError) throw boutsError;
-      
-      toast.success('Torneo chiuso senza salvare');
-      
-      // 3. Exit tournament
-      setShowFinishDialog(false);
-      onResetTournament();
-    } catch (error) {
-      console.error('Error cancelling tournament:', error);
-      toast.error('Impossibile chiudere il torneo');
-    }
-  };
-
-  const handleSaveResults = async () => {
-    if (!activeTournamentId) {
-      toast.error('Nessun torneo attivo da salvare');
+    if (completedMatches < totalMatches) {
+      toast.error(`Completa tutti i match prima di concludere il torneo (${completedMatches}/${totalMatches})`);
       return;
     }
-
-    setSaving(true);
     
-    try {
-      // 1. Mark ALL completed bouts as 'approved'
-      const { error: updateError } = await supabase
-        .from('bouts')
-        .update({ 
-          status: 'approved',
-          approved_by: currentUserId,
-          approved_at: new Date().toISOString()
-        })
-        .eq('tournament_id', activeTournamentId)
-        .not('score_a', 'is', null)
-        .not('score_b', 'is', null);
-      
-      if (updateError) throw updateError;
-      
-      // 2. Mark tournament as completed
-      const { error: tournamentError } = await supabase
-        .from('tournaments')
-        .update({ status: 'completed' })
-        .eq('id', activeTournamentId);
-      
-      if (tournamentError) throw tournamentError;
-      
-      toast.success('Torneo salvato con successo!');
-      
-      // 3. Exit tournament
-      setShowFinishDialog(false);
-      onResetTournament();
-    } catch (error) {
-      console.error('Error saving tournament:', error);
-      toast.error('Impossibile salvare il torneo');
-    } finally {
-      setSaving(false);
-    }
+    setShowFinishDialog(true);
   };
-
-  // Sort athletes by their stats for ranking
-  const sortedAthletes = [...athletes].sort((a, b) => {
-    const statsA = getAthleteStats(a.id);
-    const statsB = getAthleteStats(b.id);
-    
-    // Sort by wins, then by points difference
-    if (statsA.wins !== statsB.wins) {
-      return statsB.wins - statsA.wins;
-    }
-    return statsB.pointsDiff - statsA.pointsDiff;
-  });
 
   return (
     <div className="space-y-6">
-      {/* Tournament Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5" />
-              Torneo in Corso - {athletes.length} Atleti
-            </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="secondary">
-                {getCompletedMatches()}/{getTotalMatches()} incontri completati
-              </Badge>
-              <Button 
-                onClick={() => setShowFinishDialog(true)}
-                disabled={!isCreator}
-                className="flex items-center gap-2"
-              >
-                <Trophy className="w-4 h-4" />
-                FINE {!isCreator && <span className="text-xs ml-1">(Solo Creatore)</span>}
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Tournament Matrix - READ-ONLY */}
-        <div className="xl:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Matrice Torneo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table className="table-fixed">
-                  <TableHeader>
-                     <TableRow>
-                       <TableHead className="w-48 min-w-48 max-w-48">Atleta</TableHead>
-                       {athletes.map((athlete) => (
-                         <TableHead key={athlete.id} className="text-center w-32 min-w-32 max-w-32 text-xs px-1">
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <div className="truncate cursor-help whitespace-nowrap">
-                                   {athlete.full_name}
-                                 </div>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>{athlete.full_name}</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                         </TableHead>
-                       ))}
-                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                     {athletes.map((athleteA) => (
-                       <TableRow key={athleteA.id}>
-                         <TableCell className="font-medium text-sm w-48 min-w-48 max-w-48 px-2 sticky left-0 bg-background">
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <div className="truncate cursor-help whitespace-nowrap">
-                                   {athleteA.full_name}
-                                 </div>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>{athleteA.full_name}</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                         </TableCell>
-                          {athletes.map((athleteB) => {
-                            const match = getMatch(athleteA.id, athleteB.id);
-                            
-                            return (
-                              <TableCell 
-                                key={`${athleteB.id}-${version}`}
-                                className="p-1 w-32 min-w-32 max-w-32"
-                              >
-                             {athleteA.id === athleteB.id ? (
-                               <div className="w-20 h-16 bg-muted rounded flex items-center justify-center">
-                                 <Target className="w-4 h-4 text-muted-foreground" />
-                               </div>
-                             ) : (
-                                <ReadOnlyMatchCell 
-                                  athleteA={athleteA.id}
-                                  athleteB={athleteB.id}
-                                  match={match} 
-                                />
-                              )}
-                             </TableCell>
-                           );
-                         })}
-                       </TableRow>
-                     ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Summary Table */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Classifica</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {sortedAthletes.map((athlete, index) => {
-                  const stats = getAthleteStats(athlete.id);
-                  return (
-                    <div key={athlete.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <Badge variant={index < 3 ? "default" : "secondary"}>
-                          {index + 1}°
-                        </Badge>
-                        <div>
-                          <div className="font-medium text-sm">{athlete.full_name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {stats.wins}/{stats.totalMatches} vittorie
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-sm">
-                          {stats.pointsDiff > 0 ? '+' : ''}{stats.pointsDiff}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {stats.pointsFor}-{stats.pointsAgainst}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Tournament Rounds */}
+      {/* Organization Section */}
       <Card>
         <CardHeader>
           <CardTitle>Organizzazione Turni</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {rounds.map(({ round, matches }) => (
-              <div key={round} className="border rounded-lg p-4">
-                <h4 className="font-semibold mb-3">Turno {round}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                   {matches.map((match, index) => {
-                     const matchData = getMatch(match.athleteA.id, match.athleteB.id);
-                     const isCompleted = matchData?.scoreA !== null && matchData?.scoreB !== null;
-                     
-                     return (
-                       <div key={`${match.athleteA.id}-${match.athleteB.id}-${version}`} className={`p-4 rounded border ${isCompleted ? 'bg-green-50 border-green-200' : 'bg-gray-50'}`}>
-                         <div className="text-sm font-medium mb-3">
-                           {match.athleteA.full_name} vs {match.athleteB.full_name}
-                         </div>
-                           <MatchInputs
-                             key={matchData?.id || `${match.athleteA.id}-${match.athleteB.id}`}
-                             athleteA={match.athleteA.id}
-                             athleteB={match.athleteB.id}
-                             athleteAName={match.athleteA.full_name}
-                             athleteBName={match.athleteB.full_name}
-                             match={matchData}
-                             canEdit={canEditMatch(match.athleteA.id, match.athleteB.id, matchData)}
-                             canCancel={canCancelMatch(match.athleteA.id, match.athleteB.id, matchData)}
-                             currentUserId={currentUserId}
-                            />
-                       </div>
-                     );
-                   })}
-                </div>
+        <CardContent className="space-y-6">
+          {visibleRounds.map(round => (
+            <div key={round.round} className="space-y-3">
+              <h3 className="font-semibold text-lg">Turno {round.round}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {round.matches.map(({ athleteA, athleteB }) => {
+                  const match = getMatch(athleteA.id, athleteB.id);
+                  const canEdit = isInstructor || 
+                                 athleteA.id === currentUserId || 
+                                 athleteB.id === currentUserId;
+
+                  return (
+                    <Card key={`${athleteA.id}-${athleteB.id}`}>
+                      <CardContent className="p-4">
+                        <div className="font-medium mb-3 text-center">
+                          {athleteA.full_name} vs {athleteB.full_name}
+                        </div>
+                        <MatchInputs
+                          match={match}
+                          athleteAId={athleteA.id}
+                          athleteBId={athleteB.id}
+                          athleteAName={athleteA.full_name}
+                          athleteBName={athleteB.full_name}
+                          canEdit={canEdit}
+                          onSaved={onRefresh}
+                        />
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            ))}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Tournament Matrix */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Matrice Torneo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Atleta</TableHead>
+                  {athletes.map(athlete => (
+                    <TableHead key={athlete.id} className="text-center min-w-[80px]">
+                      {athlete.full_name.split(' ')[0]}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {athletes.map(athleteA => (
+                  <TableRow key={athleteA.id}>
+                    <TableCell className="font-medium">{athleteA.full_name}</TableCell>
+                    {athletes.map(athleteB => {
+                      if (athleteA.id === athleteB.id) {
+                        return <TableCell key={athleteB.id} className="text-center">-</TableCell>;
+                      }
+
+                      const match = getMatch(athleteA.id, athleteB.id);
+                      const scoreA = match?.athleteA === athleteA.id ? match.scoreA : match?.scoreB;
+                      const scoreB = match?.athleteA === athleteA.id ? match.scoreB : match?.scoreA;
+
+                      return (
+                        <TableCell key={athleteB.id} className="text-center">
+                          {scoreA !== null && scoreB !== null ? (
+                            <Badge variant={scoreA > scoreB ? 'default' : 'secondary'}>
+                              {scoreA} - {scoreB}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Ranking Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5" />
+            Classifica
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[60px]">Pos.</TableHead>
+                <TableHead>Atleta</TableHead>
+                <TableHead className="text-center">V</TableHead>
+                <TableHead className="text-center">M</TableHead>
+                <TableHead className="text-center">PF</TableHead>
+                <TableHead className="text-center">PS</TableHead>
+                <TableHead className="text-center">Diff</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedAthletes.map((athlete, index) => {
+                const stats = getAthleteStats(athlete.id);
+                return (
+                  <TableRow key={athlete.id}>
+                    <TableCell className="font-bold">
+                      <Badge variant={index === 0 ? 'default' : 'outline'}>
+                        {index + 1}°
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{athlete.full_name}</TableCell>
+                    <TableCell className="text-center">{stats.wins}</TableCell>
+                    <TableCell className="text-center">{stats.totalMatches}</TableCell>
+                    <TableCell className="text-center">{stats.pointsFor}</TableCell>
+                    <TableCell className="text-center">{stats.pointsAgainst}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={stats.pointsDiff > 0 ? 'default' : 'secondary'}>
+                        {stats.pointsDiff > 0 ? '+' : ''}{stats.pointsDiff}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 justify-end">
+        <Button
+          onClick={onExit}
+          variant="outline"
+          disabled={isLoading}
+        >
+          <X className="w-4 h-4 mr-2" />
+          Esci
+        </Button>
+        
+        {(isCreator || isInstructor) && (
+          <Button
+            onClick={handleFinishClick}
+            disabled={isLoading}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Concludi Torneo
+          </Button>
+        )}
+      </div>
 
       {/* Finish Dialog */}
       <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Finalizza Torneo</AlertDialogTitle>
+            <AlertDialogTitle>Concludere il torneo?</AlertDialogTitle>
             <AlertDialogDescription>
-              Sono stati completati {getCompletedMatches()} incontri su {getTotalMatches()}.
-              <br /><br />
-              <strong>Scegli come vuoi chiudere il torneo:</strong>
-              <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
-                <li><strong>Salva i Dati:</strong> I match completati verranno registrati nel database.</li>
-                <li><strong>Non Salvare:</strong> Il torneo verrà chiuso senza registrare nessun match.</li>
-              </ul>
+              Tutti i match saranno approvati e il torneo verrà chiuso.
+              Questa azione non può essere annullata.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel onClick={() => setShowFinishDialog(false)}>
-              Annulla
-            </AlertDialogCancel>
-            <Button
-              variant="destructive"
-              onClick={handleCancelTournament}
-            >
-              FINE senza Salvare
-            </Button>
-            <Button
-              onClick={handleSaveResults}
-              disabled={getCompletedMatches() === 0 || isSaving}
-            >
-              {isSaving ? 'Salvataggio...' : 'FINE e Salva i Dati'}
-            </Button>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={onFinish}>
+              Conferma
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -582,205 +354,135 @@ export const TournamentMatrix = ({
   );
 };
 
-// Read-only matrix cell component
-interface ReadOnlyMatchCellProps {
-  athleteA: string;
-  athleteB: string;
-  match?: TournamentMatch;
-}
-
-const ReadOnlyMatchCell = ({ athleteA, athleteB, match }: ReadOnlyMatchCellProps) => {
-  const isComplete = match?.scoreA !== null && match?.scoreB !== null && match?.weapon;
-  
-  if (!isComplete) {
-    return (
-      <div className="w-20 h-16 bg-muted rounded flex items-center justify-center">
-        <div className="text-xs text-muted-foreground">-</div>
-      </div>
-    );
-  }
-
-  // Determine if the match orientation matches the cell orientation
-  const isMatchOriented = match.athleteA === athleteA && match.athleteB === athleteB;
-  
-  // Get scores in the correct orientation for this cell
-  const scoreForA = isMatchOriented ? match.scoreA! : match.scoreB!;
-  const scoreForB = isMatchOriented ? match.scoreB! : match.scoreA!;
-  
-  const isAWinning = scoreForA > scoreForB;
-  const isBWinning = scoreForB > scoreForA;
-
-  return (
-    <div className="w-20 h-16 rounded border flex flex-col items-center justify-center p-1">
-      <div className="text-xs mb-1">{match.weapon?.charAt(0).toUpperCase()}</div>
-      <div className="flex gap-1 text-xs">
-        <span className={`${isAWinning ? 'text-green-600 font-bold' : isBWinning ? 'text-red-600' : ''}`}>
-          {scoreForA}
-        </span>
-        <span>-</span>
-        <span className={`${isBWinning ? 'text-green-600 font-bold' : isAWinning ? 'text-red-600' : ''}`}>
-          {scoreForB}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-// Match input component for the turns section
+// Match Input Component
 interface MatchInputsProps {
-  athleteA: string;
-  athleteB: string;
+  match: TournamentMatch | undefined;
+  athleteAId: string;
+  athleteBId: string;
   athleteAName: string;
   athleteBName: string;
-  match?: TournamentMatch;
-  canEdit?: boolean;
-  canCancel?: boolean;
-  currentUserId?: string | null;
-  onMatchSaved?: () => void;
+  canEdit: boolean;
+  onSaved: () => void;
 }
 
-const MatchInputs = ({ athleteA, athleteB, athleteAName, athleteBName, match, canEdit = true, canCancel = false, currentUserId, onMatchSaved }: MatchInputsProps) => {
-  // ✅ Uncontrolled inputs con useRef
+const MatchInputs = ({
+  match,
+  athleteAId,
+  athleteBId,
+  athleteAName,
+  athleteBName,
+  canEdit,
+  onSaved
+}: MatchInputsProps) => {
   const scoreARef = useRef<HTMLInputElement>(null);
   const scoreBRef = useRef<HTMLInputElement>(null);
-  const [weaponValue, setWeaponValue] = useState(match?.weapon || 'fioretto');
+  const [weapon, setWeapon] = useState(match?.weapon || 'fioretto');
   const [isSaving, setIsSaving] = useState(false);
 
-  // ✅ SEMPRE MODIFICABILE - rimuoviamo completamente lo stato "Completato"
-  if (canEdit) {
-    const handleSave = async () => {
-      const scoreA = scoreARef.current?.value;
-      const scoreB = scoreBRef.current?.value;
-      
-      console.log('[MatchInputs] 💾 Salvando match:', {
-        matchId: match?.id,
-        athleteA: athleteAName,
-        athleteB: athleteBName,
+  const handleSave = async () => {
+    const scoreAValue = scoreARef.current?.value;
+    const scoreBValue = scoreBRef.current?.value;
+
+    if (!scoreAValue || !scoreBValue) return;
+
+    const scoreA = parseInt(scoreAValue);
+    const scoreB = parseInt(scoreBValue);
+
+    if (isNaN(scoreA) || isNaN(scoreB)) {
+      toast.error('Inserisci punteggi validi');
+      return;
+    }
+
+    if (!match?.id) {
+      toast.error('Match non trovato');
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      console.log('[MatchInputs] Saving match:', {
+        matchId: match.id,
         scoreA,
         scoreB,
-        weapon: weaponValue
+        weapon
       });
-      
-      if (!scoreA || !scoreB || !weaponValue) {
-        toast.error('Compila tutti i campi');
-        return;
-      }
-      
-      if (!match?.id) {
-        toast.error('Match non trovato nel database. Ricrea il torneo.');
-        return;
-      }
-      
-      setIsSaving(true);
-      try {
-        // ✅ Salva come APPROVED per attivare trigger ranking + SOVRASCRIVE sempre
-        const { error } = await supabase
-          .from('bouts')
-          .update({
-            score_a: parseInt(scoreA),
-            score_b: parseInt(scoreB),
-            weapon: weaponValue,
-            status: 'approved',
-            approved_by: currentUserId,
-            approved_at: new Date().toISOString()
-          })
-          .eq('id', match.id);
-        
-        if (error) throw error;
-        
-        console.log('[MatchInputs] ✅ Match salvato con successo');
-        toast.success('Match aggiornato! Clicca "Aggiorna Risultati" per vedere le modifiche.');
-        
-        // Chiama callback se presente per aggiornare UI locale
-        onMatchSaved?.();
-      } catch (error) {
-        console.error('[MatchInputs] ❌ Errore:', error);
-        toast.error('Errore nel salvataggio: ' + (error as Error).message);
-      } finally {
-        setIsSaving(false);
-      }
-    };
 
-    return (
-      <div className="space-y-3">
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Arma</label>
-          <Select 
-            value={weaponValue} 
-            onValueChange={setWeaponValue}
-            disabled={isSaving}
-          >
-            <SelectTrigger className="h-8">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fioretto">Fioretto</SelectItem>
-              <SelectItem value="spada">Spada</SelectItem>
-              <SelectItem value="sciabola">Sciabola</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      const { error } = await supabase
+        .from('bouts')
+        .update({
+          score_a: match.athleteA === athleteAId ? scoreA : scoreB,
+          score_b: match.athleteA === athleteAId ? scoreB : scoreA,
+          weapon: weapon,
+          status: 'pending'
+        })
+        .eq('id', match.id);
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{athleteAName}</label>
-            <Input
-              ref={scoreARef}
-              type="number"
-              min="0"
-              max="15"
-              defaultValue={match?.scoreA || ''}
-              disabled={isSaving}
-              className="text-center"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{athleteBName}</label>
-            <Input
-              ref={scoreBRef}
-              type="number"
-              min="0"
-              max="15"
-              defaultValue={match?.scoreB || ''}
-              disabled={isSaving}
-              className="text-center"
-              placeholder="0"
-            />
-          </div>
-        </div>
+      if (error) throw error;
 
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="w-full"
-          size="sm"
-        >
-          {isSaving ? 'Salvataggio...' : 'Salva Match'}
-        </Button>
-      </div>
-    );
-  }
+      console.log('[MatchInputs] Match saved successfully');
+      toast.success('Match salvato');
+      onSaved();
+    } catch (error: any) {
+      console.error('[MatchInputs] Error saving match:', error);
+      toast.error('Errore nel salvataggio: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  // ✅ Match non completato + NON può modificare → messaggi di attesa
-  const isInvolved = currentUserId && (athleteA === currentUserId || athleteB === currentUserId);
-  
-  if (isInvolved) {
-    return (
-      <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-center space-y-2">
-        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-          Il tuo avversario deve ancora inserire i dati
-        </div>
-        <Badge variant="outline" className="text-xs border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300">
-          In attesa dell'avversario
-        </Badge>
-      </div>
-    );
-  }
-  
+  // Determine scores based on athlete order
+  const getScoreForAthlete = (targetAthleteId: string): number | null => {
+    if (!match) return null;
+    return match.athleteA === targetAthleteId ? match.scoreA : match.scoreB;
+  };
+
   return (
-    <div className="p-3 bg-muted/30 rounded-lg text-center text-xs text-muted-foreground">
-      In attesa di dati
+    <div className="space-y-3">
+      <Select
+        value={weapon}
+        onValueChange={setWeapon}
+        disabled={isSaving || !canEdit}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Seleziona arma" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="fioretto">Fioretto</SelectItem>
+          <SelectItem value="spada">Spada</SelectItem>
+          <SelectItem value="sciabola">Sciabola</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Input
+          ref={scoreARef}
+          type="number"
+          placeholder={athleteAName.split(' ')[0]}
+          defaultValue={getScoreForAthlete(athleteAId) || ''}
+          onBlur={handleSave}
+          disabled={isSaving || !canEdit}
+          min="0"
+          max="45"
+        />
+        
+        <Input
+          ref={scoreBRef}
+          type="number"
+          placeholder={athleteBName.split(' ')[0]}
+          defaultValue={getScoreForAthlete(athleteBId) || ''}
+          onBlur={handleSave}
+          disabled={isSaving || !canEdit}
+          min="0"
+          max="45"
+        />
+      </div>
+
+      {!canEdit && (
+        <p className="text-xs text-muted-foreground text-center">
+          Solo visualizzazione
+        </p>
+      )}
     </div>
   );
 };
