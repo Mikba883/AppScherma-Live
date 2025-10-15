@@ -319,9 +319,18 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const handleRefreshData = async () => {
     if (!activeTournamentId) return;
     
-    console.log('[TournamentSection] Refreshing data...');
-    await loadTournamentData(activeTournamentId);
-    toast.success('Dati aggiornati');
+    console.log('[TournamentSection] Refreshing data for tournament:', activeTournamentId);
+    setIsLoading(true);
+    
+    try {
+      await loadTournamentData(activeTournamentId);
+      toast.success('Dati aggiornati');
+    } catch (error) {
+      console.error('[TournamentSection] Error refreshing:', error);
+      toast.error('Errore nell\'aggiornamento');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancelTournament = async () => {

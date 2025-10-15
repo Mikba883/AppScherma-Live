@@ -300,6 +300,7 @@ export const TournamentMatrix = ({
                           {athleteA.full_name} vs {athleteB.full_name}
                         </div>
                         <MatchInputs
+                          key={`${athleteA.id}-${athleteB.id}-${match?.id || 'new'}`}
                           match={match}
                           athleteAId={athleteA.id}
                           athleteBId={athleteB.id}
@@ -389,18 +390,27 @@ const MatchInputs = ({
     setScoreA(getScoreForAthlete(athleteAId)?.toString() || '');
     setScoreB(getScoreForAthlete(athleteBId)?.toString() || '');
     setWeapon(match?.weapon || 'fioretto');
-  }, [match?.scoreA, match?.scoreB, match?.weapon]);
+  }, [match, athleteAId, athleteBId]);
 
   // Check if match is complete
   const isComplete = scoreA !== '' && scoreB !== '';
 
   const handleSave = async () => {
-    if (!scoreA || !scoreB) return;
+    const scoreANum = scoreA === '' ? null : parseInt(scoreA);
+    const scoreBNum = scoreB === '' ? null : parseInt(scoreB);
 
-    const scoreANum = parseInt(scoreA);
-    const scoreBNum = parseInt(scoreB);
+    // Validazione: se uno dei due è compilato, devono essere entrambi compilati
+    if ((scoreA !== '' && scoreB === '') || (scoreA === '' && scoreB !== '')) {
+      toast.error('Compila entrambi i punteggi o lascia vuoti entrambi');
+      return;
+    }
 
-    if (isNaN(scoreANum) || isNaN(scoreBNum)) {
+    // Validazione numeri
+    if (scoreA !== '' && isNaN(scoreANum!)) {
+      toast.error('Inserisci punteggi validi');
+      return;
+    }
+    if (scoreB !== '' && isNaN(scoreBNum!)) {
       toast.error('Inserisci punteggi validi');
       return;
     }
@@ -423,7 +433,7 @@ const MatchInputs = ({
 
       if (error) throw error;
 
-      toast.success('Match salvato');
+      toast.success(scoreANum === null ? 'Match cancellato' : 'Match salvato');
       onSaved();
     } catch (error: any) {
       toast.error('Errore: ' + error.message);
