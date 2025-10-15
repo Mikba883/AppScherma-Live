@@ -321,25 +321,25 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setIsLoading(true);
     
     try {
-      // 1. Elimina tutti i bouts del torneo
+      // 1. Marca tutti i bouts come cancellati
       const { error: boutsError } = await supabase
         .from('bouts')
-        .delete()
+        .update({ status: 'cancelled' })
         .eq('tournament_id', activeTournamentId);
       
       if (boutsError) throw boutsError;
       
-      // 2. Elimina il torneo
+      // 2. Marca il torneo come cancellato
       const { error: tournamentError } = await supabase
         .from('tournaments')
-        .delete()
+        .update({ status: 'cancelled' })
         .eq('id', activeTournamentId);
       
       if (tournamentError) throw tournamentError;
       
       toast.success('Torneo cancellato');
       
-      // 3. Reset stato
+      // 3. Reset stato locale
       setActiveTournamentId(null);
       setTournamentName('');
       setTournamentDate('');
@@ -372,6 +372,17 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Button
+            onClick={checkActiveTournament}
+            variant="outline"
+            className="w-full"
+            size="lg"
+            disabled={isLoading}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Verifica Tornei Attivi
+          </Button>
+          
           <Button
             onClick={() => setMode('setup')}
             className="w-full"
