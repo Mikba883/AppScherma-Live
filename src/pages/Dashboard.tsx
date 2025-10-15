@@ -8,16 +8,19 @@ import { Navigation } from '@/components/Navigation';
 import { InstructorDashboard } from '@/components/InstructorDashboard';
 import { StudentDashboard } from '@/components/StudentDashboard';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock, Building2, AlertCircle, Settings } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { LogOut, BarChart3, Calendar, Plus, ArrowRight, User, Lock, Building2, AlertCircle, Settings, Clock } from 'lucide-react';
 import { DashboardSkeleton } from '@/components/LoadingSkeleton';
 import { InstallPrompt } from '@/components/InstallPrompt';
-import { useMemo } from 'react';
+import { ShiftSelector } from '@/components/ShiftSelector';
+import { useMemo, useState } from 'react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loading: profileLoading } = useProfileQuery();
   const { gym, loading: gymLoading } = useGymQuery();
+  const [showShiftDialog, setShowShiftDialog] = useState(false);
   
   // Derive user role from profile
   const isInstructor = useMemo(() => {
@@ -121,6 +124,12 @@ const Dashboard = () => {
                     Cambia Password
                   </Link>
                 </DropdownMenuItem>
+                {isStudent && (
+                  <DropdownMenuItem onClick={() => setShowShiftDialog(true)}>
+                    <Clock className="w-4 h-4 mr-2" />
+                    Cambia Turno
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="w-4 h-4 mr-2" />
@@ -162,6 +171,12 @@ const Dashboard = () => {
                       Cambia Password
                     </Link>
                   </DropdownMenuItem>
+                  {isStudent && (
+                    <DropdownMenuItem onClick={() => setShowShiftDialog(true)}>
+                      <Clock className="w-4 h-4 mr-2" />
+                      Cambia Turno
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
                     <LogOut className="w-4 h-4 mr-2" />
@@ -196,6 +211,19 @@ const Dashboard = () => {
 
       {/* Main Content - Conditional based on role */}
       {isInstructor ? <InstructorDashboard /> : <StudentDashboard />}
+
+      {/* Shift Change Dialog */}
+      <Dialog open={showShiftDialog} onOpenChange={setShowShiftDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cambia Turno</DialogTitle>
+            <DialogDescription>
+              Seleziona il turno a cui vuoi partecipare
+            </DialogDescription>
+          </DialogHeader>
+          <ShiftSelector onSuccess={() => setShowShiftDialog(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
