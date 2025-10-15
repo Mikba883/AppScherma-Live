@@ -79,6 +79,63 @@ export const TournamentMatrix = ({
     };
   };
 
+  // Helper function to calculate round-robin from existing matches
+  const calculateRoundRobinFromExistingMatches = (
+    athletes: TournamentAthlete[], 
+    existingMatches: TournamentMatch[]
+  ) => {
+    let athletesList = [...athletes];
+    
+    // Add BYE if odd number of athletes
+    if (athletes.length % 2 === 1) {
+      athletesList.push({ id: 'bye', full_name: 'BYE' });
+    }
+
+    const numAthletes = athletesList.length;
+    const totalRounds = numAthletes - 1;
+    const rounds = [];
+
+    for (let round = 0; round < totalRounds; round++) {
+      const roundMatches = [];
+      
+      for (let i = 0; i < numAthletes / 2; i++) {
+        const athlete1 = athletesList[i];
+        const athlete2 = athletesList[numAthletes - 1 - i];
+        
+        if (athlete1.id !== 'bye' && athlete2.id !== 'bye') {
+          // Find the existing match between these two athletes
+          const existingMatch = existingMatches.find(m =>
+            (m.athleteA === athlete1.id && m.athleteB === athlete2.id) ||
+            (m.athleteA === athlete2.id && m.athleteB === athlete1.id)
+          );
+          
+          if (existingMatch) {
+            roundMatches.push({
+              athleteA: athlete1,
+              athleteB: athlete2
+            });
+          }
+        }
+      }
+      
+      if (roundMatches.length > 0) {
+        rounds.push({
+          round: round + 1,
+          matches: roundMatches
+        });
+      }
+
+      // Rotate athletes (keep first fixed)
+      const temp = athletesList[1];
+      for (let i = 1; i < numAthletes - 1; i++) {
+        athletesList[i] = athletesList[i + 1];
+      }
+      athletesList[numAthletes - 1] = temp;
+    }
+
+    return rounds;
+  };
+
   // Generate round-robin rounds
   const generateRounds = () => {
     // CASO 1: Se i match hanno round_number, usalo (FISSO!)
@@ -108,86 +165,9 @@ export const TournamentMatrix = ({
         .map(([round, matches]) => ({ round, matches }));
     }
     
-    // CASO 2: Match esistenti senza round_number (torneo vecchio) - assegna ordine attuale
-    if (matches.length > 0) {
-      const matchesPerRound = Math.ceil(athletes.length / 2);
-      const rounds = [];
-      let currentRoundMatches: any[] = [];
-      let roundNumber = 1;
-      
-      matches.forEach((match) => {
-        const athleteAData = athletes.find(a => a.id === match.athleteA);
-        const athleteBData = athletes.find(a => a.id === match.athleteB);
-        
-        if (athleteAData && athleteBData) {
-          currentRoundMatches.push({
-            athleteA: athleteAData,
-            athleteB: athleteBData
-          });
-          
-          if (currentRoundMatches.length === matchesPerRound) {
-            rounds.push({
-              round: roundNumber++,
-              matches: [...currentRoundMatches]
-            });
-            currentRoundMatches = [];
-          }
-        }
-      });
-      
-      if (currentRoundMatches.length > 0) {
-        rounds.push({
-          round: roundNumber,
-          matches: currentRoundMatches
-        });
-      }
-      
-      // Assegna round_number ai match nel database
-      assignRoundNumbersToMatches(rounds);
-      
-      return rounds;
-    }
-    
-    // CASO 3: Nuovi tornei - usa algoritmo round-robin
-    let athletesList = [...athletes];
-    
-    // Add BYE if odd number of athletes
-    if (athletes.length % 2 === 1) {
-      athletesList.push({ id: 'bye', full_name: 'BYE' });
-    }
-
-    const numAthletes = athletesList.length;
-    const totalRounds = numAthletes - 1;
-    const rounds = [];
-
-    for (let round = 0; round < totalRounds; round++) {
-      const roundMatches = [];
-      
-      for (let i = 0; i < numAthletes / 2; i++) {
-        const athlete1 = athletesList[i];
-        const athlete2 = athletesList[numAthletes - 1 - i];
-        
-        if (athlete1.id !== 'bye' && athlete2.id !== 'bye') {
-          roundMatches.push({
-            athleteA: athlete1,
-            athleteB: athlete2
-          });
-        }
-      }
-      
-      rounds.push({
-        round: round + 1,
-        matches: roundMatches
-      });
-
-      // Rotate athletes (keep first fixed)
-      const temp = athletesList[1];
-      for (let i = 1; i < numAthletes - 1; i++) {
-        athletesList[i] = athletesList[i + 1];
-      }
-      athletesList[numAthletes - 1] = temp;
-    }
-
+    // CASO 2: Ricalcola con algoritmo round-robin e assegna round_number
+    const rounds = calculateRoundRobinFromExistingMatches(athletes, matches);
+    assignRoundNumbersToMatches(rounds);
     return rounds;
   };
 
