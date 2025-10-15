@@ -315,17 +315,47 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     toast.success('Dati aggiornati');
   };
 
-  const handleExitTournament = () => {
-    setActiveTournamentId(null);
-    setTournamentName('');
-    setTournamentDate('');
-    setTournamentWeapon(null);
-    setTournamentBoutType('sparring');
-    setTournamentCreatorId(null);
-    setAthletes([]);
-    setMatches([]);
-    setMode('menu');
-    onTournamentStateChange?.(false);
+  const handleCancelTournament = async () => {
+    if (!activeTournamentId) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // 1. Elimina tutti i bouts del torneo
+      const { error: boutsError } = await supabase
+        .from('bouts')
+        .delete()
+        .eq('tournament_id', activeTournamentId);
+      
+      if (boutsError) throw boutsError;
+      
+      // 2. Elimina il torneo
+      const { error: tournamentError } = await supabase
+        .from('tournaments')
+        .delete()
+        .eq('id', activeTournamentId);
+      
+      if (tournamentError) throw tournamentError;
+      
+      toast.success('Torneo cancellato');
+      
+      // 3. Reset stato
+      setActiveTournamentId(null);
+      setTournamentName('');
+      setTournamentDate('');
+      setTournamentWeapon(null);
+      setTournamentBoutType('sparring');
+      setTournamentCreatorId(null);
+      setAthletes([]);
+      setMatches([]);
+      setMode('menu');
+      onTournamentStateChange?.(false);
+    } catch (error: any) {
+      console.error('[TournamentSection] Error canceling tournament:', error);
+      toast.error('Errore: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Menu view
@@ -395,7 +425,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         matches={matches}
         onRefresh={handleRefreshData}
         onFinish={handleFinishTournament}
-        onExit={handleExitTournament}
+        onExit={handleCancelTournament}
         currentUserId={currentUserId}
         isCreator={tournamentCreatorId === currentUserId}
         isLoading={isLoading}

@@ -168,12 +168,125 @@ export const TournamentMatrix = ({
     setShowFinishDialog(true);
   };
 
+  const completedMatches = matches.filter(m => m.scoreA !== null && m.scoreB !== null).length;
+  const totalMatches = matches.length;
+
   return (
     <div className="space-y-6">
+      {/* Ranking Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5" />
+            Classifica
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[60px]">Pos.</TableHead>
+                <TableHead>Atleta</TableHead>
+                <TableHead className="text-center">V/M</TableHead>
+                <TableHead className="text-center">Diff Stoccate</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedAthletes.map((athlete, index) => {
+                const stats = getAthleteStats(athlete.id);
+                return (
+                  <TableRow key={athlete.id}>
+                    <TableCell className="font-bold">
+                      <Badge variant={index === 0 ? 'default' : 'outline'}>
+                        {index + 1}°
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{athlete.full_name}</TableCell>
+                    
+                    {/* Colonna V/M */}
+                    <TableCell className="text-center font-semibold">
+                      {stats.wins} / {stats.totalMatches}
+                    </TableCell>
+                    
+                    {/* Colonna Diff Stoccate */}
+                    <TableCell className="text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <Badge variant={stats.pointsDiff > 0 ? 'default' : stats.pointsDiff < 0 ? 'secondary' : 'outline'}>
+                          {stats.pointsDiff > 0 ? '+' : ''}{stats.pointsDiff}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          ({stats.pointsFor}/{stats.pointsAgainst})
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Tournament Matrix */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Matrice Torneo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Atleta</TableHead>
+                  {athletes.map(athlete => (
+                    <TableHead key={athlete.id} className="text-center min-w-[80px]">
+                      {athlete.full_name.split(' ')[0]}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {athletes.map(athleteA => (
+                  <TableRow key={athleteA.id}>
+                    <TableCell className="font-medium">{athleteA.full_name}</TableCell>
+                    {athletes.map(athleteB => {
+                      if (athleteA.id === athleteB.id) {
+                        return <TableCell key={athleteB.id} className="text-center bg-gray-100 dark:bg-gray-800">-</TableCell>;
+                      }
+
+                      const match = getMatch(athleteA.id, athleteB.id);
+                      const scoreA = match?.athleteA === athleteA.id ? match.scoreA : match?.scoreB;
+                      const scoreB = match?.athleteA === athleteA.id ? match.scoreB : match?.scoreA;
+
+                      return (
+                        <TableCell key={athleteB.id} className="text-center">
+                          {scoreA !== null && scoreB !== null ? (
+                            <Badge variant={scoreA > scoreB ? 'default' : 'secondary'}>
+                              {scoreA} - {scoreB}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Organization Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Organizzazione Turni</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Organizzazione Turni</CardTitle>
+            <Badge variant="outline" className="text-base">
+              {completedMatches} / {totalMatches} match giocati
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {visibleRounds.map(round => (
@@ -211,121 +324,13 @@ export const TournamentMatrix = ({
         </CardContent>
       </Card>
 
-      {/* Tournament Matrix */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Matrice Torneo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Atleta</TableHead>
-                  {athletes.map(athlete => (
-                    <TableHead key={athlete.id} className="text-center min-w-[80px]">
-                      {athlete.full_name.split(' ')[0]}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {athletes.map(athleteA => (
-                  <TableRow key={athleteA.id}>
-                    <TableCell className="font-medium">{athleteA.full_name}</TableCell>
-                    {athletes.map(athleteB => {
-                      if (athleteA.id === athleteB.id) {
-                        return <TableCell key={athleteB.id} className="text-center">-</TableCell>;
-                      }
-
-                      const match = getMatch(athleteA.id, athleteB.id);
-                      const scoreA = match?.athleteA === athleteA.id ? match.scoreA : match?.scoreB;
-                      const scoreB = match?.athleteA === athleteA.id ? match.scoreB : match?.scoreA;
-
-                      return (
-                        <TableCell key={athleteB.id} className="text-center">
-                          {scoreA !== null && scoreB !== null ? (
-                            <Badge variant={scoreA > scoreB ? 'default' : 'secondary'}>
-                              {scoreA} - {scoreB}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Ranking Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5" />
-            Classifica
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[60px]">Pos.</TableHead>
-                <TableHead>Atleta</TableHead>
-                <TableHead className="text-center">V</TableHead>
-                <TableHead className="text-center">M</TableHead>
-                <TableHead className="text-center">PF</TableHead>
-                <TableHead className="text-center">PS</TableHead>
-                <TableHead className="text-center">Diff</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedAthletes.map((athlete, index) => {
-                const stats = getAthleteStats(athlete.id);
-                return (
-                  <TableRow key={athlete.id}>
-                    <TableCell className="font-bold">
-                      <Badge variant={index === 0 ? 'default' : 'outline'}>
-                        {index + 1}°
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{athlete.full_name}</TableCell>
-                    <TableCell className="text-center">{stats.wins}</TableCell>
-                    <TableCell className="text-center">{stats.totalMatches}</TableCell>
-                    <TableCell className="text-center">{stats.pointsFor}</TableCell>
-                    <TableCell className="text-center">{stats.pointsAgainst}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={stats.pointsDiff > 0 ? 'default' : 'secondary'}>
-                        {stats.pointsDiff > 0 ? '+' : ''}{stats.pointsDiff}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Action Buttons */}
+      {/* Action Button */}
       <div className="flex gap-3 justify-end">
-        <Button
-          onClick={onExit}
-          variant="outline"
-          disabled={isLoading}
-        >
-          <X className="w-4 h-4 mr-2" />
-          Esci
-        </Button>
-        
         {(isCreator || isInstructor) && (
           <Button
             onClick={handleFinishClick}
             disabled={isLoading}
+            size="lg"
           >
             <Save className="w-4 h-4 mr-2" />
             Concludi Torneo
@@ -337,16 +342,24 @@ export const TournamentMatrix = ({
       <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Concludere il torneo?</AlertDialogTitle>
+            <AlertDialogTitle>Come vuoi concludere il torneo?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tutti i match saranno approvati e il torneo verrà chiuso.
-              Questa azione non può essere annullata.
+              Puoi salvare i match giocati e chiudere il torneo, oppure cancellare tutto senza salvare i risultati.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction onClick={onFinish}>
-              Conferma
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel 
+              onClick={onExit}
+              className="w-full sm:w-auto"
+            >
+              Cancella Torneo (senza salvare)
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={onFinish}
+              className="w-full sm:w-auto"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Salva Match e Chiudi Torneo
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
