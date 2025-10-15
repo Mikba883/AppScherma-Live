@@ -131,10 +131,11 @@ export default function AcceptInvitationPage() {
         options: {
           data: {
             full_name: fullName,
-            birth_date: birthDate,
-            gender,
+            // Use default values for instructors (who don't fill these fields)
+            birth_date: invitation.role === 'istruttore' ? '1990-01-01' : birthDate,
+            gender: invitation.role === 'istruttore' ? 'M' : gender,
             role: invitation.role,
-            shift,
+            shift: invitation.role === 'istruttore' ? '' : shift,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
