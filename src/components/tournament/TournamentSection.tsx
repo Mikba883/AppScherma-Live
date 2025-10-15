@@ -263,7 +263,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setIsLoading(true);
 
     try {
-      // 1. Approve all completed matches
+      // 1. Approve all completed matches (with scores)
       const { error: updateError } = await supabase
         .from('bouts')
         .update({
@@ -277,7 +277,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       if (updateError) throw updateError;
 
-      // 2. Close tournament
+      // 2. Cancel all incomplete matches (pending without scores)
+      const { error: cancelError } = await supabase
+        .from('bouts')
+        .update({ status: 'cancelled' })
+        .eq('tournament_id', activeTournamentId)
+        .eq('status', 'pending');
+
+      if (cancelError) throw cancelError;
+
+      // 3. Close tournament
       const { error: tournamentError } = await supabase
         .from('tournaments')
         .update({ status: 'completed' })
