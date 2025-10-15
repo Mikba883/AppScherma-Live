@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
@@ -80,6 +81,56 @@ export const TournamentMatrix = ({
 
   // Generate round-robin rounds
   const generateRounds = () => {
+    // Se esistono già match nel database, preserva il loro ordine
+    if (matches.length > 0) {
+      // Crea una mappa dei match esistenti
+      const existingMatches = new Map<string, TournamentMatch>();
+      matches.forEach(match => {
+        const key = [match.athleteA, match.athleteB].sort().join('-');
+        existingMatches.set(key, match);
+      });
+
+      // Ricostruisci i turni basandoti sui match esistenti
+      const matchesPerRound = Math.ceil(athletes.length / 2);
+      const rounds = [];
+      
+      // Raggruppa i match in turni
+      let currentRoundMatches: any[] = [];
+      let roundNumber = 1;
+      
+      matches.forEach((match, index) => {
+        const athleteAData = athletes.find(a => a.id === match.athleteA);
+        const athleteBData = athletes.find(a => a.id === match.athleteB);
+        
+        if (athleteAData && athleteBData) {
+          currentRoundMatches.push({
+            athleteA: athleteAData,
+            athleteB: athleteBData
+          });
+          
+          // Quando raggiungiamo il numero di match per turno, crea un nuovo turno
+          if (currentRoundMatches.length === matchesPerRound) {
+            rounds.push({
+              round: roundNumber++,
+              matches: [...currentRoundMatches]
+            });
+            currentRoundMatches = [];
+          }
+        }
+      });
+      
+      // Aggiungi l'ultimo turno se ci sono match rimanenti
+      if (currentRoundMatches.length > 0) {
+        rounds.push({
+          round: roundNumber,
+          matches: currentRoundMatches
+        });
+      }
+      
+      return rounds;
+    }
+    
+    // Se non ci sono match, usa l'algoritmo round-robin
     let athletesList = [...athletes];
     
     // Add BYE if odd number of athletes
@@ -331,24 +382,58 @@ export const TournamentMatrix = ({
           Aggiorna
         </Button>
         
-        <Button
-          onClick={onExit}
-          disabled={isLoading}
-          variant="destructive"
-          size="lg"
-        >
-          <X className="w-4 h-4 mr-2" />
-          Cancella Torneo
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              disabled={isLoading}
+              variant="destructive"
+              size="lg"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancella Torneo
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conferma Cancellazione</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler cancellare questo torneo? Tutti i match verranno cancellati e questa azione non può essere annullata.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={onExit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Cancella Torneo
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         
-        <Button
-          onClick={onFinish}
-          disabled={isLoading}
-          size="lg"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          Salva e Chiudi
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              disabled={isLoading}
+              size="lg"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Salva e Chiudi
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Conferma Salvataggio</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sei sicuro di voler salvare e chiudere il torneo? I match completati saranno registrati e il torneo verrà chiuso.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annulla</AlertDialogCancel>
+              <AlertDialogAction onClick={onFinish}>
+                Salva e Chiudi
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
