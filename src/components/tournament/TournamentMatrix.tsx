@@ -238,54 +238,61 @@ export const TournamentMatrix = ({
       {/* Ranking Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
             Classifica
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[60px]">Pos.</TableHead>
-                <TableHead>Atleta</TableHead>
-                <TableHead className="text-center">V/M</TableHead>
-                <TableHead className="text-center">Diff Stoccate</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedAthletes.map((athlete, index) => {
-                const stats = getAthleteStats(athlete.id);
-                return (
-                  <TableRow key={athlete.id}>
-                    <TableCell className="font-bold">
-                      <Badge variant={index === 0 ? 'default' : 'outline'}>
-                        {index + 1}°
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{athlete.full_name}</TableCell>
-                    
-                    {/* Colonna V/M */}
-                    <TableCell className="text-center font-semibold">
-                      {stats.wins} / {stats.totalMatches}
-                    </TableCell>
-                    
-                    {/* Colonna Diff Stoccate */}
-                    <TableCell className="text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        <Badge variant={stats.pointsDiff > 0 ? 'default' : stats.pointsDiff < 0 ? 'secondary' : 'outline'}>
+        <CardContent className="p-3 sm:p-6">
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px] sm:w-[60px] text-xs sm:text-sm">Pos.</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Atleta</TableHead>
+                  <TableHead className="text-center text-xs sm:text-sm whitespace-nowrap">V/M</TableHead>
+                  <TableHead className="text-center text-xs sm:text-sm whitespace-nowrap">Diff</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedAthletes.map((athlete, index) => {
+                  const stats = getAthleteStats(athlete.id);
+                  return (
+                    <TableRow key={athlete.id}>
+                      <TableCell className="font-bold p-2 sm:p-4">
+                        <Badge variant={index === 0 ? 'default' : 'outline'} className="text-xs">
+                          {index + 1}°
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium p-2 sm:p-4 text-xs sm:text-sm">
+                        {athlete.full_name}
+                      </TableCell>
+                      
+                      {/* Colonna V/M - più compatta su mobile */}
+                      <TableCell className="text-center font-semibold p-2 sm:p-4">
+                        <div className="text-sm sm:text-base">
+                          {stats.wins}/{stats.totalMatches}
+                        </div>
+                      </TableCell>
+                      
+                      {/* Colonna Diff Stoccate - nasconde dettagli su mobile */}
+                      <TableCell className="text-center p-2 sm:p-4">
+                        <Badge 
+                          variant={stats.pointsDiff > 0 ? 'default' : stats.pointsDiff < 0 ? 'secondary' : 'outline'}
+                          className="text-xs sm:text-sm"
+                        >
                           {stats.pointsDiff > 0 ? '+' : ''}{stats.pointsDiff}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
+                        <div className="hidden sm:block text-xs text-muted-foreground mt-1">
                           ({stats.pointsFor}/{stats.pointsAgainst})
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -342,13 +349,11 @@ export const TournamentMatrix = ({
 
       {/* Organization Section */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Organizzazione Turni</CardTitle>
-            <Badge variant="outline" className="text-base">
-              {completedMatches} / {totalMatches} match giocati
-            </Badge>
-          </div>
+        <CardHeader className="space-y-3">
+          <CardTitle className="text-base sm:text-lg">Organizzazione Turni</CardTitle>
+          <Badge variant="outline" className="text-sm sm:text-base w-fit">
+            {completedMatches} / {totalMatches} match giocati
+          </Badge>
         </CardHeader>
         <CardContent className="space-y-6">
           {visibleRounds.map(round => (
@@ -387,74 +392,85 @@ export const TournamentMatrix = ({
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      <div className="flex gap-3 justify-end">
-        <Button
-          onClick={onRefresh}
-          disabled={isLoading}
-          variant="outline"
-          size="lg"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Aggiorna
-        </Button>
-        
-        {isCreator && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                disabled={isLoading}
-                variant="destructive"
-                size="lg"
-              >
-                <X className="w-4 h-4 mr-2" />
-                Cancella Torneo
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Conferma Cancellazione</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Sei sicuro di voler cancellare questo torneo? Tutti i match verranno cancellati e questa azione non può essere annullata.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annulla</AlertDialogCancel>
-                <AlertDialogAction onClick={onExit} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Cancella Torneo
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-        
-        {isCreator && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                disabled={isLoading}
-                size="lg"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Salva e Chiudi
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Conferma Salvataggio</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Sei sicuro di voler salvare e chiudere il torneo? I match completati saranno registrati e il torneo verrà chiuso.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annulla</AlertDialogCancel>
-                <AlertDialogAction onClick={onFinish}>
-                  Salva e Chiudi
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+      {/* Action Buttons - Sticky su mobile */}
+      <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t p-4 -mx-4 sm:mx-0 sm:static sm:border-0 sm:p-0">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
+          <Button
+            onClick={onRefresh}
+            disabled={isLoading}
+            variant="outline"
+            size="lg"
+            className="w-full sm:w-auto"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Aggiorna</span>
+            <span className="sm:hidden">Aggiorna Dati</span>
+          </Button>
+          
+          {isCreator && (
+            <>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    disabled={isLoading}
+                    variant="destructive"
+                    size="lg"
+                    className="w-full sm:w-auto order-last sm:order-none"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Cancella Torneo</span>
+                    <span className="sm:hidden">Cancella</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Conferma Cancellazione</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Sei sicuro di voler cancellare questo torneo? Tutti i match verranno cancellati e questa azione non può essere annullata.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                    <AlertDialogCancel className="w-full sm:w-auto">Annulla</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={onExit} 
+                      className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Cancella Torneo
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    disabled={isLoading}
+                    size="lg"
+                    className="w-full sm:w-auto"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Salva e Chiudi</span>
+                    <span className="sm:hidden">Chiudi Torneo</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Conferma Salvataggio</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Sei sicuro di voler salvare e chiudere il torneo? I match completati saranno registrati e il torneo verrà chiuso.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                    <AlertDialogCancel className="w-full sm:w-auto">Annulla</AlertDialogCancel>
+                    <AlertDialogAction onClick={onFinish} className="w-full sm:w-auto">
+                      Salva e Chiudi
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
