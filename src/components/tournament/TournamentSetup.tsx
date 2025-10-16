@@ -25,6 +25,18 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
   const [loading, setLoading] = useState(true);
   const [availableShifts, setAvailableShifts] = useState<string[]>([]);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('=== TOURNAMENT SETUP DEBUG ===');
+    console.log('All Athletes:', athletes.length, athletes.map(a => ({
+      name: a.full_name,
+      shift: a.shift || 'NO SHIFT',
+      id: a.id
+    })));
+    console.log('Shift Filter:', shiftFilter);
+    console.log('Selected Athletes:', selectedAthletes.length, selectedAthletes);
+  }, [athletes, shiftFilter, selectedAthletes]);
+
   useEffect(() => {
     fetchAthletes();
   }, []);
@@ -81,7 +93,15 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
 
   const filteredAthletes = athletes.filter(athlete => {
     const isNotSelected = !selectedAthletes.some(selected => selected.id === athlete.id);
-    const matchesShift = !shiftFilter || shiftFilter === 'all' || athlete.shift === shiftFilter;
+    
+    // Se non c'è filtro shift (o è 'all'), mostra tutti
+    if (!shiftFilter || shiftFilter === 'all') {
+      return isNotSelected;
+    }
+    
+    // Se c'è filtro, mostra quelli con shift corrispondente
+    // OPPURE quelli senza shift (NULL o vuoto) - FIX per Tommaso1
+    const matchesShift = !athlete.shift || athlete.shift === shiftFilter;
     return isNotSelected && matchesShift;
   });
 
