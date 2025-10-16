@@ -191,10 +191,7 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
               <Select 
                 key={selectedAthletes.length}
                 value={selectedAthleteId} 
-                onValueChange={(value) => {
-                  handleAddAthlete(value);
-                  setTimeout(() => setSelectedAthleteId(''), 0);
-                }}
+                onValueChange={handleAddAthlete}
               >
                 <SelectTrigger className="flex-1">
                   <SelectValue placeholder="Seleziona un atleta..." />
