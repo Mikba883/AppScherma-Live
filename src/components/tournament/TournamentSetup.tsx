@@ -88,7 +88,12 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
   const handleAddAthlete = (athleteId: string) => {
     const athlete = athletes.find(a => a.id === athleteId);
     if (athlete) {
-      setSelectedAthletes(prev => [...prev, { id: athlete.id, full_name: athlete.full_name }]);
+      console.log('[TournamentSetup] Adding athlete:', athlete.full_name);
+      setSelectedAthletes(prev => {
+        const newList = [...prev, { id: athlete.id, full_name: athlete.full_name }];
+        console.log('[TournamentSetup] New count:', newList.length);
+        return newList;
+      });
       setSelectedAthleteId('');
     }
   };
@@ -137,7 +142,7 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
           Selezione Atleti per Torneo
         </CardTitle>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-4">
             <Badge variant="secondary">
               {selectedAthletes.length} atleti selezionati
             </Badge>
@@ -148,7 +153,7 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
             )}
           </div>
           {selectedAthletes.length > 0 && (
-            <Button variant="outline" size="sm" onClick={clearAll}>
+            <Button variant="outline" size="sm" onClick={clearAll} className="hidden md:inline-flex">
               Deseleziona tutti
             </Button>
           )}
@@ -184,10 +189,11 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
             <label className="text-sm font-medium">Aggiungi atleta</label>
             <div className="flex gap-2">
               <Select 
+                key={selectedAthletes.length}
                 value={selectedAthleteId} 
                 onValueChange={(value) => {
-                  setSelectedAthleteId(value);
                   handleAddAthlete(value);
+                  setTimeout(() => setSelectedAthleteId(''), 0);
                 }}
               >
                 <SelectTrigger className="flex-1">
