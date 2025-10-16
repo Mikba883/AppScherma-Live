@@ -61,7 +61,13 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
   const checkActiveTournament = async () => {
     try {
+      console.log('[TournamentSection] Checking for active tournament...');
+      console.log('[TournamentSection] Current user:', currentUserId);
+      console.log('[TournamentSection] User gym:', userGymId);
+      
       const { data, error } = await supabase.rpc('get_my_active_tournament');
+      
+      console.log('[TournamentSection] RPC response:', { data, error });
       
       if (error) {
         console.error('[TournamentSection] Error checking active tournament:', error);
@@ -81,6 +87,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         
         await loadTournamentData(tournament.tournament_id);
         setMode('matrix');
+      } else {
+        console.log('[TournamentSection] No active tournament found');
       }
     } catch (error) {
       console.error('[TournamentSection] Error in checkActiveTournament:', error);
