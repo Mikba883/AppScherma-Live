@@ -558,8 +558,8 @@ const MatchInputs = ({
     }
 
     try {
-      // Status based on who created the tournament
-      const newStatus = isCreator ? 'approved' : 'pending';
+      // Status based on user role (instructor auto-approves)
+      const newStatus = isInstructor ? 'approved' : 'pending';
       
       const updateData: any = {
         score_a: match.athleteA === athleteAId ? scoreANum : scoreBNum,
@@ -568,8 +568,8 @@ const MatchInputs = ({
         status: newStatus,
       };
 
-      // If tournament creator saves, auto-approve
-      if (isCreator) {
+      // If instructor saves, auto-approve
+      if (isInstructor) {
         updateData.approved_by = currentUserId;
         updateData.approved_at = new Date().toISOString();
       }
