@@ -238,21 +238,22 @@ export const NotificationsPanel = () => {
     }
   };
 
-  const handleTournamentMatchApprove = async (boutId: string) => {
+  const handleTournamentMatchDecision = async (boutId: string, decision: 'approve' | 'reject') => {
     setActionLoading(boutId);
     
     try {
-      const { error } = await supabase.rpc('approve_tournament_match', {
-        _bout_id: boutId
+      const { error } = await supabase.rpc('decide_bout', {
+        _bout_id: boutId,
+        _decision: decision
       });
 
       if (error) throw error;
 
-      toast.success("Match di torneo approvato");
+      toast.success(decision === 'approve' ? "Match di torneo approvato" : "Match di torneo rifiutato");
       await fetchPendingTournamentMatches();
       await fetchNotifications();
     } catch (error) {
-      toast.error('Impossibile approvare il match di torneo');
+      toast.error(`Impossibile ${decision === 'approve' ? 'approvare' : 'rifiutare'} il match di torneo`);
     } finally {
       setActionLoading(null);
     }
@@ -369,14 +370,25 @@ export const NotificationsPanel = () => {
                     </div>
 
                     {!myApproved && (
-                      <Button
-                        onClick={() => handleTournamentMatchApprove(match.id)}
-                        disabled={actionLoading === match.id}
-                        className="w-full"
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        {actionLoading === match.id ? 'Elaborazione...' : 'Approva Match di Torneo'}
-                      </Button>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          onClick={() => handleTournamentMatchDecision(match.id, 'approve')}
+                          disabled={actionLoading === match.id}
+                          className="flex-1"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          {actionLoading === match.id ? 'Elaborazione...' : 'Approva'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleTournamentMatchDecision(match.id, 'reject')}
+                          disabled={actionLoading === match.id}
+                          className="flex-1"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Rifiuta
+                        </Button>
+                      </div>
                     )}
 
                     {myApproved && !opponentApproved && (
