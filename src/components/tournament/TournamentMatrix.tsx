@@ -582,39 +582,6 @@ const MatchInputs = ({
 
       if (error) throw error;
 
-      // Se è uno studente (status = pending), invia notifiche ad entrambi gli atleti
-      if (newStatus === 'pending' && tournamentId && gymId) {
-        const { data: tournamentData } = await supabase
-          .from('tournaments')
-          .select('name, tournament_date')
-          .eq('id', tournamentId)
-          .single();
-        
-        const notificationMessage = `È stato registrato un risultato per il match del torneo "${tournamentData?.name || 'Torneo'}". Approva per confermare.`;
-        
-        // Notifica per atleta A
-        await supabase.from('notifications').insert({
-          athlete_id: athleteAId,
-          title: 'Match da Approvare',
-          message: notificationMessage,
-          type: 'info',
-          created_by: currentUserId,
-          related_bout_id: match.id,
-          gym_id: gymId
-        });
-        
-        // Notifica per atleta B
-        await supabase.from('notifications').insert({
-          athlete_id: athleteBId,
-          title: 'Match da Approvare',
-          message: notificationMessage,
-          type: 'info',
-          created_by: currentUserId,
-          related_bout_id: match.id,
-          gym_id: gymId
-        });
-      }
-
       onSaved();
     } catch (error: any) {
       toast.error('Errore nel salvataggio: ' + error.message);
