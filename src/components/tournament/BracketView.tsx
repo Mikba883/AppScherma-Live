@@ -162,10 +162,7 @@ const BracketMatchCard = ({
         .update({
           score_a: parsedScoreA,
           score_b: parsedScoreB,
-          weapon: weapon && weapon.trim() !== '' ? weapon.toLowerCase() : null,  // ✅ Converti in minuscolo
-          status: 'pending',  // ✅ Tutti i match restano pending fino all'approvazione esplicita
-          approved_by_a: null,
-          approved_by_b: null,
+          weapon: weapon && weapon.trim() !== '' ? weapon.toLowerCase() : null,
         })
         .eq('id', match.id);
 
