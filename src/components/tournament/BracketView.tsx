@@ -157,18 +157,24 @@ const BracketMatchCard = ({
     setIsSaving(true);
 
     try {
+      // ✅ In Fase 2, salvare = approvare automaticamente
       const { error } = await supabase
         .from('bouts')
         .update({
           score_a: parsedScoreA,
           score_b: parsedScoreB,
           weapon: weapon && weapon.trim() !== '' ? weapon.toLowerCase() : null,
+          status: 'approved',
+          approved_by: currentUserId,
+          approved_at: new Date().toISOString(),
+          approved_by_a: currentUserId,
+          approved_by_b: currentUserId,
         })
         .eq('id', match.id);
 
       if (error) throw error;
 
-      toast.success('Match salvato');
+      toast.success('Match salvato e approvato');
       
       // Trigger automatic advancement if round is complete
       const currentRound = match.bracket_round;
@@ -185,42 +191,6 @@ const BracketMatchCard = ({
     }
   };
 
-  const handleApprove = async () => {
-    if (!match.id || !currentUserId) return;
-
-    setIsSaving(true);
-
-    try {
-      const updateData: any = {};
-      
-      if (isAthleteA) {
-        updateData.approved_by_a = currentUserId;
-      } else if (isAthleteB) {
-        updateData.approved_by_b = currentUserId;
-      }
-
-      // Check if both approvals are done
-      const bothApproved = (isAthleteA && hasApprovedB) || (isAthleteB && hasApprovedA);
-      if (bothApproved) {
-        updateData.status = 'approved';
-      }
-
-      const { error } = await supabase
-        .from('bouts')
-        .update(updateData)
-        .eq('id', match.id);
-
-      if (error) throw error;
-
-      toast.success('Match approvato');
-      onRefresh();
-    } catch (error) {
-      console.error('Error approving match:', error);
-      toast.error('Errore nell\'approvazione');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   // Check if it's a BYE match (one athlete is TBD)
   const isByeMatch = !match.athleteA || !match.athleteB || 
@@ -307,36 +277,16 @@ const BracketMatchCard = ({
         )}
 
         {/* Action buttons */}
-        {!isCompleted && (
-          <div className="flex gap-2">
-            {/* TUTTI vedono bottone Salva se possono editare */}
-            {canEdit && (
-              <Button
-                onClick={handleSave}
-                disabled={isSaving || !scoreA || !scoreB}
-                size="sm"
-                className="w-full"
-              >
-                <Save className="w-3 h-3 mr-1" />
-                Salva
-              </Button>
-            )}
-            
-            {/* TUTTI (istruttori E allievi) vedono bottoni Approva */}
-            {((isAthleteA && !hasApprovedA) || (isAthleteB && !hasApprovedB)) && (
-              match.scoreA !== null && match.scoreB !== null && (
-                <Button
-                  onClick={handleApprove}
-                  disabled={isSaving}
-                  size="sm"
-                  className="w-full"
-                >
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Approva
-                </Button>
-              )
-            )}
-          </div>
+        {!isCompleted && canEdit && (
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !scoreA || !scoreB}
+            size="sm"
+            className="w-full"
+          >
+            <Save className="w-3 h-3 mr-1" />
+            Salva e Approva
+          </Button>
         )}
 
         {isCompleted && (

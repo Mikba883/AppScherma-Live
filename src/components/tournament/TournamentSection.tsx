@@ -504,11 +504,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         .eq('tournament_id', activeTournamentId)
         .eq('bracket_round', completedRound);
 
-      // ✅ Un match è completo se ha punteggi inseriti O è già approvato/cancellato
+      // ✅ Un match è completo se è approvato o cancellato
       const allCompleted = allRoundMatches?.every(m => 
         m.status === 'approved' || 
-        m.status === 'cancelled' ||
-        (m.score_a !== null && m.score_b !== null)
+        m.status === 'cancelled'
       );
 
       if (!allCompleted) {
@@ -517,28 +516,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         return;
       }
 
-      // ✅ STEP 1: Auto-approve all matches from completed round (solo quelli con punteggi)
-      const { error: approveError } = await supabase
-        .from('bouts')
-        .update({
-          status: 'approved',
-          approved_by: currentUserId,
-          approved_at: new Date().toISOString()
-        })
-        .eq('tournament_id', activeTournamentId)
-        .eq('bracket_round', completedRound)
-        .eq('status', 'pending')
-        .not('score_a', 'is', null)
-        .not('score_b', 'is', null);
-
-      if (approveError) {
-        console.error('[TournamentSection] Error approving round matches:', approveError);
-        toast.error('Errore nell\'approvazione dei match');
-        setIsLoading(false);
-        return;
-      }
-
-      console.log(`[TournamentSection] ✅ Approved all matches from round ${completedRound}`);
 
       // 3. If only 1 match completed → IT'S THE FINAL → TOURNAMENT COMPLETED
       if (completedMatches.length === 1) {
