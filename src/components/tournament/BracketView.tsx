@@ -57,6 +57,7 @@ export const BracketView = ({
     if (roundsFromFinal === 1) return 'Semifinali';
     if (roundsFromFinal === 2) return 'Quarti di Finale';
     if (roundsFromFinal === 3) return 'Ottavi di Finale';
+    if (roundsFromFinal === 4) return 'Sedicesimi di Finale';
     
     return `Turno ${roundNum}`;
   };

@@ -400,10 +400,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     const sortedAthletes = rankings.sort((a, b) => a.position - b.position);
     const n = sortedAthletes.length;
     
-    // Calculate bracket size (next power of 2)
-    const bracketSize = Math.pow(2, Math.ceil(Math.log2(n)));
+    // Calculate total rounds needed (e.g., 8 players = 3 rounds)
     const totalRounds = Math.ceil(Math.log2(n));
-    const byesNeeded = bracketSize - n;
+    
+    console.log(`[Phase 2] Creating bracket for ${n} athletes with ${totalRounds} rounds`);
     
     // Save total rounds to tournament
     await supabase
@@ -414,10 +414,12 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setTotalBracketRounds(totalRounds);
     
     const matchesToInsert = [];
-    let pairingsCount = 0;
     
-    // Create first round pairings: 1st vs last, 2nd vs second-to-last, etc.
-    for (let i = 0; i < Math.floor(n / 2); i++) {
+    // STRATEGY: Create ONLY first round matches
+    // Pairings: 1st vs last, 2nd vs second-to-last, etc.
+    const numFirstRoundMatches = Math.floor(n / 2);
+    
+    for (let i = 0; i < numFirstRoundMatches; i++) {
       const topSeed = sortedAthletes[i];
       const bottomSeed = sortedAthletes[n - 1 - i];
       
@@ -436,18 +438,22 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         score_a: null,
         score_b: null
       });
-      pairingsCount++;
     }
     
-    // Handle BYE: top seeds get automatic advancement
-    if (byesNeeded > 0) {
-      console.log(`[Phase 2] ${byesNeeded} athletes receive BYE (automatic advancement)`);
+    // Handle odd number of athletes (BYE)
+    if (n % 2 !== 0) {
+      const byeAthlete = sortedAthletes[0];
+      const athleteName = athletes.find(a => a.id === byeAthlete.athleteId)?.full_name || byeAthlete.athleteId;
+      console.log(`[Phase 2] ${athleteName} receives BYE`);
+      // BYE is handled by advanceBracketRound when creating next round
     }
+    
+    console.log(`[Phase 2] Created ${matchesToInsert.length} matches for Round 1`);
     
     return matchesToInsert;
   };
 
-  // Helper to get round name
+  // Helper to get round name based on distance from final
   const getRoundName = (roundNum: number, totalRounds: number) => {
     const roundsFromFinal = totalRounds - roundNum;
     
@@ -455,6 +461,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     if (roundsFromFinal === 1) return 'Semifinali';
     if (roundsFromFinal === 2) return 'Quarti di Finale';
     if (roundsFromFinal === 3) return 'Ottavi di Finale';
+    if (roundsFromFinal === 4) return 'Sedicesimi di Finale';
     
     return `Turno ${roundNum}`;
   };
