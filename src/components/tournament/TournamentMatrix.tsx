@@ -190,24 +190,10 @@ export const TournamentMatrix = ({
     }
   };
 
-  // Filter rounds based on user role
+  // Everyone can see all matches
   const visibleRounds = useMemo(() => {
-    const allRounds = generateRounds();
-
-    if (isInstructor) {
-      return allRounds; // Organizer sees all
-    }
-
-    // Athlete sees only their matches
-    return allRounds
-      .map(round => ({
-        ...round,
-        matches: round.matches.filter(m =>
-          m.athleteA.id === currentUserId || m.athleteB.id === currentUserId
-        )
-      }))
-      .filter(round => round.matches.length > 0);
-  }, [athletes, isInstructor, currentUserId]);
+    return generateRounds();
+  }, [athletes]);
 
   // Sort athletes by ranking
   const sortedAthletes = useMemo(() => {
