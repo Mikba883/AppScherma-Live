@@ -51,7 +51,10 @@ export const BracketView = ({
     .sort((a, b) => a - b); // From first round to final
 
   const getRoundName = (roundNum: number) => {
-    const roundsFromFinal = totalBracketRounds - roundNum;
+    // ✅ Fallback: if totalBracketRounds is 0, calculate from max round number
+    const effectiveTotalRounds = totalBracketRounds > 0 ? totalBracketRounds : (sortedRounds.length > 0 ? Math.max(...sortedRounds) : 1);
+    
+    const roundsFromFinal = effectiveTotalRounds - roundNum;
     
     if (roundsFromFinal === 0) return '🏆 Finale';
     if (roundsFromFinal === 1) return 'Semifinali';
@@ -125,7 +128,7 @@ const BracketMatchCard = ({
 }: BracketMatchCardProps) => {
   const [scoreA, setScoreA] = useState<string>(match.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState<string>(match.scoreB?.toString() || '');
-  const [weapon, setWeapon] = useState<string>(match.weapon || '');
+  const [weapon, setWeapon] = useState<string>(match.weapon || 'fioretto');
   const [isSaving, setIsSaving] = useState(false);
 
   const canEdit = isInstructor || isCreator;

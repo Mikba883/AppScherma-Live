@@ -241,7 +241,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           status: 'in_progress',
           bout_type: boutType,
           weapon: weapon || null,
-          gym_id: userGymId
+          gym_id: userGymId,
+          phase: 1  // ✅ Force Phase 1 for new tournaments
         })
         .select()
         .single();
@@ -249,6 +250,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       if (tournamentError) throw tournamentError;
 
       console.log('[TournamentSection] Tournament created:', tournament);
+      
+      // ✅ Reset phase state
+      setTournamentPhase(1);
+      setTotalBracketRounds(0);
 
       // 2. Generate all matches with round-robin scheduling
       const boutsToInsert = [];
@@ -454,8 +459,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   };
 
   // Helper to get round name based on distance from final
-  const getRoundName = (roundNum: number, totalRounds: number) => {
-    const roundsFromFinal = totalRounds - roundNum;
+  const getRoundName = (roundNum: number, totalRounds: number, sortedRounds: number[] = []) => {
+    // ✅ Fallback: if totalRounds is 0, calculate from max round number
+    const effectiveTotalRounds = totalRounds > 0 ? totalRounds : (sortedRounds.length > 0 ? Math.max(...sortedRounds) : 1);
+    
+    const roundsFromFinal = effectiveTotalRounds - roundNum;
     
     if (roundsFromFinal === 0) return '🏆 Finale';
     if (roundsFromFinal === 1) return 'Semifinali';
@@ -565,7 +573,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
         if (insertError) throw insertError;
 
-        const nextRoundName = getRoundName(completedRound + 1, completedRound + 2);
+        const nextRoundName = getRoundName(completedRound + 1, totalBracketRounds);
         toast.success(`✅ Turno ${completedRound} completato! Creati match per: ${nextRoundName}`);
         
         await loadTournamentData(activeTournamentId);

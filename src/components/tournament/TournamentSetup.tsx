@@ -136,7 +136,7 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
     const name = `Torneo ${new Date().toLocaleDateString('it-IT')}`;
     const date = new Date().toISOString().split('T')[0];
     
-    onStart(selectedAthletes, name, date, null, 'sparring');
+    onStart(selectedAthletes, name, date, 'fioretto', 'sparring');
   };
 
   const clearAll = () => {
