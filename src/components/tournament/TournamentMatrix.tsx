@@ -193,7 +193,7 @@ export const TournamentMatrix = ({
   // Everyone can see all matches
   const visibleRounds = useMemo(() => {
     return generateRounds();
-  }, [athletes]);
+  }, [athletes, matches]);
 
   // Sort athletes by ranking
   const sortedAthletes = useMemo(() => {
@@ -569,6 +569,40 @@ const MatchInputs = ({
         .eq('id', match.id);
 
       if (error) throw error;
+
+      // Send notifications to both athletes when a non-creator saves a match
+      if (!isCreator && scoreANum !== null && scoreBNum !== null) {
+        // Get current user's gym_id
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('gym_id')
+          .eq('user_id', currentUserId)
+          .single();
+
+        if (profileData?.gym_id) {
+          // Notify athlete A
+          await supabase.from('notifications').insert({
+            athlete_id: match.athleteA,
+            title: 'Match da Approvare',
+            message: 'È stato registrato un nuovo match del torneo. Approva il risultato per confermare.',
+            type: 'info',
+            created_by: currentUserId,
+            related_bout_id: match.id,
+            gym_id: profileData.gym_id
+          });
+
+          // Notify athlete B
+          await supabase.from('notifications').insert({
+            athlete_id: match.athleteB,
+            title: 'Match da Approvare',
+            message: 'È stato registrato un nuovo match del torneo. Approva il risultato per confermare.',
+            type: 'info',
+            created_by: currentUserId,
+            related_bout_id: match.id,
+            gym_id: profileData.gym_id
+          });
+        }
+      }
 
       toast.success(
         scoreANum === null 
