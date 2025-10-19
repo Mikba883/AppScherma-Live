@@ -193,7 +193,7 @@ export const TournamentMatrix = ({
   // Everyone can see all matches
   const visibleRounds = useMemo(() => {
     return generateRounds();
-  }, [athletes]);
+  }, [athletes, matches]);
 
   // Sort athletes by ranking
   const sortedAthletes = useMemo(() => {
