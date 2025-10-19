@@ -121,7 +121,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       
       // Update total bracket rounds
       if (tournamentData?.total_bracket_rounds) {
+        console.log('[TournamentSection] Loading total_bracket_rounds from DB:', tournamentData.total_bracket_rounds);
         setTotalBracketRounds(tournamentData.total_bracket_rounds);
+      } else {
+        console.log('[TournamentSection] ⚠️ No total_bracket_rounds in DB');
       }
 
       // Load bouts filtered by phase

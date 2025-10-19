@@ -54,6 +54,8 @@ export const BracketView = ({
     // ✅ Fallback: if totalBracketRounds is 0, calculate from max round number
     const effectiveTotalRounds = totalBracketRounds > 0 ? totalBracketRounds : (sortedRounds.length > 0 ? Math.max(...sortedRounds) : 1);
     
+    console.log('[BracketView] getRoundName - roundNum:', roundNum, 'totalBracketRounds:', totalBracketRounds, 'effectiveTotalRounds:', effectiveTotalRounds);
+    
     const roundsFromFinal = effectiveTotalRounds - roundNum;
     
     if (roundsFromFinal === 0) return '🏆 Finale';
@@ -128,7 +130,10 @@ const BracketMatchCard = ({
 }: BracketMatchCardProps) => {
   const [scoreA, setScoreA] = useState<string>(match.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState<string>(match.scoreB?.toString() || '');
-  const [weapon, setWeapon] = useState<string>(match.weapon || 'fioretto');
+  // ✅ Converti weapon in minuscolo per evitare errori con constraint DB
+  const [weapon, setWeapon] = useState<string>(
+    match.weapon ? match.weapon.toLowerCase() : 'fioretto'
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   const canEdit = isInstructor || isCreator;
@@ -157,7 +162,7 @@ const BracketMatchCard = ({
         .update({
           score_a: parsedScoreA,
           score_b: parsedScoreB,
-          weapon: weapon && weapon.trim() !== '' ? weapon : null,
+          weapon: weapon && weapon.trim() !== '' ? weapon.toLowerCase() : null,  // ✅ Converti in minuscolo
           status: 'pending',  // ✅ Tutti i match restano pending fino all'approvazione esplicita
           approved_by_a: null,
           approved_by_b: null,
