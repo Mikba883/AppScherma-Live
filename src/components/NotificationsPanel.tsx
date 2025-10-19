@@ -248,8 +248,21 @@ export const NotificationsPanel = () => {
 
       if (error) throw error;
 
+      // Elimina la notifica "Match da Approvare" correlata
+      const { error: deleteNotifError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('related_bout_id', boutId)
+        .eq('athlete_id', user?.id)
+        .eq('type', 'info');
+
+      if (deleteNotifError) {
+        console.error('Error deleting approval notification:', deleteNotifError);
+      }
+
       toast.success(decision === 'approve' ? "Match approvato" : "Match rifiutato");
       await fetchPendingBouts();
+      await fetchNotifications();
     } catch (error) {
       toast.error(`Impossibile ${decision === 'approve' ? 'approvare' : 'rifiutare'} il match`);
     } finally {
@@ -267,6 +280,18 @@ export const NotificationsPanel = () => {
       });
 
       if (error) throw error;
+
+      // Elimina la notifica "Match da Approvare" correlata
+      const { error: deleteNotifError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('related_bout_id', boutId)
+        .eq('athlete_id', user?.id)
+        .eq('type', 'info');
+
+      if (deleteNotifError) {
+        console.error('Error deleting approval notification:', deleteNotifError);
+      }
 
       toast.success(decision === 'approve' ? "Match di torneo approvato" : "Match di torneo rifiutato");
       await fetchPendingTournamentMatches();
