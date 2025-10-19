@@ -159,7 +159,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         scoreB: bout.score_b,
         weapon: bout.weapon,
         status: bout.status,
-        round_number: bout.round_number
+        round_number: bout.round_number,
+        bracket_round: bout.bracket_round,
+        approved_by_a: bout.approved_by_a,
+        approved_by_b: bout.approved_by_b
       }));
 
       // Map profiles to athletes
@@ -295,7 +298,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         scoreB: bout.score_b,
         weapon: bout.weapon,
         status: bout.status,
-        round_number: bout.round_number
+        round_number: bout.round_number,
+        bracket_round: bout.bracket_round,
+        approved_by_a: bout.approved_by_a,
+        approved_by_b: bout.approved_by_b
       }));
       
       setMatches(mappedMatches);
@@ -391,7 +397,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         status: 'pending',
         created_by: currentUserId,
         gym_id: userGymId,
-        round_number: 1,
+        bracket_round: 1,
+        round_number: null,
         score_a: null,
         score_b: null
       });
