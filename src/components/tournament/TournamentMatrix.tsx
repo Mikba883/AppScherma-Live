@@ -348,9 +348,7 @@ export const TournamentMatrix = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {round.matches.map(({ athleteA, athleteB }) => {
                   const match = getMatch(athleteA.id, athleteB.id);
-                  const canEdit = isInstructor || 
-                                 athleteA.id === currentUserId || 
-                                 athleteB.id === currentUserId;
+                  const canEdit = isInstructor;
 
                   return (
                     <Card key={`${athleteA.id}-${athleteB.id}`}>
@@ -366,6 +364,8 @@ export const TournamentMatrix = ({
                           athleteAName={athleteA.full_name}
                           athleteBName={athleteB.full_name}
                           canEdit={canEdit}
+                          currentUserId={currentUserId}
+                          isInstructor={isInstructor}
                           onSaved={onRefresh}
                         />
                       </CardContent>
@@ -470,6 +470,8 @@ interface MatchInputsProps {
   athleteAName: string;
   athleteBName: string;
   canEdit: boolean;
+  currentUserId: string | null;
+  isInstructor: boolean;
   onSaved: () => void;
 }
 
@@ -480,6 +482,8 @@ const MatchInputs = ({
   athleteAName,
   athleteBName,
   canEdit,
+  currentUserId,
+  isInstructor,
   onSaved
 }: MatchInputsProps) => {
   // Helper to get score for specific athlete
@@ -502,6 +506,23 @@ const MatchInputs = ({
 
   // Check if match is complete
   const isComplete = scoreA !== '' && scoreB !== '';
+
+  // Check if current user is a participant
+  const isAthleteA = match?.athleteA === currentUserId;
+  const isAthleteB = match?.athleteB === currentUserId;
+  const isParticipant = isAthleteA || isAthleteB;
+
+  // Check if user has already approved
+  const hasApproved = isAthleteA 
+    ? match?.approved_by_a !== null 
+    : match?.approved_by_b !== null;
+
+  // Can approve if: pending match, is participant, hasn't approved yet, scores are present
+  const canApprove = match?.status === 'pending' 
+                  && isParticipant 
+                  && !hasApproved
+                  && match?.scoreA !== null
+                  && match?.scoreB !== null;
 
   const handleSave = async () => {
     const scoreANum = scoreA === '' ? null : parseInt(scoreA);
@@ -545,6 +566,23 @@ const MatchInputs = ({
       onSaved();
     } catch (error: any) {
       toast.error('Errore: ' + error.message);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!match?.id) return;
+    
+    try {
+      const { error } = await supabase.rpc('approve_tournament_match', {
+        _bout_id: match.id
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Match approvato!');
+      onSaved();
+    } catch (error: any) {
+      toast.error('Errore nell\'approvazione: ' + error.message);
     }
   };
 
@@ -592,10 +630,40 @@ const MatchInputs = ({
         />
       </div>
 
-      {!canEdit && (
+      {!canEdit && !isInstructor && (
         <p className="text-xs text-muted-foreground text-center">
           Solo visualizzazione
         </p>
+      )}
+
+      {/* Approval button for athletes */}
+      {canApprove && (
+        <Button 
+          onClick={handleApprove}
+          className="w-full"
+          size="sm"
+        >
+          Approva Match
+        </Button>
+      )}
+
+      {/* Approval status badges */}
+      {match?.status === 'pending' && isParticipant && !canApprove && (
+        <div className="text-center">
+          {hasApproved ? (
+            <Badge variant="default" className="text-xs">✓ Hai approvato</Badge>
+          ) : match?.scoreA === null || match?.scoreB === null ? (
+            <Badge variant="secondary" className="text-xs">⏳ In attesa punteggi</Badge>
+          ) : (
+            <Badge variant="secondary" className="text-xs">⏳ In attesa dell'altro atleta</Badge>
+          )}
+        </div>
+      )}
+
+      {match?.status === 'approved' && (
+        <Badge variant="default" className="w-full justify-center text-xs">
+          ✓ Match Approvato
+        </Badge>
       )}
     </div>
   );

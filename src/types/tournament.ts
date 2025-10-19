@@ -12,4 +12,6 @@ export interface TournamentMatch {
   weapon: string | null;
   status: string;
   round_number?: number | null;
+  approved_by_a?: string | null;
+  approved_by_b?: string | null;
 }
