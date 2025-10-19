@@ -353,30 +353,43 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setIsClosingTournament(true);
 
     try {
-      // 1. Approve all completed matches (with scores)
-      const { error: updateError } = await supabase
-        .from('bouts')
-        .update({
-          status: 'approved',
-          approved_by: currentUserId,
-          approved_at: new Date().toISOString()
-        })
-        .eq('tournament_id', activeTournamentId)
-        .not('score_a', 'is', null)
-        .not('score_b', 'is', null);
+      // 0. Recupera il ruolo dell'utente
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', currentUserId)
+        .single();
 
-      if (updateError) throw updateError;
+      const userRole = profileData?.role;
+      const isInstructor = userRole === 'istruttore' || userRole === 'capo_palestra';
 
-      // 2. Cancel ALL pending matches (anche senza score)
+      // 1. Se è istruttore, approva automaticamente tutti i match con punteggio
+      if (isInstructor) {
+        const { error: updateError } = await supabase
+          .from('bouts')
+          .update({
+            status: 'approved',
+            approved_by: currentUserId,
+            approved_at: new Date().toISOString()
+          })
+          .eq('tournament_id', activeTournamentId)
+          .not('score_a', 'is', null)
+          .not('score_b', 'is', null);
+
+        if (updateError) throw updateError;
+      }
+      // Se è studente, i match rimangono in pending e devono essere approvati dagli atleti
+
+      // 2. Cancella SOLO i match senza punteggio (match mai giocati)
       const { error: cancelError } = await supabase
         .from('bouts')
         .update({ status: 'cancelled' })
         .eq('tournament_id', activeTournamentId)
-        .or('status.eq.pending,score_a.is.null,score_b.is.null');
+        .or('score_a.is.null,score_b.is.null');
 
       if (cancelError) throw cancelError;
 
-      // 3. Close tournament
+      // 3. Chiudi il torneo
       const { error: tournamentError } = await supabase
         .from('tournaments')
         .update({ status: 'completed' })
@@ -384,41 +397,88 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       if (tournamentError) throw tournamentError;
 
-      // 4. IMPORTANTE: Aspettare che il DB si aggiorni
+      // 4. Se è studente, crea notifiche di approvazione per ogni match
+      if (!isInstructor) {
+        // Recupera tutti i match con punteggio che sono ancora in pending
+        const { data: pendingMatches } = await supabase
+          .from('bouts')
+          .select('id, athlete_a, athlete_b, score_a, score_b')
+          .eq('tournament_id', activeTournamentId)
+          .eq('status', 'pending')
+          .not('score_a', 'is', null)
+          .not('score_b', 'is', null);
+
+        if (pendingMatches && pendingMatches.length > 0) {
+          // Per ogni match, crea 2 notifiche (una per ciascun atleta)
+          const approvalNotifications = pendingMatches.flatMap(match => [
+            {
+              athlete_id: match.athlete_a,
+              title: 'Match Torneo da Approvare',
+              message: `Il torneo "${tournamentName}" è stato chiuso. Approva il tuo match per confermare il risultato (${match.score_a}-${match.score_b}).`,
+              type: 'info',
+              created_by: currentUserId,
+              related_bout_id: match.id,
+              gym_id: userGymId
+            },
+            {
+              athlete_id: match.athlete_b,
+              title: 'Match Torneo da Approvare',
+              message: `Il torneo "${tournamentName}" è stato chiuso. Approva il tuo match per confermare il risultato (${match.score_b}-${match.score_a}).`,
+              type: 'info',
+              created_by: currentUserId,
+              related_bout_id: match.id,
+              gym_id: userGymId
+            }
+          ]);
+
+          const { error: approvalNotifError } = await supabase
+            .from('notifications')
+            .insert(approvalNotifications);
+
+          if (approvalNotifError) {
+            console.error('[TournamentSection] Error creating approval notifications:', approvalNotifError);
+          }
+        }
+      }
+
+      // 5. IMPORTANTE: Aspettare che il DB si aggiorni
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // 5. Calculate final rankings
-      const rankings = calculateFinalRankings(athletes, matches);
+      // 6. SOLO se è istruttore, calcola classifica e invia notifiche finali
+      if (isInstructor) {
+        // Calculate final rankings
+        const rankings = calculateFinalRankings(athletes, matches);
 
-      // 6. Send notifications to all participants
-      const notificationsToInsert = rankings.map(ranking => {
-        // Emoji for top 3 positions
-        const positionEmoji = 
-          ranking.position === 1 ? '🥇' :
-          ranking.position === 2 ? '🥈' :
-          ranking.position === 3 ? '🥉' : '';
+        // Send notifications to all participants
+        const notificationsToInsert = rankings.map(ranking => {
+          // Emoji for top 3 positions
+          const positionEmoji = 
+            ranking.position === 1 ? '🥇' :
+            ranking.position === 2 ? '🥈' :
+            ranking.position === 3 ? '🥉' : '';
 
-        return {
-          athlete_id: ranking.athleteId,
-          title: 'Torneo Concluso',
-          message: `${positionEmoji} Il torneo "${tournamentName}" si è concluso!\n\n` +
-                   `Posizione finale: ${ranking.position}°\n` +
-                   `Vittorie: ${ranking.wins}/${ranking.totalMatches}\n` +
-                   `Differenza stoccate: ${ranking.pointsDiff > 0 ? '+' : ''}${ranking.pointsDiff}`,
-          type: ranking.position <= 3 ? 'success' : 'info',
-          created_by: currentUserId,
-          gym_id: userGymId
-        };
-      });
+          return {
+            athlete_id: ranking.athleteId,
+            title: 'Torneo Concluso',
+            message: `${positionEmoji} Il torneo "${tournamentName}" si è concluso!\n\n` +
+                     `Posizione finale: ${ranking.position}°\n` +
+                     `Vittorie: ${ranking.wins}/${ranking.totalMatches}\n` +
+                     `Differenza stoccate: ${ranking.pointsDiff > 0 ? '+' : ''}${ranking.pointsDiff}`,
+            type: ranking.position <= 3 ? 'success' : 'info',
+            created_by: currentUserId,
+            gym_id: userGymId
+          };
+        });
 
-      // Insert notifications
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert(notificationsToInsert);
+        // Insert notifications
+        const { error: notifError } = await supabase
+          .from('notifications')
+          .insert(notificationsToInsert);
 
-      if (notifError) {
-        console.error('[TournamentSection] Error creating notifications:', notifError);
-        // Don't block tournament closure for notification errors
+        if (notifError) {
+          console.error('[TournamentSection] Error creating notifications:', notifError);
+          // Don't block tournament closure for notification errors
+        }
       }
 
       toast.success('Torneo concluso con successo!');
