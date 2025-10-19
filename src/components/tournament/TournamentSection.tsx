@@ -415,7 +415,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               athlete_id: match.athlete_a,
               title: 'Match Torneo da Approvare',
               message: `Il torneo "${tournamentName}" è stato chiuso. Approva il tuo match per confermare il risultato (${match.score_a}-${match.score_b}).`,
-              type: 'info',
+              type: 'warning',
               created_by: currentUserId,
               related_bout_id: match.id,
               gym_id: userGymId
@@ -424,7 +424,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
               athlete_id: match.athlete_b,
               title: 'Match Torneo da Approvare',
               message: `Il torneo "${tournamentName}" è stato chiuso. Approva il tuo match per confermare il risultato (${match.score_b}-${match.score_a}).`,
-              type: 'info',
+              type: 'warning',
               created_by: currentUserId,
               related_bout_id: match.id,
               gym_id: userGymId
