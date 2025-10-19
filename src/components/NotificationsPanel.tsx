@@ -49,6 +49,7 @@ interface TournamentMatch {
 }
 
 export const NotificationsPanel = () => {
+  console.log('[NotificationsPanel] Component mounted');
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pendingBouts, setPendingBouts] = useState<PendingBout[]>([]);
@@ -57,6 +58,7 @@ export const NotificationsPanel = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('[NotificationsPanel] useEffect triggered, user:', user?.id);
     if (user) {
       fetchNotifications();
       fetchPendingBouts();

@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
 
 export const StudentDashboard = () => {
-  console.log('StudentDashboard - Component loaded');
+  console.log('[StudentDashboard] Component loaded');
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('overview');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -19,6 +19,10 @@ export const StudentDashboard = () => {
   const [showTabChangeDialog, setShowTabChangeDialog] = useState(false);
 
   useUnsavedChanges(hasUnsavedChanges);
+
+  useEffect(() => {
+    console.log('[StudentDashboard] Active tab changed to:', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
