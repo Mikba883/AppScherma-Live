@@ -103,6 +103,21 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setIsLoading(true);
     
     try {
+      // Load tournament info to get the phase
+      const { data: tournamentData, error: tournamentError } = await supabase
+        .from('tournaments')
+        .select('phase')
+        .eq('id', tournamentId)
+        .single();
+
+      if (tournamentError) throw tournamentError;
+      
+      // Update phase state
+      if (tournamentData?.phase) {
+        console.log('[TournamentSection] Tournament phase:', tournamentData.phase);
+        setTournamentPhase(tournamentData.phase);
+      }
+
       // Load all bouts for this tournament, ordered by round_number
       const { data: bouts, error: boutsError } = await supabase
         .from('bouts')
