@@ -162,7 +162,14 @@ export const TournamentMatrix = ({
       // Converti in array ordinato per numero turno
       return Array.from(roundsMap.entries())
         .sort(([a], [b]) => a - b)
-        .map(([round, matches]) => ({ round, matches }));
+        .map(([round, matches]) => ({ 
+          round, 
+          matches: matches.sort((a, b) => {
+            const idA = a.athleteA.id + a.athleteB.id;
+            const idB = b.athleteA.id + b.athleteB.id;
+            return idA.localeCompare(idB);
+          })
+        }));
     }
     
     // CASO 2: Ricalcola con algoritmo round-robin e assegna round_number
@@ -527,17 +534,14 @@ const MatchInputs = ({
 
     // Validazione: se uno dei due è compilato, devono essere entrambi compilati
     if ((scoreA !== '' && scoreB === '') || (scoreA === '' && scoreB !== '')) {
-      toast.error('Compila entrambi i punteggi o lascia vuoti entrambi');
       return;
     }
 
     // Validazione numeri
     if (scoreA !== '' && isNaN(scoreANum!)) {
-      toast.error('Inserisci punteggi validi');
       return;
     }
     if (scoreB !== '' && isNaN(scoreBNum!)) {
-      toast.error('Inserisci punteggi validi');
       return;
     }
 
@@ -570,51 +574,6 @@ const MatchInputs = ({
 
       if (error) throw error;
 
-      // Send notifications to BOTH athletes when scores are saved
-      if (scoreANum !== null && scoreBNum !== null) {
-        // Get current user's gym_id
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('gym_id')
-          .eq('user_id', currentUserId)
-          .single();
-
-        if (profileData?.gym_id) {
-          console.log('[DEBUG] Sending approval notifications to both athletes');
-          
-          // Send notification to athlete A
-          const { error: notifErrorA } = await supabase.from('notifications').insert({
-            athlete_id: match.athleteA,
-            title: 'Match da Approvare',
-            message: 'È stato registrato un risultato per il match del torneo. Approva per confermare.',
-            type: 'info',
-            created_by: currentUserId,
-            related_bout_id: match.id,
-            gym_id: profileData.gym_id
-          });
-
-          if (notifErrorA) {
-            console.error('[ERROR] Errore notifica atleta A:', notifErrorA);
-          }
-
-          // Send notification to athlete B
-          const { error: notifErrorB } = await supabase.from('notifications').insert({
-            athlete_id: match.athleteB,
-            title: 'Match da Approvare',
-            message: 'È stato registrato un risultato per il match del torneo. Approva per confermare.',
-            type: 'info',
-            created_by: currentUserId,
-            related_bout_id: match.id,
-            gym_id: profileData.gym_id
-          });
-
-          if (notifErrorB) {
-            console.error('[ERROR] Errore notifica atleta B:', notifErrorB);
-          }
-          
-          console.log('[SUCCESS] Notifiche inviate ad entrambi gli atleti');
-        }
-      }
       onSaved();
     } catch (error: any) {
       toast.error('Errore nel salvataggio: ' + error.message);
