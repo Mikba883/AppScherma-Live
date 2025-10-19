@@ -153,6 +153,7 @@ export const TournamentMatrix = ({
         
         if (athleteAData && athleteBData) {
           roundsMap.get(roundNum)!.push({
+            matchId: match.id,
             athleteA: athleteAData,
             athleteB: athleteBData
           });
@@ -164,11 +165,7 @@ export const TournamentMatrix = ({
         .sort(([a], [b]) => a - b)
         .map(([round, matches]) => ({ 
           round, 
-          matches: matches.sort((a, b) => {
-            const idA = a.athleteA.id + a.athleteB.id;
-            const idB = b.athleteA.id + b.athleteB.id;
-            return idA.localeCompare(idB);
-          })
+          matches: matches.sort((a, b) => a.matchId.localeCompare(b.matchId))
         }));
     }
     
