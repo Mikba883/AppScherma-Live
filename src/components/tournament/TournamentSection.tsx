@@ -654,12 +654,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         
         if (insertError) throw insertError;
 
-        // 5. Aggiorna torneo: phase = 2, status = 'in_progress', total_bracket_rounds
-        const totalRounds = phase2Matches.length > 0 
-          ? Math.max(...phase2Matches.map(m => m.bracket_round || 0))
-          : 0;
+        // 5. Calcola il numero TOTALE di round dal numero di atleti (non dal max bracket_round!)
+        const numAthletes = rankings.length;
+        const totalRounds = Math.ceil(Math.log2(numAthletes));
 
-        console.log('[TournamentSection] ✅ Setting total_bracket_rounds to:', totalRounds);
+        console.log('[TournamentSection] ✅ Setting total_bracket_rounds to:', totalRounds, 'for', numAthletes, 'athletes');
 
         const { error: tournamentError } = await supabase
           .from('tournaments')

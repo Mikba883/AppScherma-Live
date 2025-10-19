@@ -297,9 +297,9 @@ const BracketMatchCard = ({
               <SelectValue placeholder="Seleziona arma" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Sciabola">Sciabola</SelectItem>
-              <SelectItem value="Fioretto">Fioretto</SelectItem>
-              <SelectItem value="Spada">Spada</SelectItem>
+              <SelectItem value="sciabola">Sciabola</SelectItem>
+              <SelectItem value="fioretto">Fioretto</SelectItem>
+              <SelectItem value="spada">Spada</SelectItem>
             </SelectContent>
           </Select>
         )}
