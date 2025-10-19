@@ -26,6 +26,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [userGymId, setUserGymId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isClosingTournament, setIsClosingTournament] = useState(false);
+  const [tournamentPhase, setTournamentPhase] = useState<number>(1);
 
   // Load current user on mount
   useEffect(() => {
@@ -85,6 +86,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         setTournamentWeapon(tournament.weapon);
         setTournamentBoutType(tournament.bout_type);
         setTournamentCreatorId(tournament.created_by);
+        setTournamentPhase(tournament.phase || 1);
         
         await loadTournamentData(tournament.tournament_id);
         setMode('matrix');
@@ -346,6 +348,49 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }));
   };
 
+  const generatePhase2Bracket = async (
+    rankings: { athleteId: string; position: number; wins: number; totalMatches: number; pointsDiff: number }[]
+  ) => {
+    const sortedAthletes = rankings.sort((a, b) => a.position - b.position);
+    const n = sortedAthletes.length;
+    
+    // Calculate bracket size (next power of 2)
+    const bracketSize = Math.pow(2, Math.ceil(Math.log2(n)));
+    const byesNeeded = bracketSize - n;
+    
+    const matchesToInsert = [];
+    let pairingsCount = 0;
+    
+    // Create first round pairings: 1st vs last, 2nd vs second-to-last, etc.
+    for (let i = 0; i < Math.floor(n / 2); i++) {
+      const topSeed = sortedAthletes[i];
+      const bottomSeed = sortedAthletes[n - 1 - i];
+      
+      matchesToInsert.push({
+        tournament_id: activeTournamentId,
+        athlete_a: topSeed.athleteId,
+        athlete_b: bottomSeed.athleteId,
+        bout_date: tournamentDate,
+        bout_type: tournamentBoutType,
+        weapon: tournamentWeapon || null,
+        status: 'pending',
+        created_by: currentUserId,
+        gym_id: userGymId,
+        round_number: 1,
+        score_a: null,
+        score_b: null
+      });
+      pairingsCount++;
+    }
+    
+    // Handle BYE: top seeds get automatic advancement
+    if (byesNeeded > 0) {
+      console.log(`[Phase 2] ${byesNeeded} athletes receive BYE (automatic advancement)`);
+    }
+    
+    return matchesToInsert;
+  };
+
   const handleFinishTournament = async () => {
     if (!activeTournamentId || !currentUserId) return;
 
@@ -363,6 +408,107 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       const userRole = profileData?.role;
       const isInstructor = userRole === 'istruttore' || userRole === 'capo_palestra';
 
+      // ===== FASE 1: PASSA ALLA FASE 2 =====
+      if (tournamentPhase === 1) {
+        // 1. Se è istruttore, approva automaticamente tutti i match con punteggio
+        if (isInstructor) {
+          const { error: updateError } = await supabase
+            .from('bouts')
+            .update({
+              status: 'approved',
+              approved_by: currentUserId,
+              approved_at: new Date().toISOString()
+            })
+            .eq('tournament_id', activeTournamentId)
+            .not('score_a', 'is', null)
+            .not('score_b', 'is', null);
+
+          if (updateError) throw updateError;
+        }
+
+        // 2. Cancella SOLO i match senza punteggio (match mai giocati)
+        const { error: cancelError } = await supabase
+          .from('bouts')
+          .update({ status: 'cancelled' })
+          .eq('tournament_id', activeTournamentId)
+          .or('score_a.is.null,score_b.is.null');
+
+        if (cancelError) throw cancelError;
+
+        // 3. Se è studente, crea notifiche di approvazione per ogni match
+        if (!isInstructor) {
+          const { data: pendingMatches } = await supabase
+            .from('bouts')
+            .select('id, athlete_a, athlete_b, score_a, score_b')
+            .eq('tournament_id', activeTournamentId)
+            .eq('status', 'pending')
+            .not('score_a', 'is', null)
+            .not('score_b', 'is', null);
+
+          if (pendingMatches && pendingMatches.length > 0) {
+            const approvalNotifications = pendingMatches.flatMap(match => [
+              {
+                athlete_id: match.athlete_a,
+                title: 'Match Torneo da Approvare',
+                message: `Il torneo "${tournamentName}" è stato chiuso. Approva il tuo match per confermare il risultato (${match.score_a}-${match.score_b}).`,
+                type: 'warning',
+                created_by: currentUserId,
+                related_bout_id: match.id,
+                gym_id: userGymId
+              },
+              {
+                athlete_id: match.athlete_b,
+                title: 'Match Torneo da Approvare',
+                message: `Il torneo "${tournamentName}" è stato chiuso. Approva il tuo match per confermare il risultato (${match.score_b}-${match.score_a}).`,
+                type: 'warning',
+                created_by: currentUserId,
+                related_bout_id: match.id,
+                gym_id: userGymId
+              }
+            ]);
+
+            const { error: approvalNotifError } = await supabase
+              .from('notifications')
+              .insert(approvalNotifications);
+
+            if (approvalNotifError) {
+              console.error('[TournamentSection] Error creating approval notifications:', approvalNotifError);
+            }
+          }
+        }
+
+        // 4. Calcola seeding dalla Fase 1
+        const rankings = calculateFinalRankings(athletes, matches);
+        
+        // 5. Genera accoppiamenti Fase 2
+        const phase2Matches = await generatePhase2Bracket(rankings);
+        
+        // 6. Inserisci match Fase 2 nel database
+        const { error: insertError } = await supabase
+          .from('bouts')
+          .insert(phase2Matches);
+        
+        if (insertError) throw insertError;
+
+        // 7. Aggiorna torneo: phase = 2, status = 'in_progress'
+        const { error: tournamentError } = await supabase
+          .from('tournaments')
+          .update({ phase: 2, status: 'in_progress' })
+          .eq('id', activeTournamentId);
+
+        if (tournamentError) throw tournamentError;
+
+        // 8. Ricarica dati e aggiorna UI
+        setTournamentPhase(2);
+        await loadTournamentData(activeTournamentId);
+        
+        toast.success('Fase 1 completata! Passaggio alla Fase 2 (eliminazione diretta)');
+        setIsLoading(false);
+        setIsClosingTournament(false);
+        return;
+      }
+
+      // ===== FASE 2: CHIUDI TORNEO =====
       // 1. Se è istruttore, approva automaticamente tutti i match con punteggio
       if (isInstructor) {
         const { error: updateError } = await supabase
@@ -378,7 +524,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
         if (updateError) throw updateError;
       }
-      // Se è studente, i match rimangono in pending e devono essere approvati dagli atleti
 
       // 2. Cancella SOLO i match senza punteggio (match mai giocati)
       const { error: cancelError } = await supabase
@@ -657,6 +802,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         isLoading={isLoading}
         tournamentId={activeTournamentId}
         gymId={userGymId}
+        tournamentPhase={tournamentPhase}
       />
     </div>
   );

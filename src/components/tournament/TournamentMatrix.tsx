@@ -25,6 +25,7 @@ interface TournamentMatrixProps {
   isLoading: boolean;
   tournamentId: string | null;
   gymId: string | null;
+  tournamentPhase?: number;
 }
 
 export const TournamentMatrix = ({
@@ -37,7 +38,8 @@ export const TournamentMatrix = ({
   isCreator,
   isLoading,
   tournamentId,
-  gymId
+  gymId,
+  tournamentPhase = 1
 }: TournamentMatrixProps) => {
   const { role } = useUserRoleOptimized();
   
@@ -446,21 +448,35 @@ export const TournamentMatrix = ({
                     className="w-full sm:w-auto"
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Salva e Chiudi</span>
-                    <span className="sm:hidden">Chiudi Torneo</span>
+                    {tournamentPhase === 1 ? (
+                      <>
+                        <span className="hidden sm:inline">Passa alla Fase 2</span>
+                        <span className="sm:hidden">Fase 2</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="hidden sm:inline">Salva e Chiudi</span>
+                        <span className="sm:hidden">Chiudi Torneo</span>
+                      </>
+                    )}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Conferma Salvataggio</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {tournamentPhase === 1 ? 'Conferma Passaggio Fase 2' : 'Conferma Salvataggio'}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Sei sicuro di voler salvare e chiudere il torneo? I match completati saranno registrati e il torneo verrà chiuso.
+                      {tournamentPhase === 1 
+                        ? 'Sei sicuro di voler completare la Fase 1 e passare alla Fase 2 (eliminazione diretta)? I risultati della Fase 1 saranno salvati e verrà generato il tabellone.'
+                        : 'Sei sicuro di voler salvare e chiudere il torneo? I match completati saranno registrati e il torneo verrà chiuso definitivamente.'
+                      }
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="flex-col sm:flex-row gap-2">
                     <AlertDialogCancel className="w-full sm:w-auto">Annulla</AlertDialogCancel>
                     <AlertDialogAction onClick={onFinish} className="w-full sm:w-auto">
-                      Salva e Chiudi
+                      {tournamentPhase === 1 ? 'Passa alla Fase 2' : 'Salva e Chiudi'}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

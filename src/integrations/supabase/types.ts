@@ -54,16 +54,21 @@ export type Database = {
           athlete_b: string
           bout_date: string
           bout_type: string
+          bracket_match_number: number | null
+          bracket_round: number | null
           created_at: string | null
           created_by: string
           gym_id: string | null
           id: string
+          next_match_id: string | null
           notes: string | null
           rejected_at: string | null
           rejected_by: string | null
           round_number: number | null
           score_a: number | null
           score_b: number | null
+          seed_a: number | null
+          seed_b: number | null
           status: string
           tournament_id: string | null
           weapon: string | null
@@ -77,16 +82,21 @@ export type Database = {
           athlete_b: string
           bout_date: string
           bout_type?: string
+          bracket_match_number?: number | null
+          bracket_round?: number | null
           created_at?: string | null
           created_by: string
           gym_id?: string | null
           id?: string
+          next_match_id?: string | null
           notes?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
           round_number?: number | null
           score_a?: number | null
           score_b?: number | null
+          seed_a?: number | null
+          seed_b?: number | null
           status?: string
           tournament_id?: string | null
           weapon?: string | null
@@ -100,16 +110,21 @@ export type Database = {
           athlete_b?: string
           bout_date?: string
           bout_type?: string
+          bracket_match_number?: number | null
+          bracket_round?: number | null
           created_at?: string | null
           created_by?: string
           gym_id?: string | null
           id?: string
+          next_match_id?: string | null
           notes?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
           round_number?: number | null
           score_a?: number | null
           score_b?: number | null
+          seed_a?: number | null
+          seed_b?: number | null
           status?: string
           tournament_id?: string | null
           weapon?: string | null
@@ -142,6 +157,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "bouts_next_match_id_fkey"
+            columns: ["next_match_id"]
+            isOneToOne: false
+            referencedRelation: "bouts"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "bouts_rejected_by_fkey"
@@ -446,6 +468,7 @@ export type Database = {
           gym_id: string | null
           id: string
           name: string
+          phase: number
           status: string
           tournament_date: string
           weapon: string | null
@@ -457,6 +480,7 @@ export type Database = {
           gym_id?: string | null
           id?: string
           name: string
+          phase?: number
           status?: string
           tournament_date: string
           weapon?: string | null
@@ -468,6 +492,7 @@ export type Database = {
           gym_id?: string | null
           id?: string
           name?: string
+          phase?: number
           status?: string
           tournament_date?: string
           weapon?: string | null
@@ -533,6 +558,17 @@ export type Database = {
           logo_url?: string | null
           name?: string | null
           shifts?: string[] | null
+        }
+        Relationships: []
+      }
+      tournament_phase1_rankings: {
+        Row: {
+          athlete_id: string | null
+          point_diff: number | null
+          points_against: number | null
+          points_for: number | null
+          tournament_id: string | null
+          wins: number | null
         }
         Relationships: []
       }
@@ -637,6 +673,7 @@ export type Database = {
         Returns: {
           bout_type: string
           created_by: string
+          phase: number
           tournament_date: string
           tournament_id: string
           tournament_name: string
