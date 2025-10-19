@@ -512,15 +512,10 @@ const MatchInputs = ({
   const isAthleteB = match?.athleteB === currentUserId;
   const isParticipant = isAthleteA || isAthleteB;
 
-  // Check if user has already approved
-  const hasApproved = isAthleteA 
-    ? match?.approved_by_a !== null 
-    : match?.approved_by_b !== null;
-
-  // Can approve if: pending match, is participant, hasn't approved yet, scores are present
-  const canApprove = match?.status === 'pending' 
+  // Athletes can approve their own pending matches with scores
+  const canApprove = !isInstructor
+                  && match?.status === 'pending' 
                   && isParticipant 
-                  && !hasApproved
                   && match?.scoreA !== null
                   && match?.scoreB !== null;
 
@@ -630,12 +625,6 @@ const MatchInputs = ({
         />
       </div>
 
-      {!canEdit && !isInstructor && (
-        <p className="text-xs text-muted-foreground text-center">
-          Solo visualizzazione
-        </p>
-      )}
-
       {/* Approval button for athletes */}
       {canApprove && (
         <Button 
@@ -645,19 +634,6 @@ const MatchInputs = ({
         >
           Approva Match
         </Button>
-      )}
-
-      {/* Approval status badges */}
-      {match?.status === 'pending' && isParticipant && !canApprove && (
-        <div className="text-center">
-          {hasApproved ? (
-            <Badge variant="default" className="text-xs">✓ Hai approvato</Badge>
-          ) : match?.scoreA === null || match?.scoreB === null ? (
-            <Badge variant="secondary" className="text-xs">⏳ In attesa punteggi</Badge>
-          ) : (
-            <Badge variant="secondary" className="text-xs">⏳ In attesa dell'altro atleta</Badge>
-          )}
-        </div>
       )}
 
       {match?.status === 'approved' && (
