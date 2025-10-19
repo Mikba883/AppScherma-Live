@@ -28,6 +28,7 @@ interface TournamentMatrixProps {
   gymId: string | null;
   tournamentPhase?: number;
   onRoundComplete?: (completedRound: number) => Promise<void>;
+  totalBracketRounds?: number;
 }
 
 export const TournamentMatrix = ({
@@ -42,7 +43,8 @@ export const TournamentMatrix = ({
   tournamentId,
   gymId,
   tournamentPhase = 1,
-  onRoundComplete
+  onRoundComplete,
+  totalBracketRounds = 0
 }: TournamentMatrixProps) => {
   const { role } = useUserRoleOptimized();
   
@@ -430,10 +432,11 @@ export const TournamentMatrix = ({
               currentUserId={currentUserId}
               isInstructor={isInstructor}
               isCreator={isCreator}
-              tournamentId={tournamentId}
-              gymId={gymId}
-              onRoundComplete={onRoundComplete}
-            />
+          tournamentId={tournamentId}
+          gymId={gymId}
+          onRoundComplete={onRoundComplete}
+          totalBracketRounds={totalBracketRounds}
+        />
           )}
         </CardContent>
       </Card>

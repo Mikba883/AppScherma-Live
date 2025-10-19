@@ -19,6 +19,7 @@ interface BracketViewProps {
   tournamentId: string | null;
   gymId: string | null;
   onRoundComplete?: (completedRound: number) => Promise<void>;
+  totalBracketRounds: number;
 }
 
 export const BracketView = ({ 
@@ -30,7 +31,8 @@ export const BracketView = ({
   isCreator,
   tournamentId,
   gymId,
-  onRoundComplete
+  onRoundComplete,
+  totalBracketRounds
 }: BracketViewProps) => {
   // Raggruppa match per bracket_round
   const rounds = matches
@@ -46,14 +48,16 @@ export const BracketView = ({
 
   const sortedRounds = Object.keys(rounds)
     .map(Number)
-    .sort((a, b) => b - a); // Dal più alto (Finale) al più basso
+    .sort((a, b) => a - b); // From first round to final
 
-  const getRoundName = (roundNum: number, totalRounds: number) => {
-    const roundsFromEnd = totalRounds - roundNum;
-    if (roundsFromEnd === 0) return 'Finale';
-    if (roundsFromEnd === 1) return 'Semifinali';
-    if (roundsFromEnd === 2) return 'Quarti';
-    if (roundsFromEnd === 3) return 'Ottavi';
+  const getRoundName = (roundNum: number) => {
+    const roundsFromFinal = totalBracketRounds - roundNum;
+    
+    if (roundsFromFinal === 0) return '🏆 Finale';
+    if (roundsFromFinal === 1) return 'Semifinali';
+    if (roundsFromFinal === 2) return 'Quarti di Finale';
+    if (roundsFromFinal === 3) return 'Ottavi di Finale';
+    
     return `Turno ${roundNum}`;
   };
 
@@ -63,10 +67,10 @@ export const BracketView = ({
         const roundMatches = rounds[roundNum] || [];
         
         return (
-          <div key={roundNum} className="space-y-4">
-            <h3 className="font-bold text-center text-xl bg-primary text-primary-foreground py-2 rounded">
-              {getRoundName(roundNum, sortedRounds.length)}
-            </h3>
+      <div key={roundNum} className="space-y-4">
+        <h3 className="font-bold text-center text-xl bg-primary text-primary-foreground py-2 rounded">
+          {getRoundName(roundNum)}
+        </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {roundMatches.map((match, idx) => (

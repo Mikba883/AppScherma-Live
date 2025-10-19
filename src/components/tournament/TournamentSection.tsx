@@ -27,6 +27,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [isLoading, setIsLoading] = useState(false);
   const [isClosingTournament, setIsClosingTournament] = useState(false);
   const [tournamentPhase, setTournamentPhase] = useState<number>(1);
+  const [totalBracketRounds, setTotalBracketRounds] = useState<number>(0);
 
   // Load current user on mount
   useEffect(() => {
@@ -103,10 +104,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     setIsLoading(true);
     
     try {
-      // Load tournament info to get the phase
+      // Load tournament info to get the phase and total_bracket_rounds
       const { data: tournamentData, error: tournamentError } = await supabase
         .from('tournaments')
-        .select('phase')
+        .select('phase, total_bracket_rounds')
         .eq('id', tournamentId)
         .single();
 
@@ -116,6 +117,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       if (tournamentData?.phase) {
         console.log('[TournamentSection] Tournament phase:', tournamentData.phase);
         setTournamentPhase(tournamentData.phase);
+      }
+      
+      // Update total bracket rounds
+      if (tournamentData?.total_bracket_rounds) {
+        setTotalBracketRounds(tournamentData.total_bracket_rounds);
       }
 
       // Load all bouts for this tournament, ordered by round_number
@@ -382,7 +388,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     
     // Calculate bracket size (next power of 2)
     const bracketSize = Math.pow(2, Math.ceil(Math.log2(n)));
+    const totalRounds = Math.ceil(Math.log2(n));
     const byesNeeded = bracketSize - n;
+    
+    // Save total rounds to tournament
+    await supabase
+      .from('tournaments')
+      .update({ total_bracket_rounds: totalRounds })
+      .eq('id', activeTournamentId);
+    
+    setTotalBracketRounds(totalRounds);
     
     const matchesToInsert = [];
     let pairingsCount = 0;
@@ -420,11 +435,13 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
   // Helper to get round name
   const getRoundName = (roundNum: number, totalRounds: number) => {
-    const roundsFromEnd = totalRounds - roundNum;
-    if (roundsFromEnd === 0) return 'Finale';
-    if (roundsFromEnd === 1) return 'Semifinali';
-    if (roundsFromEnd === 2) return 'Quarti di Finale';
-    if (roundsFromEnd === 3) return 'Ottavi di Finale';
+    const roundsFromFinal = totalRounds - roundNum;
+    
+    if (roundsFromFinal === 0) return '🏆 Finale';
+    if (roundsFromFinal === 1) return 'Semifinali';
+    if (roundsFromFinal === 2) return 'Quarti di Finale';
+    if (roundsFromFinal === 3) return 'Ottavi di Finale';
+    
     return `Turno ${roundNum}`;
   };
 
@@ -815,6 +832,52 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     }
   };
 
+  const handleBackToPhase1 = async () => {
+    if (!activeTournamentId) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // 1. Delete all Phase 2 matches
+      const { error: deleteError } = await supabase
+        .from('bouts')
+        .delete()
+        .eq('tournament_id', activeTournamentId)
+        .not('bracket_round', 'is', null);
+      
+      if (deleteError) throw deleteError;
+      
+      // 2. Restore Phase 1 matches
+      const { error: restoreError } = await supabase
+        .from('bouts')
+        .update({ status: 'pending' })
+        .eq('tournament_id', activeTournamentId)
+        .eq('status', 'cancelled')
+        .is('bracket_round', null);
+      
+      if (restoreError) throw restoreError;
+      
+      // 3. Update tournament phase
+      const { error: updateError } = await supabase
+        .from('tournaments')
+        .update({ phase: 1 })
+        .eq('id', activeTournamentId);
+      
+      if (updateError) throw updateError;
+      
+      // 4. Reload data
+      setTournamentPhase(1);
+      await loadTournamentData(activeTournamentId);
+      
+      toast.success('Tornato alla Fase 1');
+    } catch (error) {
+      console.error('[TournamentSection] Error returning to Phase 1:', error);
+      toast.error('Errore nel ritorno alla Fase 1');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCancelTournament = async () => {
     if (!activeTournamentId) return;
     
@@ -953,6 +1016,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         gymId={userGymId}
         tournamentPhase={tournamentPhase}
         onRoundComplete={advanceBracketRound}
+        totalBracketRounds={totalBracketRounds}
       />
     </div>
   );

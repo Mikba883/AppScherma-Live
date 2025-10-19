@@ -470,6 +470,7 @@ export type Database = {
           name: string
           phase: number
           status: string
+          total_bracket_rounds: number | null
           tournament_date: string
           weapon: string | null
         }
@@ -482,6 +483,7 @@ export type Database = {
           name: string
           phase?: number
           status?: string
+          total_bracket_rounds?: number | null
           tournament_date: string
           weapon?: string | null
         }
@@ -494,6 +496,7 @@ export type Database = {
           name?: string
           phase?: number
           status?: string
+          total_bracket_rounds?: number | null
           tournament_date?: string
           weapon?: string | null
         }
