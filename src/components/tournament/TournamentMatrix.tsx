@@ -193,7 +193,7 @@ export const TournamentMatrix = ({
   // Everyone can see all matches
   const visibleRounds = useMemo(() => {
     return generateRounds();
-  }, [athletes, matches]);
+  }, [athletes]);
 
   // Sort athletes by ranking
   const sortedAthletes = useMemo(() => {
@@ -570,7 +570,7 @@ const MatchInputs = ({
 
       if (error) throw error;
 
-      // Send notifications to both athletes when a non-creator saves a match
+      // Send notification ONLY to the opponent when a non-creator saves a match
       if (!isCreator && scoreANum !== null && scoreBNum !== null) {
         // Get current user's gym_id
         const { data: profileData } = await supabase
@@ -580,37 +580,25 @@ const MatchInputs = ({
           .single();
 
         if (profileData?.gym_id) {
-          // Notify athlete A
-          await supabase.from('notifications').insert({
-            athlete_id: match.athleteA,
+          // Identify opponent
+          const opponentId = match.athleteA === currentUserId ? match.athleteB : match.athleteA;
+          
+          // Notify ONLY the opponent
+          const { error: notifError } = await supabase.from('notifications').insert({
+            athlete_id: opponentId,
             title: 'Match da Approvare',
-            message: 'È stato registrato un nuovo match del torneo. Approva il risultato per confermare.',
+            message: 'Il tuo avversario ha inserito un risultato per il match del torneo. Approva per confermare.',
             type: 'info',
             created_by: currentUserId,
             related_bout_id: match.id,
             gym_id: profileData.gym_id
           });
 
-          // Notify athlete B
-          await supabase.from('notifications').insert({
-            athlete_id: match.athleteB,
-            title: 'Match da Approvare',
-            message: 'È stato registrato un nuovo match del torneo. Approva il risultato per confermare.',
-            type: 'info',
-            created_by: currentUserId,
-            related_bout_id: match.id,
-            gym_id: profileData.gym_id
-          });
+          if (notifError) {
+            console.error('Errore invio notifica:', notifError);
+          }
         }
       }
-
-      toast.success(
-        scoreANum === null 
-          ? 'Match cancellato' 
-          : isCreator 
-            ? 'Match salvato e approvato automaticamente' 
-            : 'Match salvato, in attesa di approvazione'
-      );
       onSaved();
     } catch (error: any) {
       toast.error('Errore nel salvataggio: ' + error.message);
