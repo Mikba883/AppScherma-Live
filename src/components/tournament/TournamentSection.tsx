@@ -190,8 +190,13 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     weapon: string | null,
     boutType: string
   ) => {
-    if (!currentUserId || !userGymId) {
+    if (!currentUserId) {
       toast.error('Utente non autenticato');
+      return;
+    }
+
+    if (!userGymId) {
+      toast.error('Devi essere associato a una palestra per creare un torneo');
       return;
     }
 
