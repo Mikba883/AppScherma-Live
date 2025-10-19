@@ -158,9 +158,9 @@ const BracketMatchCard = ({
           score_a: parsedScoreA,
           score_b: parsedScoreB,
           weapon: weapon && weapon.trim() !== '' ? weapon : null,
-          status: (isInstructor || isCreator) ? 'approved' : 'pending',
-          approved_by_a: (isInstructor || isCreator) ? currentUserId : null,
-          approved_by_b: (isInstructor || isCreator) ? currentUserId : null,
+          status: 'pending',  // ✅ Tutti i match restano pending fino all'approvazione esplicita
+          approved_by_a: null,
+          approved_by_b: null,
         })
         .eq('id', match.id);
 
@@ -307,7 +307,8 @@ const BracketMatchCard = ({
         {/* Action buttons */}
         {!isCompleted && (
           <div className="flex gap-2">
-            {canEdit ? (
+            {/* TUTTI vedono bottone Salva se possono editare */}
+            {canEdit && (
               <Button
                 onClick={handleSave}
                 disabled={isSaving || !scoreA || !scoreB}
@@ -317,22 +318,21 @@ const BracketMatchCard = ({
                 <Save className="w-3 h-3 mr-1" />
                 Salva
               </Button>
-            ) : (
-              <>
-                {((isAthleteA && !hasApprovedA) || (isAthleteB && !hasApprovedB)) && (
-                  match.scoreA !== null && match.scoreB !== null && (
-                    <Button
-                      onClick={handleApprove}
-                      disabled={isSaving}
-                      size="sm"
-                      className="w-full"
-                    >
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Approva
-                    </Button>
-                  )
-                )}
-              </>
+            )}
+            
+            {/* TUTTI (istruttori E allievi) vedono bottoni Approva */}
+            {((isAthleteA && !hasApprovedA) || (isAthleteB && !hasApprovedB)) && (
+              match.scoreA !== null && match.scoreB !== null && (
+                <Button
+                  onClick={handleApprove}
+                  disabled={isSaving}
+                  size="sm"
+                  className="w-full"
+                >
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Approva
+                </Button>
+              )
             )}
           </div>
         )}

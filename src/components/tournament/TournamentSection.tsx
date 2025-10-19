@@ -511,6 +511,27 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         return;
       }
 
+      // ✅ STEP 1: Auto-approve all matches from completed round
+      const { error: approveError } = await supabase
+        .from('bouts')
+        .update({
+          status: 'approved',
+          approved_by: currentUserId,
+          approved_at: new Date().toISOString()
+        })
+        .eq('tournament_id', activeTournamentId)
+        .eq('bracket_round', completedRound)
+        .eq('status', 'pending');
+
+      if (approveError) {
+        console.error('[TournamentSection] Error approving round matches:', approveError);
+        toast.error('Errore nell\'approvazione dei match');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log(`[TournamentSection] ✅ Approved all matches from round ${completedRound}`);
+
       // 3. If only 1 match completed → IT'S THE FINAL → TOURNAMENT COMPLETED
       if (completedMatches.length === 1) {
         const finalMatch = completedMatches[0];
@@ -663,21 +684,27 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       }
 
       // ===== FASE 2: CHIUDI TORNEO =====
-      // 1. Se è istruttore, approva automaticamente tutti i match con punteggio
-      if (isInstructor) {
-        const { error: updateError } = await supabase
-          .from('bouts')
-          .update({
-            status: 'approved',
-            approved_by: currentUserId,
-            approved_at: new Date().toISOString()
-          })
-          .eq('tournament_id', activeTournamentId)
-          .not('score_a', 'is', null)
-          .not('score_b', 'is', null);
+      // ✅ STEP 1: Auto-approve ALL remaining Phase 2 matches (sia per istruttore che per studente)
+      const { error: approveError } = await supabase
+        .from('bouts')
+        .update({
+          status: 'approved',
+          approved_by: currentUserId,
+          approved_at: new Date().toISOString()
+        })
+        .eq('tournament_id', activeTournamentId)
+        .not('bracket_round', 'is', null)  // Only Phase 2 matches
+        .eq('status', 'pending');
 
-        if (updateError) throw updateError;
+      if (approveError) {
+        console.error('[TournamentSection] Error approving Phase 2 matches:', approveError);
+        toast.error('Errore nell\'approvazione dei match');
+        setIsLoading(false);
+        setIsClosingTournament(false);
+        return;
       }
+
+      console.log('[TournamentSection] ✅ Approved all Phase 2 matches');
 
       // 2. Cancella SOLO i match senza punteggio (match mai giocati)
       const { error: cancelError } = await supabase
