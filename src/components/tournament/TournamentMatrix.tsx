@@ -348,7 +348,7 @@ export const TournamentMatrix = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {round.matches.map(({ athleteA, athleteB }) => {
                   const match = getMatch(athleteA.id, athleteB.id);
-                  const canEdit = isInstructor;
+                  const canEdit = true;
 
                   return (
                     <Card key={`${athleteA.id}-${athleteB.id}`}>
@@ -356,18 +356,19 @@ export const TournamentMatrix = ({
                         <div className="font-medium mb-3 text-center">
                           {athleteA.full_name} vs {athleteB.full_name}
                         </div>
-                        <MatchInputs
-                          key={`${athleteA.id}-${athleteB.id}-${match?.id || 'new'}`}
-                          match={match}
-                          athleteAId={athleteA.id}
-                          athleteBId={athleteB.id}
-                          athleteAName={athleteA.full_name}
-                          athleteBName={athleteB.full_name}
-                          canEdit={canEdit}
-                          currentUserId={currentUserId}
-                          isInstructor={isInstructor}
-                          onSaved={onRefresh}
-                        />
+                  <MatchInputs
+                    key={`${athleteA.id}-${athleteB.id}-${match?.id || 'new'}`}
+                    match={match}
+                    athleteAId={athleteA.id}
+                    athleteBId={athleteB.id}
+                    athleteAName={athleteA.full_name}
+                    athleteBName={athleteB.full_name}
+                    canEdit={canEdit}
+                    currentUserId={currentUserId}
+                    isInstructor={isInstructor}
+                    isCreator={isCreator}
+                    onSaved={onRefresh}
+                  />
                       </CardContent>
                     </Card>
                   );
@@ -472,6 +473,7 @@ interface MatchInputsProps {
   canEdit: boolean;
   currentUserId: string | null;
   isInstructor: boolean;
+  isCreator: boolean;
   onSaved: () => void;
 }
 
@@ -484,6 +486,7 @@ const MatchInputs = ({
   canEdit,
   currentUserId,
   isInstructor,
+  isCreator,
   onSaved
 }: MatchInputsProps) => {
   // Helper to get score for specific athlete
@@ -512,9 +515,8 @@ const MatchInputs = ({
   const isAthleteB = match?.athleteB === currentUserId;
   const isParticipant = isAthleteA || isAthleteB;
 
-  // Athletes can approve their own pending matches with scores
-  const canApprove = !isInstructor
-                  && match?.status === 'pending' 
+  // Anyone can approve pending matches with scores
+  const canApprove = match?.status === 'pending' 
                   && isParticipant 
                   && match?.scoreA !== null
                   && match?.scoreB !== null;
@@ -545,22 +547,39 @@ const MatchInputs = ({
     }
 
     try {
+      // Status based on who created the tournament
+      const newStatus = isCreator ? 'approved' : 'pending';
+      
+      const updateData: any = {
+        score_a: match.athleteA === athleteAId ? scoreANum : scoreBNum,
+        score_b: match.athleteA === athleteAId ? scoreBNum : scoreANum,
+        weapon: weapon,
+        status: newStatus,
+      };
+
+      // If tournament creator saves, auto-approve
+      if (isCreator) {
+        updateData.approved_by = currentUserId;
+        updateData.approved_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from('bouts')
-        .update({
-          score_a: match.athleteA === athleteAId ? scoreANum : scoreBNum,
-          score_b: match.athleteA === athleteAId ? scoreBNum : scoreANum,
-          weapon: weapon,
-          status: 'pending'
-        })
+        .update(updateData)
         .eq('id', match.id);
 
       if (error) throw error;
 
-      toast.success(scoreANum === null ? 'Match cancellato' : 'Match salvato');
+      toast.success(
+        scoreANum === null 
+          ? 'Match cancellato' 
+          : isCreator 
+            ? 'Match salvato e approvato automaticamente' 
+            : 'Match salvato, in attesa di approvazione'
+      );
       onSaved();
     } catch (error: any) {
-      toast.error('Errore: ' + error.message);
+      toast.error('Errore nel salvataggio: ' + error.message);
     }
   };
 
@@ -636,8 +655,21 @@ const MatchInputs = ({
         </Button>
       )}
 
+      {/* Approval status badges */}
+      {match?.status === 'pending' && isParticipant && (
+        <div className="text-center mt-2">
+          {match?.approved_by_a && match?.approved_by_b ? (
+            <Badge variant="outline" className="text-xs">⏳ In attesa approvazione finale</Badge>
+          ) : match?.approved_by_a || match?.approved_by_b ? (
+            <Badge variant="secondary" className="text-xs">✓ 1/2 approvazioni</Badge>
+          ) : (
+            <Badge variant="secondary" className="text-xs">0/2 approvazioni</Badge>
+          )}
+        </div>
+      )}
+
       {match?.status === 'approved' && (
-        <Badge variant="default" className="w-full justify-center text-xs">
+        <Badge variant="default" className="w-full justify-center text-xs mt-2">
           ✓ Match Approvato
         </Badge>
       )}
