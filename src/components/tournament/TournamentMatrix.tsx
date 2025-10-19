@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { BracketView } from './BracketView';
 
 import { toast } from 'sonner';
 import { Trophy, Save, X, RefreshCw } from 'lucide-react';
@@ -346,48 +347,67 @@ export const TournamentMatrix = ({
       {/* Organization Section */}
       <Card>
         <CardHeader className="space-y-3">
-          <CardTitle className="text-base sm:text-lg">Organizzazione Turni</CardTitle>
+          <CardTitle className="text-base sm:text-lg">
+            {tournamentPhase === 1 ? 'Organizzazione Turni' : 'Tabellone Eliminazione Diretta'}
+          </CardTitle>
           <Badge variant="outline" className="text-sm sm:text-base w-fit">
             {completedMatches} / {totalMatches} match giocati
           </Badge>
         </CardHeader>
         <CardContent className="space-y-6">
-          {visibleRounds.map(round => (
-            <div key={round.round} className="space-y-3">
-              <h3 className="font-semibold text-lg">Turno {round.round}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {round.matches.map(({ athleteA, athleteB }) => {
-                  const match = getMatch(athleteA.id, athleteB.id);
-                  const canEdit = true;
+          {tournamentPhase === 1 ? (
+            // FASE 1: Round Robin
+            <>
+              {visibleRounds.map(round => (
+                <div key={round.round} className="space-y-3">
+                  <h3 className="font-semibold text-lg">Turno {round.round}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {round.matches.map(({ athleteA, athleteB }) => {
+                      const match = getMatch(athleteA.id, athleteB.id);
+                      const canEdit = true;
 
-                  return (
-                    <Card key={`${athleteA.id}-${athleteB.id}`}>
-                      <CardContent className="p-4">
-                        <div className="font-medium mb-3 text-center">
-                          {athleteA.full_name} vs {athleteB.full_name}
-                        </div>
-                  <MatchInputs
-                    key={`${athleteA.id}-${athleteB.id}-${match?.id || 'new'}`}
-                    match={match}
-                    athleteAId={athleteA.id}
-                    athleteBId={athleteB.id}
-                    athleteAName={athleteA.full_name}
-                    athleteBName={athleteB.full_name}
-                    canEdit={canEdit}
-                    currentUserId={currentUserId}
-                    isInstructor={isInstructor}
-                    isCreator={isCreator}
-                    onSaved={onRefresh}
-                    tournamentId={tournamentId}
-                    gymId={gymId}
-                  />
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+                      return (
+                        <Card key={`${athleteA.id}-${athleteB.id}`}>
+                          <CardContent className="p-4">
+                            <div className="font-medium mb-3 text-center">
+                              {athleteA.full_name} vs {athleteB.full_name}
+                            </div>
+                      <MatchInputs
+                        key={`${athleteA.id}-${athleteB.id}-${match?.id || 'new'}`}
+                        match={match}
+                        athleteAId={athleteA.id}
+                        athleteBId={athleteB.id}
+                        athleteAName={athleteA.full_name}
+                        athleteBName={athleteB.full_name}
+                        canEdit={canEdit}
+                        currentUserId={currentUserId}
+                        isInstructor={isInstructor}
+                        isCreator={isCreator}
+                        onSaved={onRefresh}
+                        tournamentId={tournamentId}
+                        gymId={gymId}
+                      />
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            // FASE 2: Bracket
+            <BracketView
+              matches={matches}
+              athleteNames={new Map(athletes.map(a => [a.id, a.full_name]))}
+              onRefresh={onRefresh}
+              currentUserId={currentUserId}
+              isInstructor={isInstructor}
+              isCreator={isCreator}
+              tournamentId={tournamentId}
+              gymId={gymId}
+            />
+          )}
         </CardContent>
       </Card>
 
