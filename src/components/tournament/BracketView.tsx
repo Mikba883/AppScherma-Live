@@ -18,6 +18,7 @@ interface BracketViewProps {
   isCreator: boolean;
   tournamentId: string | null;
   gymId: string | null;
+  onRoundComplete?: (completedRound: number) => Promise<void>;
 }
 
 export const BracketView = ({ 
@@ -28,7 +29,8 @@ export const BracketView = ({
   isInstructor,
   isCreator,
   tournamentId,
-  gymId
+  gymId,
+  onRoundComplete
 }: BracketViewProps) => {
   // Raggruppa match per bracket_round
   const rounds = matches
@@ -44,7 +46,7 @@ export const BracketView = ({
 
   const sortedRounds = Object.keys(rounds)
     .map(Number)
-    .sort((a, b) => a - b);
+    .sort((a, b) => b - a); // Dal più alto (Finale) al più basso
 
   const getRoundName = (roundNum: number, totalRounds: number) => {
     const roundsFromEnd = totalRounds - roundNum;
@@ -56,17 +58,17 @@ export const BracketView = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex gap-6 overflow-x-auto pb-4">
-        {sortedRounds.map(roundNum => {
-          const roundMatches = rounds[roundNum] || [];
-          
-          return (
-            <div key={roundNum} className="flex flex-col gap-4 min-w-[320px]">
-              <h3 className="font-bold text-center text-lg">
-                {getRoundName(roundNum, sortedRounds.length)}
-              </h3>
-              
+    <div className="space-y-8">
+      {sortedRounds.map(roundNum => {
+        const roundMatches = rounds[roundNum] || [];
+        
+        return (
+          <div key={roundNum} className="space-y-4">
+            <h3 className="font-bold text-center text-xl bg-primary text-primary-foreground py-2 rounded">
+              {getRoundName(roundNum, sortedRounds.length)}
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {roundMatches.map((match, idx) => (
                 <BracketMatchCard
                   key={match.id || idx}
@@ -79,12 +81,13 @@ export const BracketView = ({
                   tournamentId={tournamentId}
                   gymId={gymId}
                   onRefresh={onRefresh}
+                  onRoundComplete={onRoundComplete}
                 />
               ))}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -100,6 +103,7 @@ interface BracketMatchCardProps {
   tournamentId: string | null;
   gymId: string | null;
   onRefresh: () => void;
+  onRoundComplete?: (completedRound: number) => Promise<void>;
 }
 
 const BracketMatchCard = ({
@@ -111,7 +115,8 @@ const BracketMatchCard = ({
   isCreator,
   tournamentId,
   gymId,
-  onRefresh
+  onRefresh,
+  onRoundComplete
 }: BracketMatchCardProps) => {
   const [scoreA, setScoreA] = useState<string>(match.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState<string>(match.scoreB?.toString() || '');
@@ -154,6 +159,13 @@ const BracketMatchCard = ({
       if (error) throw error;
 
       toast.success('Match salvato');
+      
+      // Trigger automatic advancement if round is complete
+      const currentRound = match.bracket_round;
+      if (currentRound && onRoundComplete) {
+        await onRoundComplete(currentRound);
+      }
+      
       onRefresh();
     } catch (error) {
       console.error('Error saving match:', error);
@@ -200,6 +212,11 @@ const BracketMatchCard = ({
     }
   };
 
+  // Check if it's a BYE match (one athlete is TBD)
+  const isByeMatch = !match.athleteA || !match.athleteB || 
+                     !athleteNames.get(match.athleteA) || 
+                     !athleteNames.get(match.athleteB);
+
   return (
     <Card className="bg-muted/50">
       <CardHeader className="pb-3">
@@ -208,6 +225,12 @@ const BracketMatchCard = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {isByeMatch && (
+          <Badge variant="secondary" className="w-full text-center">
+            TBD - In attesa del turno precedente
+          </Badge>
+        )}
+        
         {/* Athletes and scores */}
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">

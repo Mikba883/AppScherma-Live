@@ -418,6 +418,128 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     return matchesToInsert;
   };
 
+  // Helper to get round name
+  const getRoundName = (roundNum: number, totalRounds: number) => {
+    const roundsFromEnd = totalRounds - roundNum;
+    if (roundsFromEnd === 0) return 'Finale';
+    if (roundsFromEnd === 1) return 'Semifinali';
+    if (roundsFromEnd === 2) return 'Quarti di Finale';
+    if (roundsFromEnd === 3) return 'Ottavi di Finale';
+    return `Turno ${roundNum}`;
+  };
+
+  // Automatic advancement to next bracket round
+  const advanceBracketRound = async (completedRound: number) => {
+    if (!activeTournamentId || !userGymId || !currentUserId) return;
+
+    setIsLoading(true);
+
+    try {
+      // 1. Get all completed matches from this round
+      const { data: completedMatches, error: fetchError } = await supabase
+        .from('bouts')
+        .select('*')
+        .eq('tournament_id', activeTournamentId)
+        .eq('bracket_round', completedRound)
+        .eq('status', 'approved')
+        .not('score_a', 'is', null)
+        .not('score_b', 'is', null);
+
+      if (fetchError) throw fetchError;
+      if (!completedMatches || completedMatches.length === 0) return;
+
+      // 2. Check if ALL matches in this round are completed
+      const { data: allRoundMatches } = await supabase
+        .from('bouts')
+        .select('id, status')
+        .eq('tournament_id', activeTournamentId)
+        .eq('bracket_round', completedRound);
+
+      const allCompleted = allRoundMatches?.every(m => 
+        m.status === 'approved' || m.status === 'cancelled'
+      );
+
+      if (!allCompleted) {
+        console.log(`[Bracket] Round ${completedRound} not yet completed`);
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. If only 1 match completed → IT'S THE FINAL → TOURNAMENT COMPLETED
+      if (completedMatches.length === 1) {
+        const finalMatch = completedMatches[0];
+        const winnerId = finalMatch.score_a > finalMatch.score_b 
+          ? finalMatch.athlete_a 
+          : finalMatch.athlete_b;
+        
+        const { data: winnerProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', winnerId)
+          .single();
+
+        toast.success(`🏆 Torneo completato! Vincitore: ${winnerProfile?.full_name}`);
+        
+        // Update tournament status
+        await supabase
+          .from('tournaments')
+          .update({ status: 'completed' })
+          .eq('id', activeTournamentId);
+        
+        await loadTournamentData(activeTournamentId);
+        setIsLoading(false);
+        return;
+      }
+
+      // 4. Determine winners
+      const winners = completedMatches.map(match => ({
+        athleteId: match.score_a > match.score_b ? match.athlete_a : match.athlete_b,
+        previousMatchId: match.id
+      }));
+
+      // 5. Create matches for next round (consecutive pairings)
+      const nextRoundMatches = [];
+      for (let i = 0; i < winners.length; i += 2) {
+        if (i + 1 < winners.length) {
+          nextRoundMatches.push({
+            tournament_id: activeTournamentId,
+            athlete_a: winners[i].athleteId,
+            athlete_b: winners[i + 1].athleteId,
+            bout_date: tournamentDate,
+            bout_type: tournamentBoutType,
+            weapon: tournamentWeapon || null,
+            status: 'pending',
+            created_by: currentUserId,
+            gym_id: userGymId,
+            bracket_round: completedRound + 1,
+            round_number: null,
+            score_a: null,
+            score_b: null
+          });
+        }
+      }
+
+      // 6. Insert next round matches
+      if (nextRoundMatches.length > 0) {
+        const { error: insertError } = await supabase
+          .from('bouts')
+          .insert(nextRoundMatches);
+
+        if (insertError) throw insertError;
+
+        const nextRoundName = getRoundName(completedRound + 1, completedRound + 2);
+        toast.success(`✅ Turno ${completedRound} completato! Creati match per: ${nextRoundName}`);
+        
+        await loadTournamentData(activeTournamentId);
+      }
+    } catch (error) {
+      console.error('[Bracket] Error advancing round:', error);
+      toast.error('Errore nell\'avanzamento del turno');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleFinishTournament = async () => {
     if (!activeTournamentId || !currentUserId) return;
 
@@ -830,6 +952,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         tournamentId={activeTournamentId}
         gymId={userGymId}
         tournamentPhase={tournamentPhase}
+        onRoundComplete={advanceBracketRound}
       />
     </div>
   );

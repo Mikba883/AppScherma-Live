@@ -27,6 +27,7 @@ interface TournamentMatrixProps {
   tournamentId: string | null;
   gymId: string | null;
   tournamentPhase?: number;
+  onRoundComplete?: (completedRound: number) => Promise<void>;
 }
 
 export const TournamentMatrix = ({
@@ -40,7 +41,8 @@ export const TournamentMatrix = ({
   isLoading,
   tournamentId,
   gymId,
-  tournamentPhase = 1
+  tournamentPhase = 1,
+  onRoundComplete
 }: TournamentMatrixProps) => {
   const { role } = useUserRoleOptimized();
   
@@ -348,6 +350,26 @@ export const TournamentMatrix = ({
         </>
       )}
 
+      {tournamentPhase === 2 && (
+        <Card className="bg-primary/10 border-primary">
+          <CardHeader>
+            <CardTitle className="text-center text-base sm:text-lg">
+              📊 Stato Bracket
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center space-y-2">
+              <p className="text-sm">
+                Compila tutti i risultati del turno corrente per passare automaticamente al successivo
+              </p>
+              <Badge variant="outline" className="text-xs sm:text-sm">
+                {completedMatches} / {totalMatches} match completati
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Organization Section */}
       <Card>
         <CardHeader className="space-y-3">
@@ -410,6 +432,7 @@ export const TournamentMatrix = ({
               isCreator={isCreator}
               tournamentId={tournamentId}
               gymId={gymId}
+              onRoundComplete={onRoundComplete}
             />
           )}
         </CardContent>
