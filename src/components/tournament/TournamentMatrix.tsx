@@ -232,117 +232,121 @@ export const TournamentMatrix = ({
 
   return (
     <div className="space-y-6">
-      {/* Ranking Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
-            Classifica
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6">
-          <div className="overflow-x-auto -mx-3 sm:mx-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px] sm:w-[60px] text-xs sm:text-sm">Pos.</TableHead>
-                  <TableHead className="text-xs sm:text-sm">Atleta</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm whitespace-nowrap">V/M</TableHead>
-                  <TableHead className="text-center text-xs sm:text-sm whitespace-nowrap">Diff</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedAthletes.map((athlete, index) => {
-                  const stats = getAthleteStats(athlete.id);
-                  return (
-                    <TableRow key={athlete.id}>
-                      <TableCell className="font-bold p-2 sm:p-4">
-                        <Badge variant={index === 0 ? 'default' : 'outline'} className="text-xs">
-                          {index + 1}°
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium p-2 sm:p-4 text-xs sm:text-sm">
-                        {athlete.full_name}
-                      </TableCell>
-                      
-                      {/* Colonna V/M - più compatta su mobile */}
-                      <TableCell className="text-center font-semibold p-2 sm:p-4">
-                        <div className="text-sm sm:text-base">
-                          {stats.wins}/{stats.totalMatches}
-                        </div>
-                      </TableCell>
-                      
-                      {/* Colonna Diff Stoccate - nasconde dettagli su mobile */}
-                      <TableCell className="text-center p-2 sm:p-4">
-                        <Badge 
-                          variant={stats.pointsDiff > 0 ? 'default' : stats.pointsDiff < 0 ? 'secondary' : 'outline'}
-                          className="text-xs sm:text-sm"
-                        >
-                          {stats.pointsDiff > 0 ? '+' : ''}{stats.pointsDiff}
-                        </Badge>
-                        <div className="hidden sm:block text-xs text-muted-foreground mt-1">
-                          ({stats.pointsFor}/{stats.pointsAgainst})
-                        </div>
-                      </TableCell>
+      {tournamentPhase === 1 && (
+        <>
+          {/* Ranking Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+                Classifica
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-6">
+              <div className="overflow-x-auto -mx-3 sm:mx-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px] sm:w-[60px] text-xs sm:text-sm">Pos.</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Atleta</TableHead>
+                      <TableHead className="text-center text-xs sm:text-sm whitespace-nowrap">V/M</TableHead>
+                      <TableHead className="text-center text-xs sm:text-sm whitespace-nowrap">Diff</TableHead>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tournament Matrix */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Matrice Torneo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Atleta</TableHead>
-                  {athletes.map(athlete => (
-                    <TableHead key={athlete.id} className="text-center min-w-[80px]">
-                      {athlete.full_name.split(' ')[0]}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {athletes.map(athleteA => (
-                  <TableRow key={athleteA.id}>
-                    <TableCell className="font-medium">{athleteA.full_name}</TableCell>
-                    {athletes.map(athleteB => {
-                      if (athleteA.id === athleteB.id) {
-                        return <TableCell key={athleteB.id} className="text-center bg-gray-100 dark:bg-gray-800">-</TableCell>;
-                      }
-
-                      const match = getMatch(athleteA.id, athleteB.id);
-                      const scoreA = match?.athleteA === athleteA.id ? match.scoreA : match?.scoreB;
-                      const scoreB = match?.athleteA === athleteA.id ? match.scoreB : match?.scoreA;
-
+                  </TableHeader>
+                  <TableBody>
+                    {sortedAthletes.map((athlete, index) => {
+                      const stats = getAthleteStats(athlete.id);
                       return (
-                        <TableCell key={athleteB.id} className="text-center">
-                          {scoreA !== null && scoreB !== null ? (
-                            <Badge variant={scoreA > scoreB ? 'default' : 'secondary'}>
-                              {scoreA} - {scoreB}
+                        <TableRow key={athlete.id}>
+                          <TableCell className="font-bold p-2 sm:p-4">
+                            <Badge variant={index === 0 ? 'default' : 'outline'} className="text-xs">
+                              {index + 1}°
                             </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
-                        </TableCell>
+                          </TableCell>
+                          <TableCell className="font-medium p-2 sm:p-4 text-xs sm:text-sm">
+                            {athlete.full_name}
+                          </TableCell>
+                          
+                          {/* Colonna V/M - più compatta su mobile */}
+                          <TableCell className="text-center font-semibold p-2 sm:p-4">
+                            <div className="text-sm sm:text-base">
+                              {stats.wins}/{stats.totalMatches}
+                            </div>
+                          </TableCell>
+                          
+                          {/* Colonna Diff Stoccate - nasconde dettagli su mobile */}
+                          <TableCell className="text-center p-2 sm:p-4">
+                            <Badge 
+                              variant={stats.pointsDiff > 0 ? 'default' : stats.pointsDiff < 0 ? 'secondary' : 'outline'}
+                              className="text-xs sm:text-sm"
+                            >
+                              {stats.pointsDiff > 0 ? '+' : ''}{stats.pointsDiff}
+                            </Badge>
+                            <div className="hidden sm:block text-xs text-muted-foreground mt-1">
+                              ({stats.pointsFor}/{stats.pointsAgainst})
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tournament Matrix */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Matrice Torneo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px]">Atleta</TableHead>
+                      {athletes.map(athlete => (
+                        <TableHead key={athlete.id} className="text-center min-w-[80px]">
+                          {athlete.full_name.split(' ')[0]}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {athletes.map(athleteA => (
+                      <TableRow key={athleteA.id}>
+                        <TableCell className="font-medium">{athleteA.full_name}</TableCell>
+                        {athletes.map(athleteB => {
+                          if (athleteA.id === athleteB.id) {
+                            return <TableCell key={athleteB.id} className="text-center bg-gray-100 dark:bg-gray-800">-</TableCell>;
+                          }
+
+                          const match = getMatch(athleteA.id, athleteB.id);
+                          const scoreA = match?.athleteA === athleteA.id ? match.scoreA : match?.scoreB;
+                          const scoreB = match?.athleteA === athleteA.id ? match.scoreB : match?.scoreA;
+
+                          return (
+                            <TableCell key={athleteB.id} className="text-center">
+                              {scoreA !== null && scoreB !== null ? (
+                                <Badge variant={scoreA > scoreB ? 'default' : 'secondary'}>
+                                  {scoreA} - {scoreB}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Organization Section */}
       <Card>

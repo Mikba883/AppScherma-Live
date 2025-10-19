@@ -32,9 +32,9 @@ export const BracketView = ({
 }: BracketViewProps) => {
   // Raggruppa match per bracket_round
   const rounds = matches
-    .filter(m => m.round_number !== null && m.round_number !== undefined)
+    .filter(m => m.bracket_round !== null && m.bracket_round !== undefined)
     .reduce((acc, match) => {
-      const round = match.round_number!;
+      const round = match.bracket_round!;
       if (!acc[round]) {
         acc[round] = [];
       }
