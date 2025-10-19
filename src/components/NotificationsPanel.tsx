@@ -434,12 +434,6 @@ export const NotificationsPanel = () => {
                         </Button>
                       </div>
                     )}
-
-                    {myApproved && !opponentApproved && (
-                      <div className="text-sm text-muted-foreground text-center">
-                        Hai già approvato. In attesa dell'avversario...
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               );
