@@ -570,8 +570,8 @@ const MatchInputs = ({
 
       if (error) throw error;
 
-      // Send notification ONLY to the opponent when a non-creator saves a match
-      if (!isCreator && scoreANum !== null && scoreBNum !== null) {
+      // Send notifications to BOTH athletes when scores are saved
+      if (scoreANum !== null && scoreBNum !== null) {
         // Get current user's gym_id
         const { data: profileData } = await supabase
           .from('profiles')
@@ -580,23 +580,39 @@ const MatchInputs = ({
           .single();
 
         if (profileData?.gym_id) {
-          // Identify opponent
-          const opponentId = match.athleteA === currentUserId ? match.athleteB : match.athleteA;
+          console.log('[DEBUG] Sending approval notifications to both athletes');
           
-          // Notify ONLY the opponent
-          const { error: notifError } = await supabase.from('notifications').insert({
-            athlete_id: opponentId,
+          // Send notification to athlete A
+          const { error: notifErrorA } = await supabase.from('notifications').insert({
+            athlete_id: match.athleteA,
             title: 'Match da Approvare',
-            message: 'Il tuo avversario ha inserito un risultato per il match del torneo. Approva per confermare.',
+            message: 'È stato registrato un risultato per il match del torneo. Approva per confermare.',
             type: 'info',
             created_by: currentUserId,
             related_bout_id: match.id,
             gym_id: profileData.gym_id
           });
 
-          if (notifError) {
-            console.error('Errore invio notifica:', notifError);
+          if (notifErrorA) {
+            console.error('[ERROR] Errore notifica atleta A:', notifErrorA);
           }
+
+          // Send notification to athlete B
+          const { error: notifErrorB } = await supabase.from('notifications').insert({
+            athlete_id: match.athleteB,
+            title: 'Match da Approvare',
+            message: 'È stato registrato un risultato per il match del torneo. Approva per confermare.',
+            type: 'info',
+            created_by: currentUserId,
+            related_bout_id: match.id,
+            gym_id: profileData.gym_id
+          });
+
+          if (notifErrorB) {
+            console.error('[ERROR] Errore notifica atleta B:', notifErrorB);
+          }
+          
+          console.log('[SUCCESS] Notifiche inviate ad entrambi gli atleti');
         }
       }
       onSaved();
