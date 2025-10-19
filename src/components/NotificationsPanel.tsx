@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, BellOff, Check, AlertTriangle, Info, X, Swords, Calendar, User, Trash2 } from 'lucide-react';
+import { Bell, BellOff, Check, AlertTriangle, Info, X, Swords, Calendar, User, Trash2, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Notification {
@@ -32,10 +32,27 @@ interface PendingBout {
   creator_name?: string;
 }
 
+interface TournamentMatch {
+  id: string;
+  bout_date: string;
+  weapon: string;
+  bout_type: string;
+  athlete_a: string;
+  athlete_b: string;
+  score_a: number;
+  score_b: number;
+  status: string;
+  tournament_id: string;
+  tournament_name: string;
+  approved_by_a: string | null;
+  approved_by_b: string | null;
+}
+
 export const NotificationsPanel = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pendingBouts, setPendingBouts] = useState<PendingBout[]>([]);
+  const [pendingTournamentMatches, setPendingTournamentMatches] = useState<TournamentMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -43,6 +60,7 @@ export const NotificationsPanel = () => {
     if (user) {
       fetchNotifications();
       fetchPendingBouts();
+      fetchPendingTournamentMatches();
     }
   }, [user]);
 
@@ -117,6 +135,21 @@ export const NotificationsPanel = () => {
       toast.error('Errore nel caricamento dei match pending');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingTournamentMatches = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('get_my_pending_tournament_matches');
+      
+      if (error) throw error;
+
+      setPendingTournamentMatches(data || []);
+    } catch (error) {
+      console.error('Error fetching pending tournament matches:', error);
+      toast.error('Errore nel caricamento dei match di torneo');
     }
   };
 
@@ -205,6 +238,26 @@ export const NotificationsPanel = () => {
     }
   };
 
+  const handleTournamentMatchApprove = async (boutId: string) => {
+    setActionLoading(boutId);
+    
+    try {
+      const { error } = await supabase.rpc('approve_tournament_match', {
+        _bout_id: boutId
+      });
+
+      if (error) throw error;
+
+      toast.success("Match di torneo approvato");
+      await fetchPendingTournamentMatches();
+      await fetchNotifications();
+    } catch (error) {
+      toast.error('Impossibile approvare il match di torneo');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getWeaponLabel = (weapon: string) => {
     const labels: Record<string, string> = {
       'fioretto': 'Fioretto',
@@ -223,7 +276,7 @@ export const NotificationsPanel = () => {
     return labels[type] || type;
   };
 
-  const totalItems = notifications.length + pendingBouts.length;
+  const totalItems = notifications.length + pendingBouts.length + pendingTournamentMatches.length;
 
   if (loading) {
     return (
@@ -274,6 +327,68 @@ export const NotificationsPanel = () => {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Tournament Matches da Approvare */}
+            {pendingTournamentMatches.map((match) => {
+              const isAthleteA = match.athlete_a === user?.id;
+              const myApproved = isAthleteA ? match.approved_by_a : match.approved_by_b;
+              const opponentApproved = isAthleteA ? match.approved_by_b : match.approved_by_a;
+              
+              return (
+                <Card key={match.id} className="border-l-4 border-l-amber-500">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Trophy className="h-5 w-5" />
+                        Match Torneo da Approvare
+                      </CardTitle>
+                      <Badge variant="outline">Torneo: {match.tournament_name}</Badge>
+                    </div>
+                    <CardDescription>
+                      {new Date(match.bout_date).toLocaleDateString('it-IT')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Arma</p>
+                        <p className="font-medium">{getWeaponLabel(match.weapon)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Punteggio</p>
+                        <p className="font-bold text-lg">{match.score_a} - {match.score_b}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Tipo</p>
+                        <p className="font-medium">{getTypeLabel(match.bout_type)}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span>La tua approvazione: {myApproved ? '✓' : '⏳'}</span>
+                      <span>Avversario: {opponentApproved ? '✓' : '⏳'}</span>
+                    </div>
+
+                    {!myApproved && (
+                      <Button
+                        onClick={() => handleTournamentMatchApprove(match.id)}
+                        disabled={actionLoading === match.id}
+                        className="w-full"
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        {actionLoading === match.id ? 'Elaborazione...' : 'Approva Match di Torneo'}
+                      </Button>
+                    )}
+
+                    {myApproved && !opponentApproved && (
+                      <div className="text-sm text-muted-foreground text-center">
+                        Hai già approvato. In attesa dell'avversario...
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+
             {/* Pending Bouts */}
             {pendingBouts.map((bout) => (
               <Card key={bout.id} className="border-l-4 border-l-primary">

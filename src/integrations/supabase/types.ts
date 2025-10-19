@@ -660,6 +660,24 @@ export type Database = {
           weapon: string
         }[]
       }
+      get_my_pending_tournament_matches: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          approved_by_a: string
+          approved_by_b: string
+          athlete_a: string
+          athlete_b: string
+          bout_date: string
+          bout_type: string
+          id: string
+          score_a: number
+          score_b: number
+          status: string
+          tournament_id: string
+          tournament_name: string
+          weapon: string
+        }[]
+      }
       get_my_tournament_matches: {
         Args: Record<PropertyKey, never>
         Returns: {

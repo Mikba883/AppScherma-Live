@@ -529,9 +529,10 @@ const MatchInputs = ({
   const isAthleteB = match?.athleteB === currentUserId;
   const isParticipant = isAthleteA || isAthleteB;
 
-  // Anyone can approve pending matches with scores
+  // Only instructors can approve from tournament matrix
   const canApprove = match?.status === 'pending' 
                   && isParticipant 
+                  && isInstructor
                   && match?.scoreA !== null
                   && match?.scoreB !== null;
 
