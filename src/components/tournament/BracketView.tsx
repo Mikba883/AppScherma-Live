@@ -157,7 +157,7 @@ const BracketMatchCard = ({
         .update({
           score_a: parsedScoreA,
           score_b: parsedScoreB,
-          weapon: weapon || null,
+          weapon: weapon && weapon.trim() !== '' ? weapon : null,
           status: (isInstructor || isCreator) ? 'approved' : 'pending',
           approved_by_a: (isInstructor || isCreator) ? currentUserId : null,
           approved_by_b: (isInstructor || isCreator) ? currentUserId : null,
