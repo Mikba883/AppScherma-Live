@@ -638,6 +638,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           ? Math.max(...phase2Matches.map(m => m.bracket_round || 0))
           : 0;
 
+        console.log('[TournamentSection] ✅ Setting total_bracket_rounds to:', totalRounds);
+
         const { error: tournamentError } = await supabase
           .from('tournaments')
           .update({ 
@@ -787,6 +789,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       setTournamentWeapon(null);
       setTournamentBoutType('sparring');
       setTournamentCreatorId(null);
+      setTournamentPhase(1);  // ✅ Reset phase
+      setTotalBracketRounds(0);  // ✅ Reset bracket rounds
       setAthletes([]);
       setMatches([]);
       setMode('menu');
@@ -899,6 +903,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       setTournamentWeapon(null);
       setTournamentBoutType('sparring');
       setTournamentCreatorId(null);
+      setTournamentPhase(1);  // ✅ Reset phase
+      setTotalBracketRounds(0);  // ✅ Reset bracket rounds
       setAthletes([]);
       setMatches([]);
       onTournamentStateChange?.(false);
