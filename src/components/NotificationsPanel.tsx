@@ -141,10 +141,27 @@ export const NotificationsPanel = () => {
   const fetchPendingTournamentMatches = async () => {
     if (!user) return;
     
+    console.log('[NotificationsPanel] Fetching pending tournament matches for user:', user.id);
+    
     try {
       const { data, error } = await supabase.rpc('get_my_pending_tournament_matches');
       
-      if (error) throw error;
+      if (error) {
+        console.error('[NotificationsPanel] Error fetching pending tournament matches:', error);
+        toast.error('Errore nel caricamento dei match di torneo');
+        return;
+      }
+
+      console.log('[NotificationsPanel] Pending tournament matches received:', data);
+      console.log('[NotificationsPanel] Number of pending matches:', data?.length || 0);
+      
+      if (data && data.length > 0) {
+        console.log('[NotificationsPanel] First match details:', data[0]);
+        console.log('[NotificationsPanel] Current user ID:', user.id);
+        console.log('[NotificationsPanel] Match includes current user:', 
+          data.some((m: TournamentMatch) => m.athlete_a === user.id || m.athlete_b === user.id)
+        );
+      }
 
       setPendingTournamentMatches(data || []);
     } catch (error) {
