@@ -113,28 +113,42 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       if (tournamentError) throw tournamentError;
       
+      const currentPhase = tournamentData?.phase || 1;
+      
       // Update phase state
-      if (tournamentData?.phase) {
-        console.log('[TournamentSection] Tournament phase:', tournamentData.phase);
-        setTournamentPhase(tournamentData.phase);
-      }
+      console.log('[TournamentSection] Tournament phase:', currentPhase);
+      setTournamentPhase(currentPhase);
       
       // Update total bracket rounds
       if (tournamentData?.total_bracket_rounds) {
         setTotalBracketRounds(tournamentData.total_bracket_rounds);
       }
 
-      // Load all bouts for this tournament, ordered by round_number
-      const { data: bouts, error: boutsError } = await supabase
+      // Load bouts filtered by phase
+      let boutsQuery = supabase
         .from('bouts')
         .select('*')
-        .eq('tournament_id', tournamentId)
+        .eq('tournament_id', tournamentId);
+      
+      // Filter by phase: Phase 1 = round_number matches, Phase 2 = bracket_round matches
+      if (currentPhase === 1) {
+        boutsQuery = boutsQuery.is('bracket_round', null);
+      } else {
+        boutsQuery = boutsQuery.not('bracket_round', 'is', null);
+      }
+      
+      const { data: bouts, error: boutsError } = await boutsQuery
         .order('round_number', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true });
 
       if (boutsError) throw boutsError;
 
       console.log('[TournamentSection] Loaded bouts:', bouts?.length, 'matches');
+      console.log('[TournamentSection] Matches by round:', bouts?.reduce((acc: any, m: any) => {
+        const round = m.bracket_round || m.round_number || 'unknown';
+        acc[round] = (acc[round] || 0) + 1;
+        return acc;
+      }, {}));
 
       if (!bouts || bouts.length === 0) {
         console.log('[TournamentSection] No bouts found');
@@ -592,12 +606,12 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           if (updateError) throw updateError;
         }
 
-        // 2. Cancella SOLO i match senza punteggio (match mai giocati)
+        // 2. Mark all Phase 1 matches as cancelled (keep for records)
         const { error: cancelError } = await supabase
           .from('bouts')
           .update({ status: 'cancelled' })
           .eq('tournament_id', activeTournamentId)
-          .or('score_a.is.null,score_b.is.null');
+          .is('bracket_round', null);
 
         if (cancelError) throw cancelError;
 
