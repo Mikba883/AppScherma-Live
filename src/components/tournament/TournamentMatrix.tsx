@@ -23,6 +23,8 @@ interface TournamentMatrixProps {
   currentUserId: string | null;
   isCreator: boolean;
   isLoading: boolean;
+  tournamentId: string | null;
+  gymId: string | null;
 }
 
 export const TournamentMatrix = ({
@@ -33,7 +35,9 @@ export const TournamentMatrix = ({
   onExit,
   currentUserId,
   isCreator,
-  isLoading
+  isLoading,
+  tournamentId,
+  gymId
 }: TournamentMatrixProps) => {
   const { role } = useUserRoleOptimized();
   
@@ -372,6 +376,8 @@ export const TournamentMatrix = ({
                     isInstructor={isInstructor}
                     isCreator={isCreator}
                     onSaved={onRefresh}
+                    tournamentId={tournamentId}
+                    gymId={gymId}
                   />
                       </CardContent>
                     </Card>
@@ -479,6 +485,8 @@ interface MatchInputsProps {
   isInstructor: boolean;
   isCreator: boolean;
   onSaved: () => void;
+  tournamentId: string | null;
+  gymId: string | null;
 }
 
 const MatchInputs = ({
@@ -491,7 +499,9 @@ const MatchInputs = ({
   currentUserId,
   isInstructor,
   isCreator,
-  onSaved
+  onSaved,
+  tournamentId,
+  gymId
 }: MatchInputsProps) => {
   // Helper to get score for specific athlete
   const getScoreForAthlete = (targetAthleteId: string): number | null => {
@@ -570,6 +580,39 @@ const MatchInputs = ({
         .eq('id', match.id);
 
       if (error) throw error;
+
+      // Se è uno studente (status = pending), invia notifiche ad entrambi gli atleti
+      if (newStatus === 'pending' && tournamentId && gymId) {
+        const { data: tournamentData } = await supabase
+          .from('tournaments')
+          .select('name, tournament_date')
+          .eq('id', tournamentId)
+          .single();
+        
+        const notificationMessage = `È stato registrato un risultato per il match del torneo "${tournamentData?.name || 'Torneo'}". Approva per confermare.`;
+        
+        // Notifica per atleta A
+        await supabase.from('notifications').insert({
+          athlete_id: athleteAId,
+          title: 'Match da Approvare',
+          message: notificationMessage,
+          type: 'info',
+          created_by: currentUserId,
+          related_bout_id: match.id,
+          gym_id: gymId
+        });
+        
+        // Notifica per atleta B
+        await supabase.from('notifications').insert({
+          athlete_id: athleteBId,
+          title: 'Match da Approvare',
+          message: notificationMessage,
+          type: 'info',
+          created_by: currentUserId,
+          related_bout_id: match.id,
+          gym_id: gymId
+        });
+      }
 
       onSaved();
     } catch (error: any) {

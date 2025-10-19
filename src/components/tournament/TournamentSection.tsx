@@ -446,7 +446,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     
     try {
       await loadTournamentData(activeTournamentId);
-      toast.success('Dati aggiornati');
     } catch (error) {
       console.error('[TournamentSection] Error refreshing:', error);
       toast.error('Errore nell\'aggiornamento');
@@ -586,6 +585,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         currentUserId={currentUserId}
         isCreator={tournamentCreatorId === currentUserId}
         isLoading={isLoading}
+        tournamentId={activeTournamentId}
+        gymId={userGymId}
       />
     </div>
   );
