@@ -25,18 +25,19 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userGymId, setUserGymId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isClosingTournament, setIsClosingTournament] = useState(false);
 
   // Load current user on mount
   useEffect(() => {
     loadCurrentUser();
   }, []);
 
-  // Check for active tournament only when in menu mode
+  // Check for active tournament only when in menu mode and not closing
   useEffect(() => {
-    if (currentUserId && userGymId && mode === 'menu') {
+    if (currentUserId && userGymId && mode === 'menu' && !isClosingTournament) {
       checkActiveTournament();
     }
-  }, [currentUserId, userGymId, mode]);
+  }, [currentUserId, userGymId, mode, isClosingTournament]);
 
   const loadCurrentUser = async () => {
     try {
@@ -349,6 +350,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     if (!activeTournamentId || !currentUserId) return;
 
     setIsLoading(true);
+    setIsClosingTournament(true);
 
     try {
       // 1. Approve all completed matches (with scores)
@@ -365,12 +367,12 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       if (updateError) throw updateError;
 
-      // 2. Cancel all incomplete matches (pending without scores)
+      // 2. Cancel ALL pending matches (anche senza score)
       const { error: cancelError } = await supabase
         .from('bouts')
         .update({ status: 'cancelled' })
         .eq('tournament_id', activeTournamentId)
-        .eq('status', 'pending');
+        .or('status.eq.pending,score_a.is.null,score_b.is.null');
 
       if (cancelError) throw cancelError;
 
@@ -382,10 +384,13 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       if (tournamentError) throw tournamentError;
 
-      // 4. Calculate final rankings
+      // 4. IMPORTANTE: Aspettare che il DB si aggiorni
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 5. Calculate final rankings
       const rankings = calculateFinalRankings(athletes, matches);
 
-      // 5. Send notifications to all participants
+      // 6. Send notifications to all participants
       const notificationsToInsert = rankings.map(ranking => {
         // Emoji for top 3 positions
         const positionEmoji = 
@@ -418,7 +423,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       toast.success('Torneo concluso con successo!');
       
-      // 6. Reset state
+      // 7. Reset state
       setActiveTournamentId(null);
       setTournamentName('');
       setTournamentDate('');
@@ -435,6 +440,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       toast.error('Errore nella conclusione del torneo');
     } finally {
       setIsLoading(false);
+      // IMPORTANTE: Resettare il flag dopo un delay per evitare race conditions
+      setTimeout(() => setIsClosingTournament(false), 1000);
     }
   };
 
@@ -458,6 +465,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     if (!activeTournamentId) return;
     
     setIsLoading(true);
+    setIsClosingTournament(true);
     
     try {
       // 1. Marca tutti i bouts come cancellati
@@ -476,9 +484,12 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       
       if (tournamentError) throw tournamentError;
       
+      // 3. IMPORTANTE: Aspettare che il DB si aggiorni
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       toast.success('Torneo cancellato');
       
-      // 3. IMPORTANTE: Reset stato locale PRIMA di tornare al menu
+      // 4. Reset stato locale
       setActiveTournamentId(null);
       setTournamentName('');
       setTournamentDate('');
@@ -489,9 +500,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       setMatches([]);
       onTournamentStateChange?.(false);
       
-      // 4. Aspetta che Supabase aggiorni la cache
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       // 5. Ora torna al menu
       setMode('menu');
       
@@ -500,6 +508,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       toast.error('Errore: ' + error.message);
     } finally {
       setIsLoading(false);
+      // IMPORTANTE: Resettare il flag dopo un delay per evitare race conditions
+      setTimeout(() => setIsClosingTournament(false), 1000);
     }
   };
 
