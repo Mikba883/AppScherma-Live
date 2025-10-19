@@ -655,19 +655,6 @@ const MatchInputs = ({
         </Button>
       )}
 
-      {/* Approval status badges */}
-      {match?.status === 'pending' && isParticipant && (
-        <div className="text-center mt-2">
-          {match?.approved_by_a && match?.approved_by_b ? (
-            <Badge variant="outline" className="text-xs">⏳ In attesa approvazione finale</Badge>
-          ) : match?.approved_by_a || match?.approved_by_b ? (
-            <Badge variant="secondary" className="text-xs">✓ 1/2 approvazioni</Badge>
-          ) : (
-            <Badge variant="secondary" className="text-xs">0/2 approvazioni</Badge>
-          )}
-        </div>
-      )}
-
       {match?.status === 'approved' && (
         <Badge variant="default" className="w-full justify-center text-xs mt-2">
           ✓ Match Approvato
