@@ -13,6 +13,7 @@ export interface TournamentMatch {
   status: string;
   round_number?: number | null;
   bracket_round?: number | null;
+  bracket_match_number?: number | null;
   approved_by_a?: string | null;
   approved_by_b?: string | null;
 }

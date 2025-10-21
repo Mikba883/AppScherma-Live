@@ -184,6 +184,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         status: bout.status,
         round_number: bout.round_number,
         bracket_round: bout.bracket_round,
+        bracket_match_number: bout.bracket_match_number,
         approved_by_a: bout.approved_by_a,
         approved_by_b: bout.approved_by_b
       }));
@@ -333,6 +334,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         status: bout.status,
         round_number: bout.round_number,
         bracket_round: bout.bracket_round,
+        bracket_match_number: bout.bracket_match_number,
         approved_by_a: bout.approved_by_a,
         approved_by_b: bout.approved_by_b
       }));
@@ -481,10 +483,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const advanceBracketRound = async (completedRound: number) => {
     if (!activeTournamentId || !userGymId || !currentUserId) return;
 
+    // ✅ LOCK: Se già in elaborazione, skip
+    if (isLoading) {
+      console.log('[Bracket] Already processing, skipping duplicate call');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // 1. Get all completed matches from this round
+      // 1. Get all completed matches from this round (WITH ORDER)
       const { data: completedMatches, error: fetchError } = await supabase
         .from('bouts')
         .select('*')
@@ -492,7 +500,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         .eq('bracket_round', completedRound)
         .eq('status', 'approved')
         .not('score_a', 'is', null)
-        .not('score_b', 'is', null);
+        .not('score_b', 'is', null)
+        .order('created_at', { ascending: true });  // ✅ ORDINE ESPLICITO
 
       if (fetchError) throw fetchError;
       if (!completedMatches || completedMatches.length === 0) return;
@@ -549,8 +558,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         previousMatchId: match.id
       }));
 
-      // 5. Create matches for next round (consecutive pairings)
+      // 5. Create matches for next round (consecutive pairings with match numbers)
       const nextRoundMatches = [];
+      let matchNumber = 1;  // ✅ Aggiungi counter
+      
       for (let i = 0; i < winners.length; i += 2) {
         if (i + 1 < winners.length) {
           nextRoundMatches.push({
@@ -564,6 +575,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             created_by: currentUserId,
             gym_id: userGymId,
             bracket_round: completedRound + 1,
+            bracket_match_number: matchNumber++,  // ✅ ASSEGNA NUMERO MATCH
             round_number: null,
             score_a: null,
             score_b: null
@@ -573,6 +585,21 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       // 6. Insert next round matches
       if (nextRoundMatches.length > 0) {
+        // ✅ VERIFICA: Check if next round matches already exist
+        const { data: existingNextRound } = await supabase
+          .from('bouts')
+          .select('id')
+          .eq('tournament_id', activeTournamentId)
+          .eq('bracket_round', completedRound + 1)
+          .limit(1);
+
+        if (existingNextRound && existingNextRound.length > 0) {
+          console.log(`[Bracket] Round ${completedRound + 1} already exists, skipping creation`);
+          await loadTournamentData(activeTournamentId);
+          setIsLoading(false);
+          return;
+        }
+
         const { error: insertError } = await supabase
           .from('bouts')
           .insert(nextRoundMatches);

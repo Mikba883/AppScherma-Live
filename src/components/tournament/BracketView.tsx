@@ -34,9 +34,21 @@ export const BracketView = ({
   onRoundComplete,
   totalBracketRounds
 }: BracketViewProps) => {
-  // Raggruppa match per bracket_round
+  // Raggruppa match per bracket_round E ordina per bracket_match_number
   const rounds = matches
     .filter(m => m.bracket_round !== null && m.bracket_round !== undefined)
+    .sort((a, b) => {
+      // Prima ordina per bracket_round
+      if (a.bracket_round !== b.bracket_round) {
+        return a.bracket_round! - b.bracket_round!;
+      }
+      // Poi per bracket_match_number (se presente)
+      if (a.bracket_match_number && b.bracket_match_number) {
+        return a.bracket_match_number - b.bracket_match_number;
+      }
+      // Altrimenti per id (fallback per consistenza)
+      return 0;
+    })
     .reduce((acc, match) => {
       const round = match.bracket_round!;
       if (!acc[round]) {
