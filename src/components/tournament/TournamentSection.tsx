@@ -483,9 +483,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
   const advanceBracketRound = async (completedRound: number) => {
     if (!activeTournamentId || !userGymId || !currentUserId) return;
 
-    // ✅ LOCK: Se già in elaborazione, skip
-    if (isLoading) {
-      console.log('[Bracket] Already processing, skipping duplicate call');
+    // ✅ LOCK BASATO SU DATABASE: Verifica se prossimo round esiste GIÀ
+    const { data: existingNextRound } = await supabase
+      .from('bouts')
+      .select('id')
+      .eq('tournament_id', activeTournamentId)
+      .eq('bracket_round', completedRound + 1)
+      .limit(1);
+
+    if (existingNextRound && existingNextRound.length > 0) {
+      console.log(`[Bracket] Round ${completedRound + 1} already created by another process, skipping`);
       return;
     }
 
@@ -585,21 +592,6 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
       // 6. Insert next round matches
       if (nextRoundMatches.length > 0) {
-        // ✅ VERIFICA: Check if next round matches already exist
-        const { data: existingNextRound } = await supabase
-          .from('bouts')
-          .select('id')
-          .eq('tournament_id', activeTournamentId)
-          .eq('bracket_round', completedRound + 1)
-          .limit(1);
-
-        if (existingNextRound && existingNextRound.length > 0) {
-          console.log(`[Bracket] Round ${completedRound + 1} already exists, skipping creation`);
-          await loadTournamentData(activeTournamentId);
-          setIsLoading(false);
-          return;
-        }
-
         const { error: insertError } = await supabase
           .from('bouts')
           .insert(nextRoundMatches);

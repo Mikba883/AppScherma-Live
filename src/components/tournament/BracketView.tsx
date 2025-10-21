@@ -194,7 +194,7 @@ const BracketMatchCard = ({
         await onRoundComplete(currentRound);
       }
       
-      onRefresh();
+      // ✅ NON chiamare onRefresh qui! advanceBracketRound già fa loadTournamentData() alla fine
     } catch (error) {
       console.error('Error saving match:', error);
       toast.error('Errore nel salvataggio');
