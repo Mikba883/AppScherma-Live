@@ -539,7 +539,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     // ✅ STEP 2: Check VELOCE - Tutti i match di questo round sono completati?
     const { data: allRoundMatches, error: checkError } = await supabase
       .from('bouts')
-      .select('id, status')
+      .select('id, status, athlete_b')  // ✅ Include athlete_b to detect BYE matches
       .eq('tournament_id', activeTournamentId)
       .eq('bracket_round', completedRound);
 
@@ -553,15 +553,22 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       return;
     }
 
-    // Un match è completo se è approvato o cancellato
-    const allCompleted = allRoundMatches.every(m => 
-      m.status === 'approved' || m.status === 'cancelled'
+    // ✅ FIX 1: Count only non-BYE pending matches
+    // BYE matches are identified by athlete_b = NULL + status = 'approved'
+    const pendingNonByeMatches = allRoundMatches.filter(m => 
+      m.status === 'pending' && m.athlete_b !== null
     );
 
-    if (!allCompleted) {
-      const pending = allRoundMatches.filter(m => m.status === 'pending').length;
-      console.log(`[Bracket] ⏳ Round ${completedRound} not complete yet (${pending} pending)`);
-      return; // ✅ EXIT EARLY - Risparmia tempo!
+    console.log(`[Bracket] 🔍 Round ${completedRound} analysis:`, {
+      total: allRoundMatches.length,
+      pending: pendingNonByeMatches.length,
+      approved: allRoundMatches.filter(m => m.status === 'approved').length,
+      byeMatches: allRoundMatches.filter(m => m.athlete_b === null).length
+    });
+
+    if (pendingNonByeMatches.length > 0) {
+      console.log(`[Bracket] ⏳ Round ${completedRound} not complete yet (${pendingNonByeMatches.length} pending non-BYE matches)`);
+      return; // ✅ EXIT EARLY - Only if there are actual pending matches
     }
 
     console.log(`[Bracket] ✅ Round ${completedRound} is complete! Advancing...`);

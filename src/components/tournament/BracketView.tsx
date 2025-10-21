@@ -63,21 +63,30 @@ export const BracketView = ({
     .sort((a, b) => a - b); // From first round to final
 
   const getRoundName = (roundNum: number, numMatches: number) => {
-    // ✅ FIX 4: Usa il numero di match per determinare il nome corretto
-    const effectiveTotalRounds = totalBracketRounds > 0 ? totalBracketRounds : (sortedRounds.length > 0 ? Math.max(...sortedRounds) : 1);
+    // ✅ FIX 3: Calcola il nome basandosi sulla distanza dalla finale
+    const effectiveTotalRounds = totalBracketRounds > 0 
+      ? totalBracketRounds 
+      : (sortedRounds.length > 0 ? Math.max(...sortedRounds) : 1);
     
-    console.log('[BracketView] getRoundName - roundNum:', roundNum, 'numMatches:', numMatches, 'totalBracketRounds:', totalBracketRounds);
+    // Distanza dalla finale (finale = 0, semifinale = 1, quarti = 2, ...)
+    const distanceFromFinal = effectiveTotalRounds - roundNum;
     
-    // Se solo 1 match rimasto → È la finale
-    if (numMatches === 1) return '🏆 Finale';
+    console.log('[BracketView] 🏆 getRoundName:', {
+      roundNum,
+      numMatches,
+      totalBracketRounds,
+      effectiveTotalRounds,
+      distanceFromFinal
+    });
     
-    // Usa il numero di match per determinare il nome (più affidabile)
-    if (numMatches === 2) return 'Semifinali';
-    if (numMatches === 4) return 'Quarti di Finale';
-    if (numMatches === 8) return 'Ottavi di Finale';
-    if (numMatches === 16) return 'Sedicesimi di Finale';
+    // Usa la distanza invece del numero di match (più accurato con BYE)
+    if (distanceFromFinal === 0) return '🏆 Finale';
+    if (distanceFromFinal === 1) return 'Semifinali';
+    if (distanceFromFinal === 2) return 'Quarti di Finale';
+    if (distanceFromFinal === 3) return 'Ottavi di Finale';
+    if (distanceFromFinal === 4) return 'Sedicesimi di Finale';
     
-    // Per numeri dispari o non standard, usa "Turno X"
+    // Fallback per round intermedi
     return `Turno ${roundNum}`;
   };
 
