@@ -473,16 +473,14 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         bout_date: tournamentDate,
         bout_type: tournamentBoutType,
         weapon: tournamentWeapon || null,
-        status: 'approved',  // Auto-approved
+        status: 'approved',  // Auto-approved (BYE matches don't need manual approval)
         created_by: currentUserId,
         gym_id: userGymId,
         bracket_round: 1,
         bracket_match_number: matchesToInsert.length + 1,
-        round_number: null,
-        score_a: 5,  // Automatic win
-        score_b: 0,
-        approved_by: currentUserId,
-        approved_at: new Date().toISOString()
+        round_number: null
+        // ✅ NO score_a, score_b, approved_by, approved_at
+        // BYE is identified by athlete_b = NULL + status = 'approved'
       });
     }
     
@@ -589,9 +587,10 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       // ✅ STEP 4: Se solo 1 match → È LA FINALE → Torneo completato
       if (completedMatches.length === 1) {
         const finalMatch = completedMatches[0];
-        const winnerId = finalMatch.score_a > finalMatch.score_b 
-          ? finalMatch.athlete_a 
-          : finalMatch.athlete_b;
+        // Handle BYE in final (unlikely but possible)
+        const winnerId = finalMatch.athlete_b === null
+          ? finalMatch.athlete_a
+          : (finalMatch.score_a > finalMatch.score_b ? finalMatch.athlete_a : finalMatch.athlete_b);
         
         const { data: winnerProfile } = await supabase
           .from('profiles')
@@ -651,16 +650,14 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           bout_date: tournamentDate,
           bout_type: tournamentBoutType,
           weapon: tournamentWeapon || null,
-          status: 'approved',  // Auto-approved
+          status: 'approved',  // Auto-approved (BYE matches don't need manual approval)
           created_by: currentUserId,
           gym_id: userGymId,
           bracket_round: completedRound + 1,
           bracket_match_number: 1,
-          round_number: null,
-          score_a: 5,  // Automatic win
-          score_b: 0,
-          approved_by: currentUserId,
-          approved_at: new Date().toISOString()
+          round_number: null
+          // ✅ NO score_a, score_b, approved_by, approved_at
+          // BYE is identified by athlete_b = NULL + status = 'approved'
         });
         
         // Remove BYE player from winners list for pairing
