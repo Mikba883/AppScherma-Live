@@ -452,13 +452,21 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     
     // Handle odd number of athletes (BYE)
     if (n % 2 !== 0) {
-      const byeAthlete = sortedAthletes[0];
+      const byeAthlete = sortedAthletes[0]; // Il primo classificato riceve BYE
       const athleteName = athletes.find(a => a.id === byeAthlete.athleteId)?.full_name || byeAthlete.athleteId;
-      console.log(`[Phase 2] ${athleteName} receives BYE`);
-      // BYE is handled by advanceBracketRound when creating next round
+      console.log(`[Phase 2] ${athleteName} receives BYE to Round 2`);
+      
+      // ✅ IMPORTANTE: Non creare match per il BYE
+      // Il giocatore con BYE viene automaticamente promosso al Round 2
+      // quando advanceBracketRound processa il Round 1
     }
     
     console.log(`[Phase 2] Created ${matchesToInsert.length} matches for Round 1`);
+    console.log('[Phase 2] Match details:', matchesToInsert.map(m => ({
+      athleteA: athletes.find(a => a.id === m.athlete_a)?.full_name || m.athlete_a,
+      athleteB: athletes.find(a => a.id === m.athlete_b)?.full_name || m.athlete_b,
+      bracketRound: m.bracket_round
+    })));
     
     return matchesToInsert;
   };
@@ -644,6 +652,38 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
         if (approveError) throw approveError;
         console.log('[TournamentSection] All Phase 1 matches auto-approved');
+
+        // ✅ VERIFICA: Check if Phase 2 matches already exist
+        const { data: existingPhase2Matches, error: checkError } = await supabase
+          .from('bouts')
+          .select('id')
+          .eq('tournament_id', activeTournamentId)
+          .not('bracket_round', 'is', null)  // Any bracket match
+          .limit(1);
+
+        if (checkError) throw checkError;
+
+        if (existingPhase2Matches && existingPhase2Matches.length > 0) {
+          console.log('[TournamentSection] Phase 2 matches already exist, skipping creation');
+          
+          // Just update tournament phase
+          const { error: tournamentError } = await supabase
+            .from('tournaments')
+            .update({ 
+              phase: 2, 
+              status: 'in_progress'
+            })
+            .eq('id', activeTournamentId);
+
+          if (tournamentError) throw tournamentError;
+
+          setTournamentPhase(2);
+          await loadTournamentData(activeTournamentId);
+          toast.success('Fase 2 già esistente, caricamento in corso...');
+          setIsLoading(false);
+          setIsClosingTournament(false);
+          return;
+        }
 
         // 2. Calcola seeding dalla Fase 1
         const rankings = calculateFinalRankings(athletes, matches);
