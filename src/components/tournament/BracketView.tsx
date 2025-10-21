@@ -189,14 +189,20 @@ const BracketMatchCard = ({
       if (error) throw error;
 
       toast.success('Match salvato e approvato');
-      
+
+      // ✅ FIX 2: Update local state to reflect the change immediately
+      setScoreA(scoreA);
+      setScoreB(scoreB);
+      setWeapon(weapon);
+
+      // ✅ FIX 2: ALWAYS refresh UI immediately
+      onRefresh();
+
       // Trigger automatic advancement if round is complete
       const currentRound = match.bracket_round;
       if (currentRound && onRoundComplete) {
         await onRoundComplete(currentRound);
       }
-      
-      // ✅ NON chiamare onRefresh qui! advanceBracketRound già fa loadTournamentData() alla fine
     } catch (error) {
       console.error('Error saving match:', error);
       toast.error('Errore nel salvataggio');

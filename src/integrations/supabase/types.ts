@@ -51,7 +51,7 @@ export type Database = {
           approved_by_a: string | null
           approved_by_b: string | null
           athlete_a: string
-          athlete_b: string
+          athlete_b: string | null
           bout_date: string
           bout_type: string
           bracket_match_number: number | null
@@ -79,7 +79,7 @@ export type Database = {
           approved_by_a?: string | null
           approved_by_b?: string | null
           athlete_a: string
-          athlete_b: string
+          athlete_b?: string | null
           bout_date: string
           bout_type?: string
           bracket_match_number?: number | null
@@ -107,7 +107,7 @@ export type Database = {
           approved_by_a?: string | null
           approved_by_b?: string | null
           athlete_a?: string
-          athlete_b?: string
+          athlete_b?: string | null
           bout_date?: string
           bout_type?: string
           bracket_match_number?: number | null
@@ -469,6 +469,7 @@ export type Database = {
           id: string
           name: string
           phase: number
+          phase_transition_lock: boolean
           status: string
           total_bracket_rounds: number | null
           tournament_date: string
@@ -482,6 +483,7 @@ export type Database = {
           id?: string
           name: string
           phase?: number
+          phase_transition_lock?: boolean
           status?: string
           total_bracket_rounds?: number | null
           tournament_date: string
@@ -495,6 +497,7 @@ export type Database = {
           id?: string
           name?: string
           phase?: number
+          phase_transition_lock?: boolean
           status?: string
           total_bracket_rounds?: number | null
           tournament_date?: string
