@@ -160,8 +160,8 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         return;
       }
 
-      // Get unique athlete IDs
-      const athleteIds = [...new Set(bouts.flatMap(b => [b.athlete_a, b.athlete_b]))];
+      // Get unique athlete IDs (filter out null for BYE matches)
+      const athleteIds = [...new Set(bouts.flatMap(b => [b.athlete_a, b.athlete_b]).filter(id => id !== null))];
       
       // Load athlete profiles
       const { data: profiles, error: profilesError } = await supabase
