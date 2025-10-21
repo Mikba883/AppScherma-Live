@@ -452,7 +452,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         gym_id: userGymId,
         bracket_round: 1,
         bracket_match_number: i + 1,
-        round_number: null
+        round_number: null,
         // ✅ NO score_a, score_b - will be added when match is saved
       });
     }
@@ -689,7 +689,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             gym_id: userGymId,
             bracket_round: completedRound + 1,
             bracket_match_number: nextRoundMatches.length + 1,
-            round_number: null
+            round_number: null,
             // ✅ NO score_a, score_b - will be added when match is saved
           });
         }
