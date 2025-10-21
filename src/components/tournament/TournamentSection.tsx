@@ -410,7 +410,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     const sortedAthletes = rankings.sort((a, b) => a.position - b.position);
     const n = sortedAthletes.length;
     
-    // Calculate total rounds needed (e.g., 8 players = 3 rounds)
+    // Calculate total rounds needed (e.g., 8 players = 3 rounds, 9 players = 4 rounds)
     const totalRounds = Math.ceil(Math.log2(n));
     
     console.log(`[Phase 2] Creating bracket for ${n} athletes with ${totalRounds} rounds`);
@@ -425,13 +425,20 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     
     const matchesToInsert = [];
     
-    // STRATEGY: Create ONLY first round matches
-    // Pairings: 1st vs last, 2nd vs second-to-last, etc.
+    // ✅ FIX 1: GARANTIRE CHE TUTTI GIOCHINO ALMENO 1 VOLTA
+    // Con numero pari (es. 8): 4 match (1vs8, 2vs7, 3vs6, 4vs5)
+    // Con numero dispari (es. 9): 4 match (1vs9, 2vs8, 3vs7, 4vs6) + #5 riceve BYE
+    
     const numFirstRoundMatches = Math.floor(n / 2);
     
     for (let i = 0; i < numFirstRoundMatches; i++) {
       const topSeed = sortedAthletes[i];
       const bottomSeed = sortedAthletes[n - 1 - i];
+      
+      const athleteAName = athletes.find(a => a.id === topSeed.athleteId)?.full_name || 'Unknown';
+      const athleteBName = athletes.find(a => a.id === bottomSeed.athleteId)?.full_name || 'Unknown';
+      
+      console.log(`[Phase 2 Round 1] Match ${i + 1}: #${topSeed.position} ${athleteAName} vs #${bottomSeed.position} ${athleteBName}`);
       
       matchesToInsert.push({
         tournament_id: activeTournamentId,
@@ -444,6 +451,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         created_by: currentUserId,
         gym_id: userGymId,
         bracket_round: 1,
+        bracket_match_number: i + 1,
         round_number: null,
         score_a: null,
         score_b: null
@@ -452,33 +460,37 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     
     // Handle odd number of athletes (BYE)
     if (n % 2 !== 0) {
-      const byeAthlete = sortedAthletes[0]; // Il primo classificato riceve BYE
+      // Il giocatore medio riceve BYE (per bilanciare il bracket)
+      const middleIndex = Math.floor(n / 2);
+      const byeAthlete = sortedAthletes[middleIndex];
       const athleteName = athletes.find(a => a.id === byeAthlete.athleteId)?.full_name || byeAthlete.athleteId;
-      console.log(`[Phase 2] ${athleteName} receives BYE to Round 2`);
-      
-      // ✅ IMPORTANTE: Non creare match per il BYE
-      // Il giocatore con BYE viene automaticamente promosso al Round 2
-      // quando advanceBracketRound processa il Round 1
+      console.log(`[Phase 2] ⭐ #${byeAthlete.position} ${athleteName} receives BYE to Round 2`);
     }
     
-    console.log(`[Phase 2] Created ${matchesToInsert.length} matches for Round 1`);
-    console.log('[Phase 2] Match details:', matchesToInsert.map(m => ({
-      athleteA: athletes.find(a => a.id === m.athlete_a)?.full_name || m.athlete_a,
-      athleteB: athletes.find(a => a.id === m.athlete_b)?.full_name || m.athlete_b,
-      bracketRound: m.bracket_round
-    })));
+    console.log(`[Phase 2] ✅ Created ${matchesToInsert.length} matches for Round 1`);
     
     return matchesToInsert;
   };
 
-  // Helper to get round name based on distance from final
-  const getRoundName = (roundNum: number, totalRounds: number, sortedRounds: number[] = []) => {
-    // ✅ Fallback: if totalRounds is 0, calculate from max round number
-    const effectiveTotalRounds = totalRounds > 0 ? totalRounds : (sortedRounds.length > 0 ? Math.max(...sortedRounds) : 1);
-    
+  // ✅ FIX 4: Helper corretto per nomi dei round (basato su numero match)
+  const getRoundName = (roundNum: number, totalRounds: number, numMatches?: number) => {
+    const effectiveTotalRounds = totalRounds > 0 ? totalRounds : 1;
     const roundsFromFinal = effectiveTotalRounds - roundNum;
     
-    if (roundsFromFinal === 0) return '🏆 Finale';
+    // Se siamo alla finale (1 match rimasto)
+    if (roundsFromFinal === 0 || numMatches === 1) return '🏆 Finale';
+    
+    // Usa il numero di match per determinare il nome (più affidabile)
+    if (numMatches !== undefined) {
+      if (numMatches === 2) return 'Semifinali';
+      if (numMatches === 4) return 'Quarti di Finale';
+      if (numMatches === 8) return 'Ottavi di Finale';
+      if (numMatches === 16) return 'Sedicesimi di Finale';
+      // Per numeri dispari o non standard, usa "Turno X"
+      return `Turno ${roundNum}`;
+    }
+    
+    // Fallback: usa la distanza dalla finale
     if (roundsFromFinal === 1) return 'Semifinali';
     if (roundsFromFinal === 2) return 'Quarti di Finale';
     if (roundsFromFinal === 3) return 'Ottavi di Finale';
@@ -487,11 +499,14 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
     return `Turno ${roundNum}`;
   };
 
-  // Automatic advancement to next bracket round
+  // ✅ FIX 3: Ottimizzato - check completamento PRIMA di query pesanti
   const advanceBracketRound = async (completedRound: number) => {
     if (!activeTournamentId || !userGymId || !currentUserId) return;
 
-    // ✅ LOCK BASATO SU DATABASE: Verifica se prossimo round esiste GIÀ
+    console.log(`[Bracket] 🔍 Checking if Round ${completedRound} can advance...`);
+    const startTime = Date.now();
+
+    // ✅ STEP 1: Verifica se prossimo round esiste GIÀ (evita duplicati)
     const { data: existingNextRound } = await supabase
       .from('bouts')
       .select('id')
@@ -500,14 +515,43 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
       .limit(1);
 
     if (existingNextRound && existingNextRound.length > 0) {
-      console.log(`[Bracket] Round ${completedRound + 1} already created by another process, skipping`);
+      console.log(`[Bracket] ⚠️ Round ${completedRound + 1} already exists, skipping`);
       return;
     }
 
+    // ✅ STEP 2: Check VELOCE - Tutti i match di questo round sono completati?
+    const { data: allRoundMatches, error: checkError } = await supabase
+      .from('bouts')
+      .select('id, status')
+      .eq('tournament_id', activeTournamentId)
+      .eq('bracket_round', completedRound);
+
+    if (checkError) {
+      console.error('[Bracket] Error checking round completion:', checkError);
+      return;
+    }
+
+    if (!allRoundMatches || allRoundMatches.length === 0) {
+      console.log(`[Bracket] ⚠️ No matches found for Round ${completedRound}`);
+      return;
+    }
+
+    // Un match è completo se è approvato o cancellato
+    const allCompleted = allRoundMatches.every(m => 
+      m.status === 'approved' || m.status === 'cancelled'
+    );
+
+    if (!allCompleted) {
+      const pending = allRoundMatches.filter(m => m.status === 'pending').length;
+      console.log(`[Bracket] ⏳ Round ${completedRound} not complete yet (${pending} pending)`);
+      return; // ✅ EXIT EARLY - Risparmia tempo!
+    }
+
+    console.log(`[Bracket] ✅ Round ${completedRound} is complete! Advancing...`);
     setIsLoading(true);
 
     try {
-      // 1. Get all completed matches from this round (WITH ORDER)
+      // ✅ STEP 3: SOLO SE COMPLETO - Fetch dettagli dei match approvati
       const { data: completedMatches, error: fetchError } = await supabase
         .from('bouts')
         .select('*')
@@ -516,32 +560,16 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         .eq('status', 'approved')
         .not('score_a', 'is', null)
         .not('score_b', 'is', null)
-        .order('created_at', { ascending: true });  // ✅ ORDINE ESPLICITO
+        .order('bracket_match_number', { ascending: true });
 
       if (fetchError) throw fetchError;
-      if (!completedMatches || completedMatches.length === 0) return;
-
-      // 2. Check if ALL matches in this round are completed
-      const { data: allRoundMatches } = await supabase
-        .from('bouts')
-        .select('id, status, score_a, score_b')
-        .eq('tournament_id', activeTournamentId)
-        .eq('bracket_round', completedRound);
-
-      // ✅ Un match è completo se è approvato o cancellato
-      const allCompleted = allRoundMatches?.every(m => 
-        m.status === 'approved' || 
-        m.status === 'cancelled'
-      );
-
-      if (!allCompleted) {
-        console.log(`[Bracket] Round ${completedRound} not yet completed`);
+      if (!completedMatches || completedMatches.length === 0) {
         setIsLoading(false);
         return;
       }
 
 
-      // 3. If only 1 match completed → IT'S THE FINAL → TOURNAMENT COMPLETED
+      // ✅ STEP 4: Se solo 1 match → È LA FINALE → Torneo completato
       if (completedMatches.length === 1) {
         const finalMatch = completedMatches[0];
         const winnerId = finalMatch.score_a > finalMatch.score_b 
@@ -554,6 +582,9 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
           .eq('user_id', winnerId)
           .single();
 
+        const elapsed = Date.now() - startTime;
+        console.log(`[Bracket] 🏆 Tournament completed in ${elapsed}ms! Winner: ${winnerProfile?.full_name}`);
+        
         toast.success(`🏆 Torneo completato! Vincitore: ${winnerProfile?.full_name}`);
         
         // Update tournament status
@@ -567,18 +598,34 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         return;
       }
 
-      // 4. Determine winners
-      const winners = completedMatches.map(match => ({
-        athleteId: match.score_a > match.score_b ? match.athlete_a : match.athlete_b,
-        previousMatchId: match.id
-      }));
+      // ✅ STEP 5: Determina vincitori con logging
+      const winners = completedMatches.map(match => {
+        const winnerId = match.score_a > match.score_b ? match.athlete_a : match.athlete_b;
+        const winnerName = athletes.find(a => a.id === winnerId)?.full_name || 'Unknown';
+        console.log(`[Bracket] Winner: ${winnerName} (${match.score_a}-${match.score_b})`);
+        return {
+          athleteId: winnerId,
+          previousMatchId: match.id
+        };
+      });
 
-      // 5. Create matches for next round (consecutive pairings with match numbers)
+      // ✅ STEP 6: Gestisci BYE se numero dispari di vincitori
+      if (winners.length % 2 !== 0) {
+        const byeWinner = winners[winners.length - 1]; // Ultimo vincitore riceve BYE
+        const byeName = athletes.find(a => a.id === byeWinner.athleteId)?.full_name || 'Unknown';
+        console.log(`[Bracket] ⭐ ${byeName} receives BYE to Round ${completedRound + 2}`);
+      }
+
+      // ✅ STEP 7: Crea match per il prossimo round
       const nextRoundMatches = [];
-      let matchNumber = 1;  // ✅ Aggiungi counter
+      let matchNumber = 1;
       
       for (let i = 0; i < winners.length; i += 2) {
         if (i + 1 < winners.length) {
+          const athleteA = athletes.find(a => a.id === winners[i].athleteId)?.full_name || 'Unknown';
+          const athleteB = athletes.find(a => a.id === winners[i + 1].athleteId)?.full_name || 'Unknown';
+          console.log(`[Bracket Round ${completedRound + 1}] Match ${matchNumber}: ${athleteA} vs ${athleteB}`);
+          
           nextRoundMatches.push({
             tournament_id: activeTournamentId,
             athlete_a: winners[i].athleteId,
@@ -590,7 +637,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
             created_by: currentUserId,
             gym_id: userGymId,
             bracket_round: completedRound + 1,
-            bracket_match_number: matchNumber++,  // ✅ ASSEGNA NUMERO MATCH
+            bracket_match_number: matchNumber++,
             round_number: null,
             score_a: null,
             score_b: null
@@ -598,7 +645,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         }
       }
 
-      // 6. Insert next round matches
+      // ✅ STEP 8: Inserisci i match del prossimo round
       if (nextRoundMatches.length > 0) {
         const { error: insertError } = await supabase
           .from('bouts')
@@ -606,8 +653,11 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
 
         if (insertError) throw insertError;
 
-        const nextRoundName = getRoundName(completedRound + 1, totalBracketRounds);
-        toast.success(`✅ Turno ${completedRound} completato! Creati match per: ${nextRoundName}`);
+        const nextRoundName = getRoundName(completedRound + 1, totalBracketRounds, nextRoundMatches.length);
+        const elapsed = Date.now() - startTime;
+        
+        console.log(`[Bracket] ✅ Round advancement completed in ${elapsed}ms`);
+        toast.success(`✅ Turno ${completedRound} completato! Creati ${nextRoundMatches.length} match per: ${nextRoundName}`);
         
         await loadTournamentData(activeTournamentId);
       }

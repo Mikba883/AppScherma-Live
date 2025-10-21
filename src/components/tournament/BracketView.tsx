@@ -62,20 +62,22 @@ export const BracketView = ({
     .map(Number)
     .sort((a, b) => a - b); // From first round to final
 
-  const getRoundName = (roundNum: number) => {
-    // ✅ Fallback: if totalBracketRounds is 0, calculate from max round number
+  const getRoundName = (roundNum: number, numMatches: number) => {
+    // ✅ FIX 4: Usa il numero di match per determinare il nome corretto
     const effectiveTotalRounds = totalBracketRounds > 0 ? totalBracketRounds : (sortedRounds.length > 0 ? Math.max(...sortedRounds) : 1);
     
-    console.log('[BracketView] getRoundName - roundNum:', roundNum, 'totalBracketRounds:', totalBracketRounds, 'effectiveTotalRounds:', effectiveTotalRounds);
+    console.log('[BracketView] getRoundName - roundNum:', roundNum, 'numMatches:', numMatches, 'totalBracketRounds:', totalBracketRounds);
     
-    const roundsFromFinal = effectiveTotalRounds - roundNum;
+    // Se solo 1 match rimasto → È la finale
+    if (numMatches === 1) return '🏆 Finale';
     
-    if (roundsFromFinal === 0) return '🏆 Finale';
-    if (roundsFromFinal === 1) return 'Semifinali';
-    if (roundsFromFinal === 2) return 'Quarti di Finale';
-    if (roundsFromFinal === 3) return 'Ottavi di Finale';
-    if (roundsFromFinal === 4) return 'Sedicesimi di Finale';
+    // Usa il numero di match per determinare il nome (più affidabile)
+    if (numMatches === 2) return 'Semifinali';
+    if (numMatches === 4) return 'Quarti di Finale';
+    if (numMatches === 8) return 'Ottavi di Finale';
+    if (numMatches === 16) return 'Sedicesimi di Finale';
     
+    // Per numeri dispari o non standard, usa "Turno X"
     return `Turno ${roundNum}`;
   };
 
@@ -87,7 +89,7 @@ export const BracketView = ({
         return (
       <div key={roundNum} className="space-y-4">
         <h3 className="font-bold text-center text-xl bg-primary text-primary-foreground py-2 rounded">
-          {getRoundName(roundNum)}
+          {getRoundName(roundNum, roundMatches.length)}
         </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
