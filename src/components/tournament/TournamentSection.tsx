@@ -477,7 +477,7 @@ export const TournamentSection = ({ onTournamentStateChange }: TournamentSection
         gym_id: userGymId,
         bracket_round: 1,
         bracket_match_number: matchesToInsert.length + 1,
-        round_number: null
+        round_number: null,
         // ✅ NO score_a, score_b, approved_by, approved_at
         // BYE is identified by athlete_b = NULL + status = 'approved'
       });
