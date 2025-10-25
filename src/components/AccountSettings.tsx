@@ -109,29 +109,14 @@ export const AccountSettings = () => {
           >
             Salva Turno
           </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="border-destructive">
-        <CardHeader>
-          <CardTitle className="text-destructive">Zona Pericolosa</CardTitle>
-          <CardDescription>
-            Azioni irreversibili sul tuo account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Eliminando il tuo account, tutti i tuoi dati verranno rimossi definitivamente. 
-              Questa azione non può essere annullata.
-            </p>
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              Elimina Account
-            </Button>
-          </div>
+          <Button
+            variant="link"
+            size="sm"
+            className="text-xs text-destructive hover:text-destructive/80 px-0 h-auto mt-4"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            Elimina il mio account
+          </Button>
         </CardContent>
       </Card>
 
