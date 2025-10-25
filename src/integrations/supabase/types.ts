@@ -851,6 +851,10 @@ export type Database = {
         }
         Returns: string
       }
+      remove_gym_member: {
+        Args: { _member_user_id: string }
+        Returns: undefined
+      }
       summary_by_athlete: {
         Args: {
           _athletes?: string[]

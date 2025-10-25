@@ -63,10 +63,9 @@ export const useGymMembers = () => {
 
   const removeMember = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ gym_id: null })
-        .eq('user_id', userId);
+      const { error } = await supabase.rpc('remove_gym_member', {
+        _member_user_id: userId
+      });
 
       if (error) throw error;
       await fetchMembers();
