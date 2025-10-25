@@ -1,37 +1,84 @@
 import { useState } from 'react';
 import { useGymMembers } from '@/hooks/useGymMembers';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Save, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Trash2, Save } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useGym } from '@/hooks/useGym';
 
 export const MembersManager = () => {
+  const { members, loading, updateMemberShift, removeMember } = useGymMembers();
   const { user } = useAuth();
   const { gym } = useGym();
-  const { members, loading, updateMemberShift, removeMember } = useGymMembers();
-  const [shiftChanges, setShiftChanges] = useState<Record<string, string | null>>({});
+  const { toast } = useToast();
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [shiftChanges, setShiftChanges] = useState<Record<string, string>>({});
 
-  const handleShiftChange = (userId: string, shift: string) => {
-    setShiftChanges(prev => ({ ...prev, [userId]: shift }));
+  const calculateAge = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'capo_palestra':
+        return 'destructive';
+      case 'istruttore':
+        return 'default';
+      case 'allievo':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'capo_palestra':
+        return 'Capo Palestra';
+      case 'istruttore':
+        return 'Istruttore';
+      case 'allievo':
+        return 'Allievo';
+      default:
+        return role;
+    }
+  };
+
+  const handleShiftChange = (userId: string, newShift: string) => {
+    setShiftChanges(prev => ({
+      ...prev,
+      [userId]: newShift
+    }));
   };
 
   const handleSaveShift = async (userId: string) => {
     const newShift = shiftChanges[userId];
-    if (newShift === undefined) return;
+    if (!newShift) return;
 
     const { error } = await updateMemberShift(userId, newShift);
     
     if (error) {
-      toast.error('Errore durante l\'aggiornamento del turno');
-      console.error(error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile aggiornare il turno',
+        variant: 'destructive',
+      });
     } else {
-      toast.success('Turno aggiornato con successo');
+      toast({
+        title: 'Turno aggiornato',
+        description: 'Il turno è stato modificato con successo',
+      });
       setShiftChanges(prev => {
         const updated = { ...prev };
         delete updated[userId];
@@ -46,42 +93,31 @@ export const MembersManager = () => {
     const { error } = await removeMember(memberToRemove);
     
     if (error) {
-      toast.error('Errore durante la rimozione del membro');
-      console.error(error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile rimuovere il membro dalla palestra',
+        variant: 'destructive',
+      });
     } else {
-      toast.success('Membro rimosso dalla palestra');
+      toast({
+        title: 'Membro rimosso',
+        description: 'Il membro è stato rimosso dalla palestra',
+      });
     }
     
     setMemberToRemove(null);
   };
 
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
-  const getRoleBadge = (role: string) => {
-    if (role === 'capo_palestra') {
-      return <Badge variant="destructive">Capo Palestra</Badge>;
-    } else if (role === 'istruttore') {
-      return <Badge variant="default">Istruttore</Badge>;
-    } else {
-      return <Badge variant="secondary">Allievo</Badge>;
-    }
-  };
-
   if (loading) {
-    return <div className="text-center py-4">Caricamento membri...</div>;
+    return <div className="text-center py-8">Caricamento membri...</div>;
+  }
+
+  if (!members.length) {
+    return <div className="text-center py-8 text-muted-foreground">Nessun membro nella palestra</div>;
   }
 
   return (
-    <div className="space-y-4">
+    <>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -90,98 +126,94 @@ export const MembersManager = () => {
               <TableHead>Ruolo</TableHead>
               <TableHead>Turno</TableHead>
               <TableHead>Età</TableHead>
-              <TableHead>Azioni</TableHead>
+              <TableHead className="text-right">Azioni</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {members.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  Nessun membro trovato
-                </TableCell>
-              </TableRow>
-            ) : (
-              members.map((member) => {
-                const isCurrentUser = member.user_id === user?.id;
-                const currentShift = shiftChanges[member.user_id] ?? member.shift ?? '';
-                const hasChanges = shiftChanges[member.user_id] !== undefined;
+            {members.map((member) => {
+              const isCurrentUser = member.user_id === user?.id;
+              const currentShift = shiftChanges[member.user_id] || member.shift || '';
+              const hasShiftChange = shiftChanges[member.user_id] && shiftChanges[member.user_id] !== member.shift;
 
-                return (
-                  <TableRow key={member.user_id}>
-                    <TableCell className="font-medium">
-                      {member.full_name}
-                      {isCurrentUser && <span className="ml-2 text-muted-foreground">(Tu)</span>}
-                    </TableCell>
-                    <TableCell>{getRoleBadge(member.role)}</TableCell>
-                    <TableCell>
-                      {isCurrentUser ? (
-                        <span>{member.shift || '-'}</span>
-                      ) : (
-                        <Select
-                          value={currentShift}
-                          onValueChange={(value) => handleShiftChange(member.user_id, value)}
-                        >
-                          <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="Seleziona turno" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {gym?.shifts?.map((shift) => (
-                              <SelectItem key={shift} value={shift}>
-                                {shift}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
-                    <TableCell>{calculateAge(member.birth_date)}</TableCell>
-                    <TableCell>
-                      {!isCurrentUser && (
-                        <div className="flex items-center gap-2">
-                          {hasChanges && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleSaveShift(member.user_id)}
-                            >
-                              <Save className="w-4 h-4 mr-1" />
-                              Salva
-                            </Button>
-                          )}
+              return (
+                <TableRow key={member.user_id}>
+                  <TableCell className="font-medium">
+                    {member.full_name}
+                    {isCurrentUser && <span className="ml-2 text-muted-foreground">(Tu)</span>}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getRoleBadgeVariant(member.role)}>
+                      {getRoleLabel(member.role)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {isCurrentUser ? (
+                      <span>{member.shift || 'Non specificato'}</span>
+                    ) : (
+                      <Select
+                        value={currentShift}
+                        onValueChange={(value) => handleShiftChange(member.user_id, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue placeholder="Seleziona turno" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {gym?.shifts?.map((shift) => (
+                            <SelectItem key={shift} value={shift}>
+                              {shift}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </TableCell>
+                  <TableCell>{calculateAge(member.birth_date)} anni</TableCell>
+                  <TableCell className="text-right">
+                    {!isCurrentUser && (
+                      <div className="flex justify-end gap-2">
+                        {hasShiftChange && (
                           <Button
                             size="sm"
-                            variant="destructive"
-                            onClick={() => setMemberToRemove(member.user_id)}
+                            variant="outline"
+                            onClick={() => handleSaveShift(member.user_id)}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Save className="h-4 w-4" />
                           </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
+                        )}
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setMemberToRemove(member.user_id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
 
-      <AlertDialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
+      <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Conferma Rimozione</AlertDialogTitle>
+            <AlertDialogTitle>Rimuovi membro dalla palestra</AlertDialogTitle>
             <AlertDialogDescription>
-              Sei sicuro di voler rimuovere questo membro dalla palestra? L'utente non potrà più accedere ai dati della palestra ma il suo account non verrà eliminato.
+              Sei sicuro di voler rimuovere questo membro dalla palestra? 
+              L'account non verrà cancellato, ma il membro non farà più parte della tua palestra.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRemoveMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleRemoveMember}>
               Rimuovi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 };

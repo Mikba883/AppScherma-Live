@@ -122,17 +122,7 @@ export const StudentDashboard = () => {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Impostazioni Account</CardTitle>
-              <CardDescription>
-                Gestisci le tue preferenze e il tuo account
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AccountSettings />
-            </CardContent>
-          </Card>
+          <AccountSettings />
         </TabsContent>
       </Tabs>
 

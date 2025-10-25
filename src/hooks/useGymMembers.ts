@@ -45,7 +45,7 @@ export const useGymMembers = () => {
     }
   };
 
-  const updateMemberShift = async (userId: string, shift: string | null) => {
+  const updateMemberShift = async (userId: string, shift: string) => {
     try {
       const { error } = await supabase
         .from('profiles')

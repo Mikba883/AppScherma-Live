@@ -6,8 +6,8 @@ import { useProfileQuery } from '@/hooks/useProfileQuery';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { GymSettingsOptimized } from '@/components/gym/GymSettingsOptimized';
 import InviteManager from '@/components/gym/InviteManager';
-import { Settings, UserPlus, Users, AlertCircle, ArrowLeft, Users2 } from 'lucide-react';
 import { MembersManager } from '@/components/gym/MembersManager';
+import { Settings, UserPlus, Users, AlertCircle, ArrowLeft, UsersRound } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DashboardSkeleton } from '@/components/LoadingSkeleton';
@@ -69,7 +69,7 @@ const GymAdminPage = () => {
       <Tabs defaultValue="members">
         <TabsList className="grid w-full grid-cols-3 max-w-2xl">
           <TabsTrigger value="members" className="flex items-center gap-2">
-            <Users2 className="h-4 w-4" />
+            <UsersRound className="h-4 w-4" />
             Membri
           </TabsTrigger>
           <TabsTrigger value="invites" className="flex items-center gap-2">
