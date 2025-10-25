@@ -6,7 +6,8 @@ import { useProfileQuery } from '@/hooks/useProfileQuery';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { GymSettingsOptimized } from '@/components/gym/GymSettingsOptimized';
 import InviteManager from '@/components/gym/InviteManager';
-import { Settings, UserPlus, Users, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Settings, UserPlus, Users, AlertCircle, ArrowLeft, Users2 } from 'lucide-react';
+import { MembersManager } from '@/components/gym/MembersManager';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DashboardSkeleton } from '@/components/LoadingSkeleton';
@@ -65,8 +66,12 @@ const GymAdminPage = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="invites">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+      <Tabs defaultValue="members">
+        <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+          <TabsTrigger value="members" className="flex items-center gap-2">
+            <Users2 className="h-4 w-4" />
+            Membri
+          </TabsTrigger>
           <TabsTrigger value="invites" className="flex items-center gap-2">
             <UserPlus className="h-4 w-4" />
             Inviti
@@ -76,6 +81,20 @@ const GymAdminPage = () => {
             Impostazioni
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="members" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestione Membri</CardTitle>
+              <CardDescription>
+                Visualizza e gestisci i membri della tua palestra
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MembersManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="invites" className="mt-6">
           <Card>

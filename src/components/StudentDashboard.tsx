@@ -4,8 +4,9 @@ import { NotificationsPanel } from './NotificationsPanel';
 import { RegisterBoutForm } from './RegisterBoutForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { BarChart3, Bell, Plus, Trophy } from 'lucide-react';
+import { BarChart3, Bell, Plus, Trophy, Settings } from 'lucide-react';
 import { TournamentSection } from './tournament/TournamentSection';
+import { AccountSettings } from './AccountSettings';
 import { useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
@@ -51,7 +52,7 @@ export const StudentDashboard = () => {
   return (
     <main className="w-full px-6 py-8 pb-20 md:pb-8">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
             <BarChart3 className="w-4 h-4" />
             <span className="hidden sm:inline">Statistiche</span>
@@ -67,6 +68,10 @@ export const StudentDashboard = () => {
           <TabsTrigger value="tournament" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
             <Trophy className="w-4 h-4" />
             <span className="hidden sm:inline">Torneo</span>
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Impostazioni</span>
           </TabsTrigger>
         </TabsList>
 
@@ -112,6 +117,20 @@ export const StudentDashboard = () => {
             </CardHeader>
             <CardContent>
               <TournamentSection onTournamentStateChange={handleTournamentStateChange} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Impostazioni Account</CardTitle>
+              <CardDescription>
+                Gestisci le tue preferenze e il tuo account
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AccountSettings />
             </CardContent>
           </Card>
         </TabsContent>

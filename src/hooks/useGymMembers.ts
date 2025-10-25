@@ -45,9 +45,43 @@ export const useGymMembers = () => {
     }
   };
 
+  const updateMemberShift = async (userId: string, shift: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ shift })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      await fetchMembers();
+      return { error: null };
+    } catch (error) {
+      console.error('Error updating member shift:', error);
+      return { error };
+    }
+  };
+
+  const removeMember = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ gym_id: null })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      await fetchMembers();
+      return { error: null };
+    } catch (error) {
+      console.error('Error removing member:', error);
+      return { error };
+    }
+  };
+
   return {
     members,
     loading,
-    refetch: fetchMembers
+    refetch: fetchMembers,
+    updateMemberShift,
+    removeMember
   };
 };

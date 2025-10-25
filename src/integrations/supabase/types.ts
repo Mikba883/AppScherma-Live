@@ -584,9 +584,9 @@ export type Database = {
         Args: { _bout_id: string }
         Returns: undefined
       }
-      calculate_elo_change: {
-        Args:
-          | {
+      calculate_elo_change:
+        | {
+            Args: {
               _frequency_multiplier?: number
               _is_first_win_of_week?: boolean
               _matches_played: number
@@ -594,19 +594,19 @@ export type Database = {
               _player_elo: number
               _player_won: boolean
             }
-          | {
+            Returns: number
+          }
+        | {
+            Args: {
               _frequency_multiplier?: number
               _matches_played: number
               _opponent_elo: number
               _player_elo: number
               _player_won: boolean
             }
-        Returns: number
-      }
-      close_old_tournaments: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+            Returns: number
+          }
+      close_old_tournaments: { Args: never; Returns: undefined }
       create_gym: {
         Args: {
           _logo_url: string
@@ -617,9 +617,9 @@ export type Database = {
         }
         Returns: string
       }
-      create_gym_and_user: {
-        Args:
-          | {
+      create_gym_and_user:
+        | {
+            Args: {
               _email: string
               _full_name: string
               _gym_logo_url?: string
@@ -627,7 +627,10 @@ export type Database = {
               _password: string
               _shifts?: string[]
             }
-          | {
+            Returns: Json
+          }
+        | {
+            Args: {
               _email: string
               _full_name: string
               _gym_logo_url?: string
@@ -635,8 +638,8 @@ export type Database = {
               _shifts?: string[]
               _user_id: string
             }
-        Returns: Json
-      }
+            Returns: Json
+          }
       decide_bout: {
         Args: { _bout_id: string; _decision: string }
         Returns: undefined
@@ -645,16 +648,11 @@ export type Database = {
         Args: { _bout_id: string }
         Returns: undefined
       }
-      get_current_user_gym_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      delete_user_account: { Args: never; Returns: undefined }
+      get_current_user_gym_id: { Args: never; Returns: string }
+      get_current_user_role: { Args: never; Returns: string }
       get_gym_member_names: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           full_name: string
           role: string
@@ -675,7 +673,7 @@ export type Database = {
         }[]
       }
       get_my_active_tournament: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           bout_type: string
           created_by: string
@@ -687,7 +685,7 @@ export type Database = {
         }[]
       }
       get_my_pending_bouts: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           athlete_a: string
           athlete_b: string
@@ -704,7 +702,7 @@ export type Database = {
         }[]
       }
       get_my_pending_tournament_matches: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           approved_by_a: string
           approved_by_b: string
@@ -722,7 +720,7 @@ export type Database = {
         }[]
       }
       get_my_tournament_matches: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           bout_date: string
           bout_id: string
@@ -781,14 +779,8 @@ export type Database = {
           ranking_position: number
         }[]
       }
-      get_user_gym_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_user_role: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_user_gym_id: { Args: never; Returns: string }
+      get_user_role: { Args: { _user_id: string }; Returns: string }
       gym_has_active_public_link: {
         Args: { _gym_id: string }
         Returns: boolean
