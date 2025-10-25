@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProfileQuery } from '@/hooks/useProfileQuery';
 import { useGymQuery } from '@/hooks/useGymQuery';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,13 @@ export const ShiftSelector = ({ onSuccess }: ShiftSelectorProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Sync selectedShift with profile.shift when it changes
+  useEffect(() => {
+    if (profile?.shift) {
+      setSelectedShift(profile.shift);
+    }
+  }, [profile?.shift]);
 
   const handleSave = async () => {
     if (!selectedShift) {
