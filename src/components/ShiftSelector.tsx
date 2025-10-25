@@ -155,6 +155,15 @@ export const ShiftSelector = ({ onSuccess }: ShiftSelectorProps) => {
               <p>
                 Questa azione eliminerà permanentemente il tuo account e rimuoverà tutti i tuoi dati dai nostri server.
               </p>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 space-y-2">
+                <p className="font-semibold text-destructive">⚠️ Verranno eliminati anche:</p>
+                <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
+                  <li>Tutti i tornei che hai creato</li>
+                  <li>I relativi incontri dei tornei</li>
+                  <li>Le tue statistiche e notifiche</li>
+                </ul>
+                <p className="text-sm font-semibold">Questa azione è irreversibile.</p>
+              </div>
               <p className="font-semibold">
                 Per confermare, digita <span className="text-destructive">ELIMINA</span> nel campo sottostante:
               </p>
