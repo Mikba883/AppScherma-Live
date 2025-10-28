@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CheckCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { TournamentMatch } from '@/types/tournament';
 
 interface BracketViewProps {
@@ -227,6 +227,43 @@ const BracketMatchCard = ({
 }: BracketMatchCardProps) => {
   const [scoreA, setScoreA] = useState<string>(match.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState<string>(match.scoreB?.toString() || '');
+
+  // Auto-save scores when they change
+  useEffect(() => {
+    const saveScores = async () => {
+      if (!match.id || !tournamentId || !gymId) return;
+      
+      const parsedScoreA = parseInt(scoreA);
+      const parsedScoreB = parseInt(scoreB);
+
+      // Only save if both scores are valid numbers
+      if (isNaN(parsedScoreA) || isNaN(parsedScoreB)) return;
+      
+      // Only save if scores actually changed from database values
+      if (parsedScoreA === match.scoreA && parsedScoreB === match.scoreB) return;
+
+      try {
+        const { error } = await supabase
+          .from('bouts')
+          .update({
+            score_a: parsedScoreA,
+            score_b: parsedScoreB,
+          })
+          .eq('id', match.id);
+
+        if (error) throw error;
+
+        // Refresh to update parent component
+        onRefresh();
+      } catch (error) {
+        console.error('Error auto-saving scores:', error);
+      }
+    };
+
+    // Debounce the save operation
+    const timeoutId = setTimeout(saveScores, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [scoreA, scoreB, match.id, match.scoreA, match.scoreB, tournamentId, gymId, onRefresh]);
 
   const canEdit = isInstructor || isCreator;
   const isAthleteA = currentUserId === match.athleteA;
