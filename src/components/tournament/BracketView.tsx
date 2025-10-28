@@ -50,10 +50,22 @@ export const BracketView = ({
 
     const roundMatches = rounds[roundNum] || [];
     
-    // Check if all matches have scores
-    const allMatchesHaveScores = roundMatches.every(m => 
-      m.scoreA !== null && m.scoreB !== null
-    );
+    // Check if all NON-BYE matches have scores
+    const allMatchesHaveScores = roundMatches.every(m => {
+      // Skip BYE matches - they don't need scores
+      const athleteAName = athleteNames.get(m.athleteA);
+      const athleteBName = athleteNames.get(m.athleteB);
+      const isByeMatch = !m.athleteA || !m.athleteB || 
+                         !athleteAName || !athleteBName ||
+                         athleteAName === 'TBD' || athleteBName === 'TBD';
+      
+      if (isByeMatch) {
+        return true; // BYE matches are always considered "complete"
+      }
+      
+      // For real matches, check database values
+      return m.scoreA !== null && m.scoreB !== null;
+    });
 
     if (!allMatchesHaveScores) {
       toast.error('Tutti i match del turno devono avere un punteggio prima di completare il turno');
