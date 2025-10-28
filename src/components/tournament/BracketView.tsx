@@ -159,6 +159,18 @@ export const BracketView = ({
         const roundMatches = rounds[roundNum] || [];
         // Check local scores first, fallback to database values
         const allMatchesHaveScores = roundMatches.every(m => {
+          // Skip BYE matches - they don't need scores
+          const athleteAName = athleteNames.get(m.athleteA);
+          const athleteBName = athleteNames.get(m.athleteB);
+          const isByeMatch = !m.athleteA || !m.athleteB || 
+                             !athleteAName || !athleteBName ||
+                             athleteAName === 'TBD' || athleteBName === 'TBD';
+          
+          if (isByeMatch) {
+            return true; // BYE matches are always considered "complete"
+          }
+          
+          // For real matches, check local scores first, fallback to database
           const localScore = localScores.get(m.id);
           if (localScore) {
             return localScore.scoreA !== null && localScore.scoreB !== null;
