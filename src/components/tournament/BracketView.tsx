@@ -35,6 +35,15 @@ export const BracketView = ({
   totalBracketRounds
 }: BracketViewProps) => {
   const [isCompletingRound, setIsCompletingRound] = useState(false);
+  const [localScores, setLocalScores] = useState<Map<string, { scoreA: number | null, scoreB: number | null }>>(new Map());
+
+  const handleScoresChange = (matchId: string, scoreA: number | null, scoreB: number | null) => {
+    setLocalScores(prev => {
+      const newMap = new Map(prev);
+      newMap.set(matchId, { scoreA, scoreB });
+      return newMap;
+    });
+  };
 
   const handleCompleteRound = async (roundNum: number) => {
     if (!tournamentId || !gymId) return;
@@ -148,9 +157,14 @@ export const BracketView = ({
     <div className="space-y-8">
       {sortedRounds.map(roundNum => {
         const roundMatches = rounds[roundNum] || [];
-        const allMatchesHaveScores = roundMatches.every(m => 
-          m.scoreA !== null && m.scoreB !== null
-        );
+        // Check local scores first, fallback to database values
+        const allMatchesHaveScores = roundMatches.every(m => {
+          const localScore = localScores.get(m.id);
+          if (localScore) {
+            return localScore.scoreA !== null && localScore.scoreB !== null;
+          }
+          return m.scoreA !== null && m.scoreB !== null;
+        });
         const allMatchesApproved = roundMatches.every(m => 
           m.status === 'approved'
         );
@@ -174,6 +188,7 @@ export const BracketView = ({
                   tournamentId={tournamentId}
                   gymId={gymId}
                   onRefresh={onRefresh}
+                  onScoresChange={handleScoresChange}
                 />
               ))}
             </div>
@@ -212,6 +227,7 @@ interface BracketMatchCardProps {
   tournamentId: string | null;
   gymId: string | null;
   onRefresh: () => void;
+  onScoresChange: (matchId: string, scoreA: number | null, scoreB: number | null) => void;
 }
 
 const BracketMatchCard = ({
@@ -223,10 +239,26 @@ const BracketMatchCard = ({
   isCreator,
   tournamentId,
   gymId,
-  onRefresh
+  onRefresh,
+  onScoresChange
 }: BracketMatchCardProps) => {
   const [scoreA, setScoreA] = useState<string>(match.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState<string>(match.scoreB?.toString() || '');
+
+  // Notify parent immediately when scores change locally
+  useEffect(() => {
+    const parsedScoreA = scoreA === '' ? null : parseInt(scoreA);
+    const parsedScoreB = scoreB === '' ? null : parseInt(scoreB);
+    
+    // Notify parent of current local state (even if incomplete)
+    if (match.id) {
+      onScoresChange(
+        match.id, 
+        isNaN(parsedScoreA as number) ? null : parsedScoreA,
+        isNaN(parsedScoreB as number) ? null : parsedScoreB
+      );
+    }
+  }, [scoreA, scoreB, match.id, onScoresChange]);
 
   // Auto-save scores when they change
   useEffect(() => {
@@ -253,7 +285,7 @@ const BracketMatchCard = ({
 
         if (error) throw error;
 
-        // Refresh to update parent component
+        // Refresh parent - but don't include onRefresh in dependencies to avoid loops
         onRefresh();
       } catch (error) {
         console.error('Error auto-saving scores:', error);
@@ -263,7 +295,8 @@ const BracketMatchCard = ({
     // Debounce the save operation
     const timeoutId = setTimeout(saveScores, 1000);
     return () => clearTimeout(timeoutId);
-  }, [scoreA, scoreB, match.id, match.scoreA, match.scoreB, tournamentId, gymId, onRefresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scoreA, scoreB, match.id, match.scoreA, match.scoreB, tournamentId, gymId]);
 
   const canEdit = isInstructor || isCreator;
   const isAthleteA = currentUserId === match.athleteA;
