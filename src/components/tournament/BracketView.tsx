@@ -34,6 +34,58 @@ export const BracketView = ({
   onRoundComplete,
   totalBracketRounds
 }: BracketViewProps) => {
+  const [isCompletingRound, setIsCompletingRound] = useState(false);
+
+  const handleCompleteRound = async (roundNum: number) => {
+    if (!tournamentId || !gymId) return;
+
+    const roundMatches = rounds[roundNum] || [];
+    
+    // Check if all matches have scores
+    const allMatchesHaveScores = roundMatches.every(m => 
+      m.scoreA !== null && m.scoreB !== null
+    );
+
+    if (!allMatchesHaveScores) {
+      toast.error('Tutti i match del turno devono avere un punteggio prima di completare il turno');
+      return;
+    }
+
+    setIsCompletingRound(true);
+
+    try {
+      // Approve all matches in this round in batch
+      const matchIds = roundMatches.map(m => m.id).filter(Boolean);
+      
+      const { error } = await supabase
+        .from('bouts')
+        .update({
+          status: 'approved',
+          approved_by: currentUserId,
+          approved_at: new Date().toISOString(),
+          approved_by_a: currentUserId,
+          approved_by_b: currentUserId,
+        })
+        .in('id', matchIds);
+
+      if (error) throw error;
+
+      toast.success(`Turno ${roundNum} completato!`);
+
+      // Refresh and advance to next round
+      onRefresh();
+      
+      if (onRoundComplete) {
+        await onRoundComplete(roundNum);
+      }
+    } catch (error) {
+      console.error('Error completing round:', error);
+      toast.error('Errore nel completamento del turno');
+    } finally {
+      setIsCompletingRound(false);
+    }
+  };
+
   // Raggruppa match per bracket_round E ordina per bracket_match_number
   const rounds = matches
     .filter(m => m.bracket_round !== null && m.bracket_round !== undefined)
@@ -90,16 +142,24 @@ export const BracketView = ({
     return `Turno ${roundNum}`;
   };
 
+  const canEdit = isInstructor || isCreator;
+
   return (
     <div className="space-y-8">
       {sortedRounds.map(roundNum => {
         const roundMatches = rounds[roundNum] || [];
+        const allMatchesHaveScores = roundMatches.every(m => 
+          m.scoreA !== null && m.scoreB !== null
+        );
+        const allMatchesApproved = roundMatches.every(m => 
+          m.status === 'approved'
+        );
         
         return (
-      <div key={roundNum} className="space-y-4">
-        <h3 className="font-bold text-center text-xl bg-primary text-primary-foreground py-2 rounded">
-          {getRoundName(roundNum, roundMatches.length)}
-        </h3>
+          <div key={roundNum} className="space-y-4">
+            <h3 className="font-bold text-center text-xl bg-primary text-primary-foreground py-2 rounded">
+              {getRoundName(roundNum, roundMatches.length)}
+            </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {roundMatches.map((match, idx) => (
@@ -114,10 +174,26 @@ export const BracketView = ({
                   tournamentId={tournamentId}
                   gymId={gymId}
                   onRefresh={onRefresh}
-                  onRoundComplete={onRoundComplete}
                 />
               ))}
             </div>
+
+            {/* Complete Round Button */}
+            {canEdit && !allMatchesApproved && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  onClick={() => handleCompleteRound(roundNum)}
+                  disabled={!allMatchesHaveScores || isCompletingRound}
+                  size="lg"
+                  className="gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {allMatchesHaveScores 
+                    ? `Completa Turno ${roundNum}` 
+                    : `Inserisci tutti i punteggi per completare il turno`}
+                </Button>
+              </div>
+            )}
           </div>
         );
       })}
@@ -136,7 +212,6 @@ interface BracketMatchCardProps {
   tournamentId: string | null;
   gymId: string | null;
   onRefresh: () => void;
-  onRoundComplete?: (completedRound: number) => Promise<void>;
 }
 
 const BracketMatchCard = ({
@@ -148,8 +223,7 @@ const BracketMatchCard = ({
   isCreator,
   tournamentId,
   gymId,
-  onRefresh,
-  onRoundComplete
+  onRefresh
 }: BracketMatchCardProps) => {
   const [scoreA, setScoreA] = useState<string>(match.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState<string>(match.scoreB?.toString() || '');
@@ -180,38 +254,27 @@ const BracketMatchCard = ({
     setIsSaving(true);
 
     try {
-      // ✅ In Fase 2, salvare = approvare automaticamente
+      // Save scores and weapon without approving
       const { error } = await supabase
         .from('bouts')
         .update({
           score_a: parsedScoreA,
           score_b: parsedScoreB,
           weapon: weapon && weapon.trim() !== '' ? weapon.toLowerCase() : null,
-          status: 'approved',
-          approved_by: currentUserId,
-          approved_at: new Date().toISOString(),
-          approved_by_a: currentUserId,
-          approved_by_b: currentUserId,
         })
         .eq('id', match.id);
 
       if (error) throw error;
 
-      toast.success('Match salvato e approvato');
+      toast.success('Punteggi salvati');
 
-      // ✅ FIX 2: Update local state to reflect the change immediately
+      // Update local state
       setScoreA(scoreA);
       setScoreB(scoreB);
       setWeapon(weapon);
 
-      // ✅ FIX 2: ALWAYS refresh UI immediately
+      // Refresh UI
       onRefresh();
-
-      // Trigger automatic advancement if round is complete
-      const currentRound = match.bracket_round;
-      if (currentRound && onRoundComplete) {
-        await onRoundComplete(currentRound);
-      }
     } catch (error) {
       console.error('Error saving match:', error);
       toast.error('Errore nel salvataggio');
@@ -314,7 +377,7 @@ const BracketMatchCard = ({
             className="w-full"
           >
             <Save className="w-3 h-3 mr-1" />
-            Salva e Approva
+            Salva Punteggi
           </Button>
         )}
 

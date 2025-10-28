@@ -24,6 +24,7 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
   const [shiftFilter, setShiftFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [availableShifts, setAvailableShifts] = useState<string[]>([]);
+  const [selectedWeapon, setSelectedWeapon] = useState<string>('fioretto');
 
   // Debug logging
   useEffect(() => {
@@ -136,7 +137,7 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
     const name = `Torneo ${new Date().toLocaleDateString('it-IT')}`;
     const date = new Date().toISOString().split('T')[0];
     
-    onStart(selectedAthletes, name, date, 'fioretto', 'sparring');
+    onStart(selectedAthletes, name, date, selectedWeapon, 'sparring');
   };
 
   const clearAll = () => {
@@ -182,7 +183,22 @@ export const TournamentSetup = ({ onStart, onCancel }: TournamentSetupProps) => 
 
       <CardContent className="space-y-6">
         {/* Filters and Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Weapon Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Arma del torneo</label>
+            <Select value={selectedWeapon} onValueChange={setSelectedWeapon}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fioretto">Fioretto</SelectItem>
+                <SelectItem value="spada">Spada</SelectItem>
+                <SelectItem value="sciabola">Sciabola</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Shift Filter */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
