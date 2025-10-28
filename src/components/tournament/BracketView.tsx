@@ -2,10 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { TournamentMatch } from '@/types/tournament';
 
@@ -227,11 +227,6 @@ const BracketMatchCard = ({
 }: BracketMatchCardProps) => {
   const [scoreA, setScoreA] = useState<string>(match.scoreA?.toString() || '');
   const [scoreB, setScoreB] = useState<string>(match.scoreB?.toString() || '');
-  // ✅ Converti weapon in minuscolo per evitare errori con constraint DB
-  const [weapon, setWeapon] = useState<string>(
-    match.weapon ? match.weapon.toLowerCase() : 'fioretto'
-  );
-  const [isSaving, setIsSaving] = useState(false);
 
   const canEdit = isInstructor || isCreator;
   const isAthleteA = currentUserId === match.athleteA;
@@ -240,48 +235,6 @@ const BracketMatchCard = ({
   const hasApprovedB = match.approved_by_b !== null;
   const isCompleted = match.status === 'approved';
 
-  const handleSave = async () => {
-    if (!match.id || !tournamentId || !gymId) return;
-
-    const parsedScoreA = parseInt(scoreA);
-    const parsedScoreB = parseInt(scoreB);
-
-    if (isNaN(parsedScoreA) || isNaN(parsedScoreB)) {
-      toast.error('Inserisci punteggi validi');
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      // Save scores and weapon without approving
-      const { error } = await supabase
-        .from('bouts')
-        .update({
-          score_a: parsedScoreA,
-          score_b: parsedScoreB,
-          weapon: weapon && weapon.trim() !== '' ? weapon.toLowerCase() : null,
-        })
-        .eq('id', match.id);
-
-      if (error) throw error;
-
-      toast.success('Punteggi salvati');
-
-      // Update local state
-      setScoreA(scoreA);
-      setScoreB(scoreB);
-      setWeapon(weapon);
-
-      // Refresh UI
-      onRefresh();
-    } catch (error) {
-      console.error('Error saving match:', error);
-      toast.error('Errore nel salvataggio');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
 
   // Check if it's a BYE match (one athlete is TBD)
@@ -354,43 +307,17 @@ const BracketMatchCard = ({
           </div>
         </div>
 
-        {/* Weapon selector */}
-        {canEdit && !isCompleted && (
-          <Select value={weapon} onValueChange={setWeapon}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Seleziona arma" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sciabola">Sciabola</SelectItem>
-              <SelectItem value="fioretto">Fioretto</SelectItem>
-              <SelectItem value="spada">Spada</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-
-        {/* Action buttons */}
-        {!isCompleted && canEdit && (
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || !scoreA || !scoreB}
-            size="sm"
-            className="w-full"
-          >
-            <Save className="w-3 h-3 mr-1" />
-            Salva Punteggi
-          </Button>
+        {/* Weapon badge */}
+        {match.weapon && (
+          <Badge variant="outline" className="w-full justify-center">
+            Arma: {match.weapon.charAt(0).toUpperCase() + match.weapon.slice(1)}
+          </Badge>
         )}
 
         {isCompleted && (
-          <div className="text-xs text-center text-muted-foreground">
+          <Badge variant="default" className="w-full justify-center">
             ✓ Match completato
-          </div>
-        )}
-
-        {match.weapon && (
-          <div className="text-xs text-center text-muted-foreground">
-            {match.weapon}
-          </div>
+          </Badge>
         )}
       </CardContent>
     </Card>
