@@ -58,10 +58,10 @@ export function Combobox({
             {options.map((option) => (
               <CommandItem
                 key={option.value}
-                value={option.value}
+                value={option.label}
                 className="touch-target"
-                onSelect={(currentValue) => {
-                  onValueChange(currentValue === value ? "" : currentValue)
+                onSelect={() => {
+                  onValueChange(option.value === value ? "" : option.value)
                   setOpen(false)
                 }}
               >
