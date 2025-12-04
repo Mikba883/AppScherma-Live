@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,10 @@ export const TeamMatchLive = ({
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [endReason, setEndReason] = useState('');
 
+  // Refs to prevent double bout-end dialog bug
+  const isTransitioningRef = useRef(false);
+  const prevBoutNumberRef = useRef(match.current_bout);
+
   const currentBoutSequence = TEAM_RELAY_SEQUENCE[match.current_bout - 1];
   const currentBout = bouts.find((b) => b.bout_number === match.current_bout);
 
@@ -49,7 +53,23 @@ export const TeamMatchLive = ({
 
   // Check bout end conditions
   useEffect(() => {
+    // Skip if we're transitioning between bouts
+    if (isTransitioningRef.current) return;
+
+    // Skip if bout number just changed - update ref and return
+    if (prevBoutNumberRef.current !== match.current_bout) {
+      prevBoutNumberRef.current = match.current_bout;
+      return;
+    }
+
     if (!currentBout || currentBout.status !== 'in_progress') return;
+
+    // Skip if bout just started (no touches and very little time elapsed)
+    if (currentBout.bout_touches_a === 0 && 
+        currentBout.bout_touches_b === 0 && 
+        timeElapsed < 5) {
+      return;
+    }
 
     const result = shouldEndBout(
       match.total_score_a,
@@ -102,10 +122,17 @@ export const TeamMatchLive = ({
   };
 
   const handleConfirmBoutEnd = () => {
+    // Block the useEffect from triggering during transition
+    isTransitioningRef.current = true;
     setShowEndBoutDialog(false);
     onBoutComplete(timeElapsed);
     setTimeElapsed(0);
     setTimerResetKey((k) => k + 1);
+    
+    // Reset the flag after a delay to allow the new bout to load
+    setTimeout(() => {
+      isTransitioningRef.current = false;
+    }, 1000);
   };
 
   const handleConfirmMatchEnd = () => {
