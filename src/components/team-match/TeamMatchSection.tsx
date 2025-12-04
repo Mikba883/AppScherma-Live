@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,13 +8,56 @@ import { TeamMatchSetup } from './TeamMatchSetup';
 import { TeamMatchLive } from './TeamMatchLive';
 import { TeamSetup, TEAM_RELAY_SEQUENCE, TeamMatch, TeamMatchBout } from '@/types/team-match';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy } from 'lucide-react';
+import { Trophy, Radio } from 'lucide-react';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 export const TeamMatchSection = () => {
   const { user } = useAuth();
   const { gym } = useGym();
   const queryClient = useQueryClient();
+  const [isLive, setIsLive] = useState(false);
+
+  // Real-time subscription for team matches and bouts
+  useEffect(() => {
+    if (!gym?.id) return;
+
+    const channel = supabase
+      .channel('team-match-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_matches',
+          filter: `gym_id=eq.${gym.id}`,
+        },
+        (payload) => {
+          console.log('Team match update:', payload);
+          queryClient.invalidateQueries({ queryKey: ['active-team-match', gym.id] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_match_bouts',
+        },
+        (payload) => {
+          console.log('Bout update:', payload);
+          queryClient.invalidateQueries({ queryKey: ['team-match-bouts'] });
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+        setIsLive(status === 'SUBSCRIBED');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [gym?.id, queryClient]);
 
   // Fetch active team match
   const { data: activeMatch, isLoading: matchLoading } = useQuery({
@@ -340,16 +383,24 @@ export const TeamMatchSection = () => {
   }
 
   return (
-    <TeamMatchLive
-      match={activeMatch}
-      bouts={bouts}
-      teamAAthletes={teamAAthletes}
-      teamBAthletes={teamBAthletes}
-      onScoreUpdate={handleScoreUpdate}
-      onBoutComplete={(time) => completeBoutMutation.mutate(time)}
-      onMatchComplete={(winner) => completeMatchMutation.mutate(winner)}
-      onStartOvertime={() => startOvertimeMutation.mutate()}
-      onCancelMatch={() => cancelMatchMutation.mutate()}
-    />
+    <div className="space-y-4">
+      {isLive && (
+        <Badge variant="outline" className="flex items-center gap-1 w-fit">
+          <Radio className="w-3 h-3 text-red-500 animate-pulse" />
+          <span className="text-xs">Live - Sincronizzazione attiva</span>
+        </Badge>
+      )}
+      <TeamMatchLive
+        match={activeMatch}
+        bouts={bouts}
+        teamAAthletes={teamAAthletes}
+        teamBAthletes={teamBAthletes}
+        onScoreUpdate={handleScoreUpdate}
+        onBoutComplete={(time) => completeBoutMutation.mutate(time)}
+        onMatchComplete={(winner) => completeMatchMutation.mutate(winner)}
+        onStartOvertime={() => startOvertimeMutation.mutate()}
+        onCancelMatch={() => cancelMatchMutation.mutate()}
+      />
+    </div>
   );
 };
