@@ -460,6 +460,164 @@ export type Database = {
         }
         Relationships: []
       }
+      team_match_bouts: {
+        Row: {
+          athlete_a_index: number
+          athlete_b_index: number
+          bout_number: number
+          bout_touches_a: number
+          bout_touches_b: number
+          completed_at: string | null
+          end_score_a: number | null
+          end_score_b: number | null
+          id: string
+          start_score_a: number
+          start_score_b: number
+          started_at: string | null
+          status: string
+          target_score: number
+          team_match_id: string
+          time_elapsed: number | null
+        }
+        Insert: {
+          athlete_a_index: number
+          athlete_b_index: number
+          bout_number: number
+          bout_touches_a?: number
+          bout_touches_b?: number
+          completed_at?: string | null
+          end_score_a?: number | null
+          end_score_b?: number | null
+          id?: string
+          start_score_a?: number
+          start_score_b?: number
+          started_at?: string | null
+          status?: string
+          target_score: number
+          team_match_id: string
+          time_elapsed?: number | null
+        }
+        Update: {
+          athlete_a_index?: number
+          athlete_b_index?: number
+          bout_number?: number
+          bout_touches_a?: number
+          bout_touches_b?: number
+          completed_at?: string | null
+          end_score_a?: number | null
+          end_score_b?: number | null
+          id?: string
+          start_score_a?: number
+          start_score_b?: number
+          started_at?: string | null
+          status?: string
+          target_score?: number
+          team_match_id?: string
+          time_elapsed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_match_bouts_team_match_id_fkey"
+            columns: ["team_match_id"]
+            isOneToOne: false
+            referencedRelation: "team_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_matches: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string
+          current_bout: number
+          gym_id: string | null
+          id: string
+          match_date: string
+          overtime_score_a: number | null
+          overtime_score_b: number | null
+          overtime_winner: string | null
+          status: string
+          team_a_athlete_1: string | null
+          team_a_athlete_2: string | null
+          team_a_athlete_3: string | null
+          team_a_name: string | null
+          team_b_athlete_1: string | null
+          team_b_athlete_2: string | null
+          team_b_athlete_3: string | null
+          team_b_name: string | null
+          total_score_a: number
+          total_score_b: number
+          weapon: string | null
+          winner: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by: string
+          current_bout?: number
+          gym_id?: string | null
+          id?: string
+          match_date?: string
+          overtime_score_a?: number | null
+          overtime_score_b?: number | null
+          overtime_winner?: string | null
+          status?: string
+          team_a_athlete_1?: string | null
+          team_a_athlete_2?: string | null
+          team_a_athlete_3?: string | null
+          team_a_name?: string | null
+          team_b_athlete_1?: string | null
+          team_b_athlete_2?: string | null
+          team_b_athlete_3?: string | null
+          team_b_name?: string | null
+          total_score_a?: number
+          total_score_b?: number
+          weapon?: string | null
+          winner?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string
+          current_bout?: number
+          gym_id?: string | null
+          id?: string
+          match_date?: string
+          overtime_score_a?: number | null
+          overtime_score_b?: number | null
+          overtime_winner?: string | null
+          status?: string
+          team_a_athlete_1?: string | null
+          team_a_athlete_2?: string | null
+          team_a_athlete_3?: string | null
+          team_a_name?: string | null
+          team_b_athlete_1?: string | null
+          team_b_athlete_2?: string | null
+          team_b_athlete_3?: string | null
+          team_b_name?: string | null
+          total_score_a?: number
+          total_score_b?: number
+          weapon?: string | null
+          winner?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_matches_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_matches_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "public_gym_info"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tournaments: {
         Row: {
           bout_type: string

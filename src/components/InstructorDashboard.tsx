@@ -4,7 +4,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RegisterBoutForm } from './RegisterBoutForm';
 import { TournamentSection } from './tournament/TournamentSection';
-import { Plus, Trophy } from 'lucide-react';
+import { TeamMatchSection } from './team-match/TeamMatchSection';
+import { Plus, Trophy, Users } from 'lucide-react';
 
 export const InstructorDashboard = () => {
   console.log('InstructorDashboard - Component loaded');
@@ -15,7 +16,7 @@ export const InstructorDashboard = () => {
   const [currentTab, setCurrentTab] = useState('register');
   
   const handleTabChange = (newTab: string) => {
-    if (currentTab === 'tournament' && hasUnsavedMatches) {
+    if ((currentTab === 'tournament' || currentTab === 'team') && hasUnsavedMatches) {
       setPendingTab(newTab);
       setShowExitDialog(true);
     } else {
@@ -39,7 +40,7 @@ export const InstructorDashboard = () => {
   return (
     <main className="w-full px-6 py-8 pb-20 md:pb-8">
       <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="register" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Registra Match</span>
@@ -47,6 +48,10 @@ export const InstructorDashboard = () => {
           <TabsTrigger value="tournament" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
             <Trophy className="w-4 h-4" />
             <span className="hidden sm:inline">Tournament</span>
+          </TabsTrigger>
+          <TabsTrigger value="team" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm">
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">Squadre 3v3</span>
           </TabsTrigger>
         </TabsList>
 
@@ -72,6 +77,16 @@ export const InstructorDashboard = () => {
             </p>
           </div>
           <TournamentSection onTournamentStateChange={setHasUnsavedMatches} />
+        </TabsContent>
+
+        <TabsContent value="team" className="space-y-6">
+          <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg mobile-banner dark:bg-green-950/30 dark:border-green-800/30">
+            <h3 className="font-medium text-green-800 text-sm mb-1 dark:text-green-200">Incontro a Squadre (3 vs 3)</h3>
+            <p className="text-green-700 text-xs mobile-text dark:text-green-300">
+              Formato staffetta: 9 assalti con target finale 45 stoccate.
+            </p>
+          </div>
+          <TeamMatchSection />
         </TabsContent>
       </Tabs>
 
