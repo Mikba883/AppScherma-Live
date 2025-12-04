@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Combobox } from '@/components/ui/combobox';
 import { Users, Swords, Play } from 'lucide-react';
 import { TeamSetup, TEAM_RELAY_SEQUENCE } from '@/types/team-match';
 import { useQuery } from '@tanstack/react-query';
@@ -123,28 +124,34 @@ export const TeamMatchSetup = ({ onStartMatch, isLoading }: TeamMatchSetupProps)
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {[0, 1, 2].map((index) => (
-                <div key={`a-${index}`} className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">
-                    Atleta A{index + 1}
-                  </Label>
-                  <Select
-                    value={teamA[index] || ''}
-                    onValueChange={(v) => handleTeamAChange(index, v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Seleziona A${index + 1}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailableAthletes('A', index).map((m: any) => (
-                        <SelectItem key={m.user_id} value={m.user_id}>
-                          {m.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
+              {[0, 1, 2].map((index) => {
+                const availableOptions = getAvailableAthletes('A', index).map((m: any) => ({
+                  value: m.user_id,
+                  label: m.full_name,
+                }));
+                // Include current selection in options
+                const currentSelection = teamA[index];
+                const currentMember = members.find((m: any) => m.user_id === currentSelection);
+                const options = currentSelection && currentMember
+                  ? [{ value: currentMember.user_id, label: currentMember.full_name }, ...availableOptions.filter(o => o.value !== currentSelection)]
+                  : availableOptions;
+                
+                return (
+                  <div key={`a-${index}`} className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Atleta A{index + 1}
+                    </Label>
+                    <Combobox
+                      options={options}
+                      value={teamA[index] || ''}
+                      onValueChange={(v) => handleTeamAChange(index, v)}
+                      placeholder={`Seleziona A${index + 1}`}
+                      emptyText="Nessun atleta disponibile"
+                      className="w-full"
+                    />
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
 
@@ -162,28 +169,34 @@ export const TeamMatchSetup = ({ onStartMatch, isLoading }: TeamMatchSetupProps)
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {[0, 1, 2].map((index) => (
-                <div key={`b-${index}`} className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">
-                    Atleta B{index + 1}
-                  </Label>
-                  <Select
-                    value={teamB[index] || ''}
-                    onValueChange={(v) => handleTeamBChange(index, v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Seleziona B${index + 1}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailableAthletes('B', index).map((m: any) => (
-                        <SelectItem key={m.user_id} value={m.user_id}>
-                          {m.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
+              {[0, 1, 2].map((index) => {
+                const availableOptions = getAvailableAthletes('B', index).map((m: any) => ({
+                  value: m.user_id,
+                  label: m.full_name,
+                }));
+                // Include current selection in options
+                const currentSelection = teamB[index];
+                const currentMember = members.find((m: any) => m.user_id === currentSelection);
+                const options = currentSelection && currentMember
+                  ? [{ value: currentMember.user_id, label: currentMember.full_name }, ...availableOptions.filter(o => o.value !== currentSelection)]
+                  : availableOptions;
+                
+                return (
+                  <div key={`b-${index}`} className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Atleta B{index + 1}
+                    </Label>
+                    <Combobox
+                      options={options}
+                      value={teamB[index] || ''}
+                      onValueChange={(v) => handleTeamBChange(index, v)}
+                      placeholder={`Seleziona B${index + 1}`}
+                      emptyText="Nessun atleta disponibile"
+                      className="w-full"
+                    />
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </div>
