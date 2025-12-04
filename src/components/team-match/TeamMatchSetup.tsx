@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Combobox } from '@/components/ui/combobox';
-import { Users, Swords, Play } from 'lucide-react';
+import { Users, Swords, Play, Loader2 } from 'lucide-react';
 import { TeamSetup, TEAM_RELAY_SEQUENCE } from '@/types/team-match';
-import { useQuery } from '@tanstack/react-query';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TeamMatchSetupProps {
@@ -16,23 +16,48 @@ interface TeamMatchSetupProps {
   isLoading?: boolean;
 }
 
+interface Athlete {
+  user_id: string;
+  full_name: string;
+}
+
 export const TeamMatchSetup = ({ onStartMatch, isLoading }: TeamMatchSetupProps) => {
+  const { profile } = useProfile();
   const [teamAName, setTeamAName] = useState('Squadra A');
   const [teamBName, setTeamBName] = useState('Squadra B');
   const [teamA, setTeamA] = useState<(string | null)[]>([null, null, null]);
   const [teamB, setTeamB] = useState<(string | null)[]>([null, null, null]);
   const [weapon, setWeapon] = useState('');
   const [matchDate, setMatchDate] = useState<Date>(new Date());
+  const [members, setMembers] = useState<Athlete[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
 
   // Fetch gym members
-  const { data: members = [] } = useQuery({
-    queryKey: ['gym-members-for-team-match'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_gym_member_names');
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (!profile?.gym_id) {
+        setLoadingMembers(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .eq('gym_id', profile.gym_id)
+          .order('full_name');
+        
+        if (error) throw error;
+        setMembers(data || []);
+      } catch (error) {
+        console.error('Error fetching members:', error);
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+    
+    fetchMembers();
+  }, [profile?.gym_id]);
 
   const handleTeamAChange = (index: number, value: string) => {
     const newTeam = [...teamA];
@@ -72,8 +97,19 @@ export const TeamMatchSetup = ({ onStartMatch, isLoading }: TeamMatchSetupProps)
     const selectedInA = teamA.filter((_, i) => currentTeam !== 'A' || i !== currentIndex);
     const selectedInB = teamB.filter((_, i) => currentTeam !== 'B' || i !== currentIndex);
     const allSelected = [...selectedInA, ...selectedInB].filter(Boolean);
-    return members.filter((m: any) => !allSelected.includes(m.user_id));
+    return members.filter((m) => !allSelected.includes(m.user_id));
   };
+
+  if (loadingMembers) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin mr-2" />
+          <span>Caricamento atleti...</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -125,13 +161,13 @@ export const TeamMatchSetup = ({ onStartMatch, isLoading }: TeamMatchSetupProps)
             </CardHeader>
             <CardContent className="space-y-3">
               {[0, 1, 2].map((index) => {
-                const availableOptions = getAvailableAthletes('A', index).map((m: any) => ({
+                const availableOptions = getAvailableAthletes('A', index).map((m) => ({
                   value: m.user_id,
                   label: m.full_name,
                 }));
                 // Include current selection in options
                 const currentSelection = teamA[index];
-                const currentMember = members.find((m: any) => m.user_id === currentSelection);
+                const currentMember = members.find((m) => m.user_id === currentSelection);
                 const options = currentSelection && currentMember
                   ? [{ value: currentMember.user_id, label: currentMember.full_name }, ...availableOptions.filter(o => o.value !== currentSelection)]
                   : availableOptions;
@@ -170,13 +206,13 @@ export const TeamMatchSetup = ({ onStartMatch, isLoading }: TeamMatchSetupProps)
             </CardHeader>
             <CardContent className="space-y-3">
               {[0, 1, 2].map((index) => {
-                const availableOptions = getAvailableAthletes('B', index).map((m: any) => ({
+                const availableOptions = getAvailableAthletes('B', index).map((m) => ({
                   value: m.user_id,
                   label: m.full_name,
                 }));
                 // Include current selection in options
                 const currentSelection = teamB[index];
-                const currentMember = members.find((m: any) => m.user_id === currentSelection);
+                const currentMember = members.find((m) => m.user_id === currentSelection);
                 const options = currentSelection && currentMember
                   ? [{ value: currentMember.user_id, label: currentMember.full_name }, ...availableOptions.filter(o => o.value !== currentSelection)]
                   : availableOptions;
