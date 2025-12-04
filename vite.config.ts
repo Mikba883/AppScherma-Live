@@ -21,9 +21,20 @@ export default defineConfig(({ mode }) => ({
     dedupe: [
       'react', 
       'react-dom',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-primitive',
+      '@radix-ui/react-context',
+      '@radix-ui/react-compose-refs',
+      '@radix-ui/react-slot',
+      '@radix-ui/react-use-callback-ref',
     ],
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
+    include: [
+      'react', 
+      'react-dom',
+      '@radix-ui/react-tooltip',
+    ],
+    force: true,
   },
 }));
